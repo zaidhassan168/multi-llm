@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
       });
     },
     handleInvalidToken: async (reason) => {
-      console.log('Request:', request);
+      // console.log('Request:', request);
 
       console.info('Missing or malformed credentials', {reason});
 
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     },
     handleError: async (error) => {
       console.error('Unhandled authentication error', {error});
-      console.log('Request:', request);
+      // console.log('Request:', request);
 
       return redirectToLogin(request, {
         path: '/login',

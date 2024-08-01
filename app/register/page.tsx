@@ -9,15 +9,18 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { Loader2 } from "lucide-react"
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading ] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(event: FormEvent) {
+    setIsLoading(true);
     event.preventDefault();
 
     setError("");
@@ -29,9 +32,11 @@ export default function Register() {
 
     try {
       await createUserWithEmailAndPassword(getAuth(app), email, password);
+      setIsLoading(false);
       router.push("/login");
     } catch (e) {
       setError((e as Error).message);
+      setIsLoading(false);
     }
   }
 
@@ -65,8 +70,18 @@ export default function Register() {
               onChange={(e) => setConfirmation(e.target.value)}
                id="confirmPassword" type="password" required />
             </div>
-            <Button type="submit" className="w-full">
-              Sign Up
+            {error && (
+              <div
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                role="alert"
+              >
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            <Button disabled={isLoading}
+           
+               type="submit" className="w-full">
+               {isLoading ? <Loader2 className="animate-spin" /> : "Sign In"}
             </Button>
           </form>
         </CardContent>
