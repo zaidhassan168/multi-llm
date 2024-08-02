@@ -17,18 +17,22 @@ import {
 import { useRouter } from "next/navigation";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
+import { Loader2 } from "lucide-react"
 
 interface HomePageProps {
   email?: string;
 }
 
 export default function HomePage({ email }: HomePageProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
 
   async function handleLogout() {
+    setIsLoading(true);
     await signOut(getAuth(app));
     await fetch("/api/logout");
+    setIsLoading(false);
     router.push("/login");
   }
 
