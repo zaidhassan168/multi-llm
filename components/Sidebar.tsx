@@ -1,6 +1,4 @@
-// Sidebar.tsx
-"use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,94 +18,108 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   email?: string;
-  onButtonClick: (component: string) => void; // Add this line
+  onButtonClick: (component: string) => void;
 }
 
-export default function Sidebar({
+const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
   email,
-  onButtonClick, // Add this line
-}: SidebarProps) {
+  onButtonClick,
+}) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleLogout() {
+  const handleLogout = async () => {
     setIsLoading(true);
-    await signOut(getAuth(app));
-    await fetch("/api/logout");
-    setIsLoading(false);
-    router.push("/login");
-  }
+    try {
+      await signOut(getAuth(app));
+      await fetch("/api/logout");
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const navItems = [
+    { icon: <HomeIcon className="w-5 h-5" />, label: "Chat" },
+    { icon: <UserIcon className="w-5 h-5" />, label: "About" },
+    { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Services" },
+    { icon: <MailIcon className="w-5 h-5" />, label: "Contact" },
+  ];
 
   return (
     <div
-      className={`bg-white border-r flex flex-col transition-all duration-300 ${isCollapsed ? "w-16" : "w-64"
-        }`}
+      className={`bg-white border-r flex flex-col h-screen transition-all duration-300 ${
+        isCollapsed ? "w-20" : "w-64"
+      }`}
     >
-      <div className="px-4 py-2 border-b flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between border-b">
+        {!isCollapsed && <h1 className="text-xl font-bold text-gray-800">Menu</h1>}
         <Button
           variant="ghost"
-          className="hover:bg-transparent"
+          size="icon"
+          className="ml-auto"
           onClick={onToggleCollapse}
         >
           {isCollapsed ? (
-            <ArrowRightIcon className="w-4 h-4" />
+            <ArrowRightIcon className="w-5 h-5" />
           ) : (
             <ArrowLeftIcon className="w-5 h-5" />
           )}
         </Button>
       </div>
 
-      <div className="px-4 py-6 border-b flex items-center gap-3">
-        <Avatar className="w-8 h-8">
-          <AvatarImage src="/placeholder-user.jpg" />
+      <div className="p-4 border-b flex items-center gap-3">
+        <Avatar className="w-10 h-10">
+          <AvatarImage src="/placeholder-user.jpg" alt="User avatar" />
           <AvatarFallback>JD</AvatarFallback>
         </Avatar>
         {!isCollapsed && (
-          <div className="text-gray-800 font-medium">{email}</div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-800">{email}</span>
+            <span className="text-xs text-gray-500">User</span>
+          </div>
         )}
       </div>
 
-      <nav className={`flex-1 py-6 px-4 space-y-4 ${isCollapsed ? "px-2" : "px-4"}`}>
-        {[
-          { icon: <HomeIcon />, label: "Chat" },
-          { icon: <UserIcon />, label: "About" },
-          { icon: <BriefcaseIcon />, label: "Services" },
-          { icon: <MailIcon />, label: "Contact" },
-        ].map(({ icon, label }, index) => (
+      <nav className="flex-1 py-6 px-4 space-y-2">
+        {navItems.map(({ icon, label }, index) => (
           <Button
             key={index}
             variant="ghost"
-            className={`flex items-center gap-3 text-gray-600 hover:text-gray-800 transition w-full ${isCollapsed ? "justify-center" : "justify-start" // Adjust alignment
-              }`}
-            onClick={() => onButtonClick(label.toLowerCase())} // Add this line
+            className={`w-full flex items-center gap-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors ${
+              isCollapsed ? "justify-center px-2" : "justify-start px-4"
+            }`}
+            onClick={() => onButtonClick(label.toLowerCase())}
           >
-            <div className="flex-shrink-0 w-5 h-5"> {/* Icon wrapper */}
-              {icon}
-            </div>
+            <div className="flex-shrink-0">{icon}</div>
             {!isCollapsed && <span>{label}</span>}
           </Button>
         ))}
       </nav>
 
-      <div
-        className={`border-t px-4 py-4 space-y-2 ${isCollapsed ? "px-2" : "px-4"
-          }`}
-      >
+      <div className="mt-auto p-4 border-t">
         <Button
-          className="w-full hover:bg-primary-500 hover:text-primary-foreground transition-colors flex items-center"
+          className="w-full hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2"
           onClick={handleLogout}
+          disabled={isLoading}
         >
           {isLoading ? (
-            <span className="loading loading-spinner loading-sm"></span>
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
           ) : (
             <LogOutIcon className="w-5 h-5 flex-shrink-0" />
           )}
-          
-          {!isCollapsed && <span className="ml-2">Logout</span>}
+          {!isCollapsed && <span>Logout</span>}
         </Button>
       </div>
     </div>
   );
-}
+};
+
+export default Sidebar;
