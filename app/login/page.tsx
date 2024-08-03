@@ -90,7 +90,7 @@ export default function Login() {
           </form>
         </CardContent>
         <CardFooter className="text-center text-sm">
-          Don't have an account?{" "}
+          Do not have an account?{" "}
           <Link href="/register" className="underline" prefetch={false}>
             Sign up
           </Link>
