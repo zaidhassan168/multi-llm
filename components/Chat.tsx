@@ -7,7 +7,8 @@ import { readStreamableValue } from 'ai/rsc';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { darcula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodeProps } from "react-markdown/lib/ast-to-react";
 
 interface ChatProps {
   initialMessages?: Message[];
@@ -67,7 +68,7 @@ const Chat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
   };
 
   return (
-    <div className="w-full w-2/3 mx-auto max-h-screen min-h-screen flex flex-col">
+    <div className=" w-2/3 mx-auto max-h-screen min-h-screen flex flex-col">
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4"
@@ -95,11 +96,11 @@ const Chat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
             >
               <ReactMarkdown
                 components={{
-                  code({node, inline, className, children, ...props}) {
+                  code({ node, inline, className, children, ...props }: CodeProps) {
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
                       <SyntaxHighlighter
-                        style={darcula}
+                        style={oneDark}
                         language={match[1]}
                         PreTag="div"
                         {...props}
