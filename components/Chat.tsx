@@ -150,7 +150,7 @@ const Chat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
           <Button
             onClick={handleSendMessage}
             disabled={isLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            className="bg-green-500 hover:bg-green-600 text-white"
           >
             {isLoading ? (
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
