@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Chat from '@/components/Chat';
-import About from '@/components/About'; // Add other components here
-
+import DatabaseChat from '@/components/DatabaseChat';
 interface HomePageProps {
   email?: string;
 }
@@ -28,7 +27,7 @@ export default function HomePage({ email }: HomePageProps) {
       />
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {currentComponent === 'chat' && <Chat />}
-        {currentComponent === 'about' && <About />}
+        {currentComponent === 'about' && <DatabaseChat />}
         {/* ... your main content */}
       </main>
     </div>
