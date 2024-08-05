@@ -59,7 +59,7 @@ const ConnectDatabase: React.FC<{ isOpen: boolean, onClose: () => void, onDataba
         data_source_configs: [
           {
             ...settings.data_source_configs[0],
-            connection_args: { user, password, host, port, database, schema: "public" },
+            connection_args: { user, password, host, port, database, schema: "demo_data" },
           },
         ],
       };
