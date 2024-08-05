@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { icon: <HomeIcon className="w-5 h-5" />, label: "Chat" },
     { icon: <UserIcon className="w-5 h-5" />, label: "About" },
-    { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Services" },
+    { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Profile" },
     { icon: <MailIcon className="w-5 h-5" />, label: "Contact" },
   ];
 
