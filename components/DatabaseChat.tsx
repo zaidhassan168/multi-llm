@@ -97,21 +97,23 @@ const DatabaseChat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
             >
               <Markdown
                 components={{
-                  code({ node, inline, className, children, ...props }) {
-                    const match = /language-(\w+)/.exec(className || '');
-                    return !inline && match ? (
+                  code(props) {
+                    const { children, className, node } = props
+                    const match = /language-(\w+)/.exec(className || '')
+                    return match ? (
                       <SyntaxHighlighter
-                        style={oneDark}
-                        language={match[1]}
                         PreTag="div"
-                        children={String(children).replace(/\n$/, '')}
-                        {...props}
-                      />
+                        language={match[1]}
+                        style={oneDark}
+                        className="rounded-md text-sm"
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
                     ) : (
-                      <code className={className} {...props}>
+                      <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`} {...props}>
                         {children}
                       </code>
-                    );
+                    )
                   }
                 }}
               >
