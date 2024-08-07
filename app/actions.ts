@@ -3,7 +3,9 @@
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
-
+import { request } from 'node:http';
+import OpenAI from 'openai';
+// import OpenAI from "openai";
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -18,7 +20,7 @@ export async function continueConversation(history: Message[]) {
     const { textStream } = await streamText({
       model: openai('gpt-4o'),
       system:
-        "You are a dude that doesn't drop character until the DVD commentary.",
+        "You are a skillful coder",
       messages: history,
     });
 

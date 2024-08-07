@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Message, continueConversation } from '@/app/actions';
+import { Message } from '@/app/actions';
+import {dbChat} from '@/app/dbChat';
 import { readStreamableValue } from 'ai/rsc';
 import { Send, Paperclip, Mic, Image } from 'lucide-react';
 import Markdown from 'react-markdown';
@@ -39,28 +40,9 @@ const DatabaseChat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
     const userMessage: Message = { role: 'user', content: input };
     setConversation(prev => [...prev, userMessage]);
     setInput('');
-
-    try {
-      const { messages, newMessage } = await continueConversation([
-        ...conversation,
-        userMessage,
-      ]);
-
-      let textContent = '';
-
-      for await (const delta of readStreamableValue(newMessage)) {
-        textContent = `${textContent}${delta}`;
-        setConversation([
-          ...messages,
-          { role: 'assistant', content: textContent } as Message,
-        ]);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    dbChat
+    
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
