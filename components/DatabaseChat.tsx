@@ -3,7 +3,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Message } from '@/app/actions';
-import {dbChat} from '@/app/dbChat';
 import { readStreamableValue } from 'ai/rsc';
 import { Send, Paperclip, Mic, Image } from 'lucide-react';
 import Markdown from 'react-markdown';
@@ -40,9 +39,31 @@ const DatabaseChat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
     const userMessage: Message = { role: 'user', content: input };
     setConversation(prev => [...prev, userMessage]);
     setInput('');
-    dbChat
-    
-  }
+    console.log('in handle send message');
+
+    try {
+        const response = await fetch('/api/dbChat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messages: [userMessage] }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(data.message);
+        const assistantMessage: Message = { role: 'assistant', content: data.message }
+        setConversation(prev => [...prev, assistantMessage]);
+    } catch (error) {
+        console.error('Error calling API:', error);
+    } finally {
+        setIsLoading(false);
+    }
+}
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
