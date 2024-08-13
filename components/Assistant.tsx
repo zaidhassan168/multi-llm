@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Message, useAssistant } from 'ai/react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,7 @@ interface FileInfo {
 export default function ChatBotInterface() {
   const [files, setFiles] = useState<FileInfo[]>([])
   const { toast } = useToast()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
     status,
@@ -35,7 +36,7 @@ export default function ChatBotInterface() {
   useEffect(() => {
     fetchFiles()
   }, [])
-
+  
   useEffect(() => {
     if (error) {
       toast({
@@ -45,6 +46,10 @@ export default function ChatBotInterface() {
       })
     }
   }, [error, toast])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const fetchFiles = async () => {
     try {
@@ -123,10 +128,22 @@ export default function ChatBotInterface() {
     }
   }
 
+  // Handle Enter key press to send a message
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      submitMessage(event as unknown as React.FormEvent<HTMLFormElement>)
+    }
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <div className="flex flex-col h-screen w-full bg-background">
-      <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4">
+      <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 ">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">Files</Button>
@@ -173,7 +190,7 @@ export default function ChatBotInterface() {
             </label>
           </div>
         </div>
-        <ScrollArea className="flex-grow border rounded-md p-4 mb-4">
+        <ScrollArea className="flex-grow border rounded-md p-4 mb-4 ">
           {messages.map((message: Message) => (
             <div
               key={message.id}
@@ -206,11 +223,13 @@ export default function ChatBotInterface() {
               <span className="loading loading-dots loading-md"></span>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </ScrollArea>
-        <form onSubmit={submitMessage} className="relative pb-4">
+        <form onSubmit={submitMessage} className="sticky bottom-0 bg-background pb-4">
           <Textarea
             value={input}
             onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
             className="pr-12 resize-none"
             rows={3}
