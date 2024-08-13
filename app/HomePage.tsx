@@ -7,7 +7,7 @@ import DatabaseChat from '@/components/DatabaseChat';
 import UserProfile from '@/components/UserProfile';
 import GeminiChat from '@/components/GeminiChat';
 import CodeChat from '@/components/CodeChat';
-import Assistant from '@/components/assistant';
+import Assistant from '@/components/Assistant';
 interface HomePageProps {
   email?: string;
 }
