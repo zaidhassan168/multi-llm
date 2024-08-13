@@ -49,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Profile" },
     { icon: <MailIcon className="w-5 h-5" />, label: "Gemini" },
     { icon: <MailIcon className="w-5 h-5" />, label: "Code" },
+    { icon: <MailIcon className="w-5 h-5" />, label: "Assistant" },
   ];
 
   return (

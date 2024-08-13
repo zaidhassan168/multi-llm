@@ -2,7 +2,7 @@ import { assistantId } from "@/app/assistant-config";
 import { openai } from "@/app/openai";
 
 // upload file to assistant's vector store
-export async function POST(request) {
+export async function POST(request: { formData: () => any; }) {
   const formData = await request.formData(); // process file as FormData
   const file = formData.get("file"); // retrieve the single file from FormData
   const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
@@ -43,7 +43,7 @@ export async function GET() {
 }
 
 // delete file from assistant's vector store
-export async function DELETE(request) {
+export async function DELETE(request: { json: () => any; }) {
   const body = await request.json();
   const fileId = body.fileId;
 
@@ -59,7 +59,7 @@ const getOrCreateVectorStore = async () => {
   const assistant = await openai.beta.assistants.retrieve(assistantId);
 
   // if the assistant already has a vector store, return it
-  if (assistant.tool_resources?.file_search?.vector_store_ids?.length > 0) {
+  if (assistant.tool_resources?.file_search?.vector_store_ids && assistant.tool_resources.file_search.vector_store_ids.length > 0) {
     return assistant.tool_resources.file_search.vector_store_ids[0];
   }
   // otherwise, create a new vector store and attatch it to the assistant
