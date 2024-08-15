@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
+import Markdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ReactMarkdown from 'react-markdown'
 
 interface FileInfo {
   file_id: string;
@@ -140,6 +144,12 @@ export default function ChatBotInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const CodeBlock = ({ language, value }: { language: string; value: string }) => {
+    return (
+      <SyntaxHighlighter language={language} style={oneDark} PreTag="div" children={value} />
+    )
+  }
+  
   return (
     <div className="flex flex-col h-screen w-full bg-background">
       <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-auto">
@@ -191,33 +201,58 @@ export default function ChatBotInterface() {
           </div>
         </div>
         <ScrollArea className="flex-grow border rounded-md p-4 mb-4 ">
-          {messages.map((message: Message) => (
-            <div
-              key={message.id}
-              className={`mb-4 ${
-                message.role === 'user' ? 'text-right' : 'text-left'
-              }`}
-            >
-              <span
-                className={`inline-block p-2 rounded-lg max-w-[80%] ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
+        {messages.map((message: Message) => (
+  <div
+    key={message.id}
+    className={`mb-4 ${
+      message.role === 'user' ? 'text-right' : 'text-left'
+    }`}
+  >
+    <span
+      className={`inline-block p-2 rounded-lg max-w-[80%] ${
+        message.role === 'user'
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-muted'
+      }`}
+    >
+      {message.role !== 'data' && (
+        <Markdown
+        components={{
+          code(props) {
+            const { children, className, node } = props
+            const match = /language-(\w+)/.exec(className || '')
+            return match ? (
+              <SyntaxHighlighter
+                PreTag="div"
+                language={match[1]}
+                style={oneDark}
+                className="rounded-md text-sm"
               >
-                {message.role !== 'data' && message.content}
-                {message.role === 'data' && (
-                  <>
-                    {(message.data as any).description}
-                    <br />
-                    <pre className="bg-gray-200">
-                      {JSON.stringify(message.data, null, 2)}
-                    </pre>
-                  </>
-                )}
-              </span>
-            </div>
-          ))}
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            ) : (
+              <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`} {...props}>
+                {children}
+              </code>
+            )
+          }
+        }}
+      >
+        {message.content}
+      </Markdown>
+      )}
+      {message.role === 'data' && (
+        <>
+          {(message.data as any).description}
+          <br />
+          <pre className="bg-gray-200">
+            {JSON.stringify(message.data, null, 2)}
+          </pre>
+        </>
+      )}
+    </span>
+  </div>
+))}
           {status === 'in_progress' && (
             <div className="flex justify-center">
               <span className="loading loading-dots loading-md"></span>
