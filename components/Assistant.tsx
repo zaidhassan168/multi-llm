@@ -10,11 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon } from 'lucide-react'
+import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon, SunIcon, MoonIcon, ChevronDownIcon } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import Markdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 interface FileInfo {
   file_id: string
@@ -24,9 +24,12 @@ interface FileInfo {
 
 export default function ChatBotInterface() {
   const [files, setFiles] = useState<FileInfo[]>([])
-  const [loadingFileUpload, setLoadingFileUpload] = useState(false) // Loading state for file upload
+  const [loadingFileUpload, setLoadingFileUpload] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const { toast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   const {
     status,
@@ -35,13 +38,14 @@ export default function ChatBotInterface() {
     submitMessage,
     handleInputChange,
     error,
-  
   } = useAssistant({ 
     api: '/api/assistants/chat',
   })
 
   useEffect(() => {
     fetchFiles()
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    if (savedTheme) setTheme(savedTheme)
   }, [])
 
   useEffect(() => {
@@ -57,6 +61,18 @@ export default function ChatBotInterface() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollAreaRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current
+        setShowScrollButton(scrollHeight - scrollTop > clientHeight + 100)
+      }
+    }
+
+    scrollAreaRef.current?.addEventListener('scroll', handleScroll)
+    return () => scrollAreaRef.current?.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const fetchFiles = async () => {
     try {
@@ -77,7 +93,7 @@ export default function ChatBotInterface() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setLoadingFileUpload(true) // Start loading indicator for file upload
+      setLoadingFileUpload(true)
       const formData = new FormData()
       formData.append('file', file)
 
@@ -95,7 +111,7 @@ export default function ChatBotInterface() {
           title: "Success",
           description: "File uploaded successfully",
         })
-        fetchFiles() // Refresh the file list
+        fetchFiles()
       } catch (error) {
         console.error('Error uploading file:', error)
         toast({
@@ -104,7 +120,7 @@ export default function ChatBotInterface() {
           variant: "destructive",
         })
       } finally {
-        setLoadingFileUpload(false) // Stop loading indicator after file upload
+        setLoadingFileUpload(false)
       }
     }
   }
@@ -127,7 +143,7 @@ export default function ChatBotInterface() {
         title: "Success",
         description: "File deleted successfully",
       })
-      fetchFiles() // Refresh the file list
+      fetchFiles()
     } catch (error) {
       console.error('Error deleting file:', error)
       toast({
@@ -138,7 +154,6 @@ export default function ChatBotInterface() {
     }
   }
 
-  // Handle Enter key press to send a message
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -150,28 +165,39 @@ export default function ChatBotInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+  }
+
   return (
-    <div className="flex flex-col h-screen w-full bg-background">
-      <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4">
+    <div className={`flex flex-col h-screen w-full bg-background transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
+      <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="flex justify-between items-center py-4 gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Files</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Files
+                <ChevronDownIcon className="ml-2 h-4 w-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[300px]">
-              {loadingFileUpload ? ( // Show loading indicator during file upload
+              {loadingFileUpload ? (
                 <DropdownMenuItem disabled>
-                  <span className="loading loading-spinner loading-md" />
+                  <span className="loading loading-spinner loading-md mr-2" />
                   Uploading...
                 </DropdownMenuItem>
               ) : files.length === 0 ? (
                 <DropdownMenuItem disabled>No files uploaded</DropdownMenuItem>
               ) : (
                 files.map((file) => (
-                  <DropdownMenuItem key={file.file_id} className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <FileIcon className="mr-2 h-4 w-4" />
-                      <span className="truncate">{file.filename}</span>
+                  <DropdownMenuItem key={file.file_id} className="flex items-center p-0">
+                    <div className="flex-grow min-w-0 pr-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                      <div className="flex items-center p-2">
+                        <FileIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{file.filename}</span>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -180,6 +206,7 @@ export default function ChatBotInterface() {
                         e.stopPropagation()
                         handleFileDelete(file.file_id)
                       }}
+                      className="flex-shrink-0 mr-2"
                     >
                       <Trash2Icon className="h-4 w-4" />
                     </Button>
@@ -188,7 +215,7 @@ export default function ChatBotInterface() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <div className="w-full sm:w-auto ">
+          <div className="flex items-center gap-2">
             <Input
               type="file"
               id="file-upload"
@@ -203,9 +230,12 @@ export default function ChatBotInterface() {
                 </span>
               </Button>
             </label>
+            <Button variant="outline" onClick={toggleTheme} size="icon">
+              {theme === 'light' ? <MoonIcon className="h-4 w-4" /> : <SunIcon className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
-        <ScrollArea className="flex-grow border rounded-md p-4 mb-4">
+        <ScrollArea className="flex-grow border rounded-md p-4 mb-4 relative" ref={scrollAreaRef}>
           {messages.map((message: Message) => (
             <div
               key={message.id}
@@ -216,8 +246,8 @@ export default function ChatBotInterface() {
               <span
                 className={`inline-block p-2 rounded-lg max-w-[80%] ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+                    ? 'bg-muted'
+                    : ''
                 }`}
               >
                 <Markdown
@@ -228,7 +258,7 @@ export default function ChatBotInterface() {
                         <SyntaxHighlighter
                           PreTag="div"
                           language={match[1]}
-                          style={oneDark}
+                          style={theme === 'dark' ? oneDark : oneLight}
                           className="rounded-md text-sm"
                         >
                           {String(children).replace(/\n$/, '')}
@@ -249,10 +279,21 @@ export default function ChatBotInterface() {
           {status === 'in_progress' && (
             <div className="flex items-center justify-start ml-4 mt-2">
               <span className="text-gray-400 italic">Thinking...</span>
+              <span className="loading loading-dots loading-sm ml-2"></span>
             </div>
           )}
           <div ref={messagesEndRef} />
         </ScrollArea>
+        {showScrollButton && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute bottom-20 right-6 rounded-full"
+            onClick={scrollToBottom}
+          >
+            <ChevronDownIcon className="h-4 w-4" />
+          </Button>
+        )}
         <form onSubmit={submitMessage} className="sticky bottom-0 bg-background pb-4">
           <Textarea
             value={input}
