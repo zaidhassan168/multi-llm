@@ -12,19 +12,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
-import Markdown from 'react-markdown';
+import Markdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import ReactMarkdown from 'react-markdown'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 interface FileInfo {
-  file_id: string;
-  filename: string;
-  status: string;
+  file_id: string
+  filename: string
+  status: string
 }
 
 export default function ChatBotInterface() {
   const [files, setFiles] = useState<FileInfo[]>([])
+  const [loadingFileUpload, setLoadingFileUpload] = useState(false) // Loading state for file upload
   const { toast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -34,13 +34,16 @@ export default function ChatBotInterface() {
     input,
     submitMessage,
     handleInputChange,
-    error
-  } = useAssistant({ api: '/api/assistants/chat' })
+    error,
+  
+  } = useAssistant({ 
+    api: '/api/assistants/chat',
+  })
 
   useEffect(() => {
     fetchFiles()
   }, [])
-  
+
   useEffect(() => {
     if (error) {
       toast({
@@ -74,6 +77,7 @@ export default function ChatBotInterface() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      setLoadingFileUpload(true) // Start loading indicator for file upload
       const formData = new FormData()
       formData.append('file', file)
 
@@ -99,6 +103,8 @@ export default function ChatBotInterface() {
           description: "File upload failed",
           variant: "destructive",
         })
+      } finally {
+        setLoadingFileUpload(false) // Stop loading indicator after file upload
       }
     }
   }
@@ -144,22 +150,21 @@ export default function ChatBotInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const CodeBlock = ({ language, value }: { language: string; value: string }) => {
-    return (
-      <SyntaxHighlighter language={language} style={oneDark} PreTag="div" children={value} />
-    )
-  }
-  
   return (
     <div className="flex flex-col h-screen w-full bg-background">
       <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 ">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">Files</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[300px]">
-              {files.length === 0 ? (
+              {loadingFileUpload ? ( // Show loading indicator during file upload
+                <DropdownMenuItem disabled>
+                  <span className="loading loading-spinner loading-md" />
+                  Uploading...
+                </DropdownMenuItem>
+              ) : files.length === 0 ? (
                 <DropdownMenuItem disabled>No files uploaded</DropdownMenuItem>
               ) : (
                 files.map((file) => (
@@ -183,7 +188,7 @@ export default function ChatBotInterface() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto ">
             <Input
               type="file"
               id="file-upload"
@@ -194,68 +199,56 @@ export default function ChatBotInterface() {
               <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <span>
                   <PaperclipIcon className="mr-2 h-4 w-4" />
-                  Upload File
+                  {loadingFileUpload ? 'Uploading...' : 'Upload File'}
                 </span>
               </Button>
             </label>
           </div>
         </div>
-        <ScrollArea className="flex-grow border rounded-md p-4 mb-4 ">
-        {messages.map((message: Message) => (
-  <div
-    key={message.id}
-    className={`mb-4 ${
-      message.role === 'user' ? 'text-right' : 'text-left'
-    }`}
-  >
-    <span
-      className={`inline-block p-2 rounded-lg max-w-[80%] ${
-        message.role === 'user'
-          ? 'bg-primary text-primary-foreground'
-          : 'bg-muted'
-      }`}
-    >
-      {message.role !== 'data' && (
-        <Markdown
-        components={{
-          code(props) {
-            const { children, className, node } = props
-            const match = /language-(\w+)/.exec(className || '')
-            return match ? (
-              <SyntaxHighlighter
-                PreTag="div"
-                language={match[1]}
-                style={oneDark}
-                className="rounded-md text-sm"
+        <ScrollArea className="flex-grow border rounded-md p-4 mb-4">
+          {messages.map((message: Message) => (
+            <div
+              key={message.id}
+              className={`mb-4 ${
+                message.role === 'user' ? 'text-right' : 'text-left'
+              }`}
+            >
+              <span
+                className={`inline-block p-2 rounded-lg max-w-[80%] ${
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                }`}
               >
-                {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
-            ) : (
-              <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`} {...props}>
-                {children}
-              </code>
-            )
-          }
-        }}
-      >
-        {message.content}
-      </Markdown>
-      )}
-      {message.role === 'data' && (
-        <>
-          {(message.data as any).description}
-          <br />
-          <pre className="bg-gray-200">
-            {JSON.stringify(message.data, null, 2)}
-          </pre>
-        </>
-      )}
-    </span>
-  </div>
-))}
+                <Markdown
+                  components={{
+                    code({ children, className }) {
+                      const match = /language-(\w+)/.exec(className || '')
+                      return match ? (
+                        <SyntaxHighlighter
+                          PreTag="div"
+                          language={match[1]}
+                          style={oneDark}
+                          className="rounded-md text-sm"
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`}>
+                          {children}
+                        </code>
+                      )
+                    }
+                  }}
+                >
+                  {message.content}
+                </Markdown>
+              </span>
+            </div>
+          ))}
           {status === 'in_progress' && (
-            <div className="flex justify-center">
-              <span className="loading loading-dots loading-md"></span>
+            <div className="flex items-center justify-start ml-4 mt-2">
+              <span className="text-gray-400 italic">Thinking...</span>
             </div>
           )}
           <div ref={messagesEndRef} />
