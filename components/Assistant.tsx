@@ -10,11 +10,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon } from 'lucide-react'
+import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon, ChevronDownIcon } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import Markdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface FileInfo {
   file_id: string
@@ -24,9 +25,11 @@ interface FileInfo {
 
 export default function ChatBotInterface() {
   const [files, setFiles] = useState<FileInfo[]>([])
-  const [loadingFileUpload, setLoadingFileUpload] = useState(false) // Loading state for file upload
+  const [loadingFileUpload, setLoadingFileUpload] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const { toast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     status,
@@ -35,7 +38,6 @@ export default function ChatBotInterface() {
     submitMessage,
     handleInputChange,
     error,
-  
   } = useAssistant({ 
     api: '/api/assistants/chat',
   })
@@ -77,7 +79,7 @@ export default function ChatBotInterface() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setLoadingFileUpload(true) // Start loading indicator for file upload
+      setLoadingFileUpload(true)
       const formData = new FormData()
       formData.append('file', file)
 
@@ -95,7 +97,7 @@ export default function ChatBotInterface() {
           title: "Success",
           description: "File uploaded successfully",
         })
-        fetchFiles() // Refresh the file list
+        fetchFiles()
       } catch (error) {
         console.error('Error uploading file:', error)
         toast({
@@ -104,7 +106,10 @@ export default function ChatBotInterface() {
           variant: "destructive",
         })
       } finally {
-        setLoadingFileUpload(false) // Stop loading indicator after file upload
+        setLoadingFileUpload(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
       }
     }
   }
@@ -127,7 +132,7 @@ export default function ChatBotInterface() {
         title: "Success",
         description: "File deleted successfully",
       })
-      fetchFiles() // Refresh the file list
+      fetchFiles()
     } catch (error) {
       console.error('Error deleting file:', error)
       toast({
@@ -138,7 +143,6 @@ export default function ChatBotInterface() {
     }
   }
 
-  // Handle Enter key press to send a message
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -154,38 +158,57 @@ export default function ChatBotInterface() {
     <div className="flex flex-col h-screen w-full bg-background">
       <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4">
-          <DropdownMenu>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Files</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Files
+                <ChevronDownIcon className={`ml-2 h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[300px]">
-              {loadingFileUpload ? ( // Show loading indicator during file upload
-                <DropdownMenuItem disabled>
-                  <span className="loading loading-spinner loading-md" />
-                  Uploading...
-                </DropdownMenuItem>
-              ) : files.length === 0 ? (
-                <DropdownMenuItem disabled>No files uploaded</DropdownMenuItem>
-              ) : (
-                files.map((file) => (
-                  <DropdownMenuItem key={file.file_id} className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <FileIcon className="mr-2 h-4 w-4" />
-                      <span className="truncate">{file.filename}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleFileDelete(file.file_id)
-                      }}
+              <AnimatePresence>
+                {loadingFileUpload ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <DropdownMenuItem disabled>
+                      <span className="loading loading-spinner loading-md" />
+                      Uploading...
+                    </DropdownMenuItem>
+                  </motion.div>
+                ) : files.length === 0 ? (
+                  <DropdownMenuItem disabled>No files uploaded</DropdownMenuItem>
+                ) : (
+                  files.map((file) => (
+                    <motion.div
+                      key={file.file_id}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <Trash2Icon className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuItem>
-                ))
-              )}
+                      <DropdownMenuItem className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FileIcon className="mr-2 h-4 w-4" />
+                          <span className="truncate">{file.filename}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleFileDelete(file.file_id)
+                          }}
+                        >
+                          <Trash2Icon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuItem>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="w-full sm:w-auto ">
@@ -194,6 +217,7 @@ export default function ChatBotInterface() {
               id="file-upload"
               className="hidden"
               onChange={handleFileUpload}
+              ref={fileInputRef}
             />
             <label htmlFor="file-upload">
               <Button variant="outline" className="w-full sm:w-auto" asChild>
@@ -206,50 +230,60 @@ export default function ChatBotInterface() {
           </div>
         </div>
         <ScrollArea className="flex-grow border rounded-md p-4 mb-4">
-          {messages.map((message: Message) => (
-            <div
-              key={message.id}
-              className={`mb-4 ${
-                message.role === 'user' ? 'text-right' : 'text-left'
-              }`}
-            >
-              <span
-                className={`inline-block p-2 rounded-lg max-w-[80%] ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+          <AnimatePresence>
+            {messages.map((message: Message) => (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className={`mb-4 ${
+                  message.role === 'user' ? 'text-right' : 'text-left'
                 }`}
               >
-                <Markdown
-                  components={{
-                    code({ children, className }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      return match ? (
-                        <SyntaxHighlighter
-                          PreTag="div"
-                          language={match[1]}
-                          style={oneDark}
-                          className="rounded-md text-sm"
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`}>
-                          {children}
-                        </code>
-                      )
-                    }
-                  }}
+                <span
+                  className={`inline-block p-2 rounded-lg max-w-[80%] ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
                 >
-                  {message.content}
-                </Markdown>
-              </span>
-            </div>
-          ))}
+                  <Markdown
+                    components={{
+                      code({ children, className }) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <SyntaxHighlighter
+                            PreTag="div"
+                            language={match[1]}
+                            style={oneDark}
+                            className="rounded-md text-sm"
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={`${className} bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5`}>
+                            {children}
+                          </code>
+                        )
+                      }
+                    }}
+                  >
+                    {message.content}
+                  </Markdown>
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           {status === 'in_progress' && (
-            <div className="flex items-center justify-start ml-4 mt-2">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-start ml-4 mt-2"
+            >
               <span className="text-gray-400 italic">Thinking...</span>
-            </div>
+            </motion.div>
           )}
           <div ref={messagesEndRef} />
         </ScrollArea>
