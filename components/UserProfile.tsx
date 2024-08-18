@@ -1,22 +1,28 @@
-import { useEffect, useState } from "react";
+import React, { Suspense } from "react";
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { app } from "../firebase";
 
-export default function UserProfile() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-
-  useEffect(() => {
+// This function returns a promise that resolves with the user
+function getUserPromise(): Promise<FirebaseUser> {
+  return new Promise((resolve, reject) => {
     const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        unsubscribe();
+        if (user) {
+          resolve(user);
+        } else {
+          reject(new Error("User not logged in"));
+        }
+      },
+      reject
+    );
+  });
+}
 
-    return () => unsubscribe();
-  }, []);
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+// This component uses the experimental use() hook
+function UserData() {
+  const user = React.use(getUserPromise());
 
   return (
     <div>
@@ -26,5 +32,13 @@ export default function UserProfile() {
       <p>Display Name: {user.displayName}</p>
       {/* Add more user properties as needed */}
     </div>
+  );
+}
+
+export default function UserProfile() {
+  return (
+    <Suspense fallback={<div>Loading suspense...</div>}>
+      <UserData />
+    </Suspense>
   );
 }
