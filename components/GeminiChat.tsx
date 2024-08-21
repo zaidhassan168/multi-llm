@@ -1,36 +1,56 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Send, Paperclip, Mic, Image } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import Markdown from 'react-markdown';
 import { useChat } from 'ai/react';
+import { useAuth } from '@/lib/hooks';
 
 export default function GeminiChat() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/geminiChat'
-  });
+  const { user } = useAuth(); // Get the current user
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+    api: '/api/geminiChat',
+    body: { userId: user?.uid, conversationId },
+    onFinish: (message) => {
+      // The message is already saved in the API route, so we don't need to do anything here
+    },
+  });
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (user) {
+      startNewConversation();
+    }
+  }, [user]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const startNewConversation = async () => {
+    if (!user) return;
+    const newConversationId = Date.now().toString(); // Simple way to generate a unique ID
+    setConversationId(newConversationId);
+    setMessages([]);
+  };
+
+  const loadConversation = async (conversationId: string) => {
+    if (!user) return;
+    const response = await fetch(`/api/geminiChat?userId=${user.uid}&conversationId=${conversationId}`);
+    const loadedMessages = await response.json();
+    setMessages(loadedMessages);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as any); // 'as any' is used here to bypass the typing issue
+      handleSubmit(e as any);
     }
   };
+
+  // ... rest of your component code (rendering, etc.)
 
   return (
     <div className="w-full max-w-4xl mx-auto h-screen flex flex-col dark:bg-gray-900 rounded-lg shadow-md">
@@ -40,7 +60,7 @@ export default function GeminiChat() {
           Clear Chat
         </Button>
       </div>
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar rounded-b-lg">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar rounded-b-lg">
         {messages.map((message, index) => (
           <div key={index} className={`flex items-start gap-4 ${message.role === "user" ? "justify-end" : ""}`}>
             <Avatar className={`w-8 h-8 ${message.role === "user" ? "order-2" : ""}`}>
@@ -48,7 +68,7 @@ export default function GeminiChat() {
               <AvatarFallback>{message.role.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className={`rounded-lg p-3 text-sm max-w-[70%] ${message.role === "user" ? "bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100" : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"}`}>
-            <Markdown
+              <Markdown
                 components={{
                   code(props) {
                     const { children, className, node } = props
@@ -109,6 +129,14 @@ export default function GeminiChat() {
           </Button>
         </div>
       </div>
+      <Button onClick={startNewConversation}>New Conversation</Button>
+      {/* <ConversationHistory
+        userId={user?.uid}
+        onSelectConversation={(id) => {
+          setConversationId(id);
+          loadConversation(id);
+        }}
+      /> */}
     </div>
   );
 }
