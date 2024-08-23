@@ -48,6 +48,8 @@ export async function POST(req: Request) {
     const { messages, email, conversationId } = await req.json();
 
     if (!email || !conversationId) {
+      console.log('email:', email)
+      console.log('conversationId:', conversationId);
       console.error('Missing email or conversationId in POST request');
       return NextResponse.json({ error: 'Missing email or conversationId' }, { status: 400 });
     }

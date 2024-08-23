@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email');
-  const conversationId = searchParams.get('conversationId');
+// export async function DELETE(request: NextRequest) {
+//   const { searchParams } = new URL(request.url);
+//   const email = searchParams.get('email');
+//   const conversationId = searchParams.get('conversationId');
+//   console.log(email, conversationId);
+//   if (!email || !conversationId) {
+//     return NextResponse.json({ error: 'Email and conversationId are required' }, { status: 400 });
+//   }
 
-  if (!email || !conversationId) {
-    return NextResponse.json({ error: 'Email and conversationId are required' }, { status: 400 });
-  }
-
-  try {
-    const conversationRef = doc(db, 'chats', email, 'conversations', conversationId);
-    await deleteDoc(conversationRef);
-    return NextResponse.json({ message: 'Conversation deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting conversation:', error);
-    return NextResponse.json({ error: 'Failed to delete conversation' }, { status: 500 });
-  }
-}
+//   try {
+//     const conversationRef = doc(db, 'chats', email, 'conversations', conversationId);
+//     await deleteDoc(conversationRef);
+//     return NextResponse.json({ message: 'Conversation deleted successfully' });
+//   } catch (error) {
+//     console.error('Error deleting conversation:', error);
+//     return NextResponse.json({ error: 'Failed to delete conversation' }, { status: 500 });
+//   }
+// }
