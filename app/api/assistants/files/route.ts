@@ -10,19 +10,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
   }
 
-  const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
+  try {
+      const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
 
-  // upload using the file stream
-  const openaiFile = await openai.files.create({
-    file: file,
-    purpose: "assistants",
-  });
+      // upload using the file stream
+      const openaiFile = await openai.files.create({
+        file: file,
+        purpose: "assistants",
+      });
 
-  // add file to vector store
-  await openai.beta.vectorStores.files.create(vectorStoreId, {
-    file_id: openaiFile.id,
-  });
+      // add file to vector store
+      await openai.beta.vectorStores.files.create(vectorStoreId, {
+        file_id: openaiFile.id,
+      });
 
+      return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error uploading file to vector store:', error);
+    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
 // list files in assistant's vector store
