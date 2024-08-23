@@ -95,7 +95,7 @@ const ConnectDatabase: React.FC<{ isOpen: boolean, onClose: () => void, onDataba
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Connect to Database</DialogTitle>
-          <DialogDescription>Enter the details to connect to your database. Click connect when you're done.</DialogDescription>
+          <DialogDescription>Enter the details to connect to your database. Click connect when you are done.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleConnectDatabase}>
           <div className="grid gap-4 py-4">
