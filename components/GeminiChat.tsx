@@ -4,13 +4,19 @@ import React, { useEffect, useRef, useState, Suspense, useCallback } from 'react
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Paperclip, Mic, Image as ImageIcon, Trash2, ChevronRight } from 'lucide-react';
+import { Send, Paperclip, Mic, Image as ImageIcon, Trash2, Plus } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import Markdown from 'react-markdown';
 import { useChat } from 'ai/react';
 import { useAuth } from '@/lib/hooks';
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type Conversation = {
   id: string;
@@ -59,15 +65,25 @@ function ConversationList({ conversations, loadConversation, deleteConversation,
             >
               {conv.name}
             </Button>
-            <Button
-              onClick={() => deleteConversation(conv.id)}
-              variant="ghost"
-              size="icon"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => deleteConversation(conv.id)}
+                    variant="ghost"
+                    className="hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete Conversation</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
           </div>
-          <span className="text-xs text-gray-500 mt-1">{formatTimestamp(conv.timestamp)}</span>
+          <span className="text-xs text-gray-500 mt-1">{formatTimestamp(Number(conv.id))}</span>
         </div>
       ))}
     </>
@@ -101,6 +117,7 @@ export default function GeminiChat() {
         throw new Error('Failed to fetch conversations');
       }
       const data = await response.json();
+      console.log('Fetched conversations:', data);
       setConversations(data);
       startNewChat();
     } catch (error) {
@@ -169,7 +186,7 @@ export default function GeminiChat() {
 
   const updateConversationName = useCallback((id: string | null, content: string) => {
     if (!id) return;
-    setConversations(prev => prev.map(conv => 
+    setConversations(prev => prev.map(conv =>
       conv.id === id ? { ...conv, name: content.slice(0, 30), timestamp: Date.now() } : conv
     ));
   }, []);
@@ -183,12 +200,12 @@ export default function GeminiChat() {
 
   const formatTimestamp = useCallback((timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
       minute: 'numeric',
-      hour12: true 
+      hour12: true
     });
   }, []);
 
@@ -199,7 +216,7 @@ export default function GeminiChat() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="border-b border-gray-200 dark:border-gray-700 p-3 flex justify-between items-center">
-          <h1 className="text-lg font-semibold">Chat Assistant</h1>
+          <h1 className="text-lg font-semibold">Gemini</h1>
           <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('messages'); location.reload(); }}>
             Clear Chat
           </Button>
@@ -280,10 +297,21 @@ export default function GeminiChat() {
       {/* Conversation List */}
       <div className="w-64 border-l border-gray-200 dark:border-gray-700 flex flex-col">
         <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="font-semibold text-sm">New Chat</h2>
-          <Button variant="ghost" size="sm" onClick={startNewChat}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <h2 className="font-semibold text-sm">History</h2>
+
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Start New Chat</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
         </div>
         <div className="flex-1 overflow-y-auto">
           <Suspense fallback={[...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)}>
