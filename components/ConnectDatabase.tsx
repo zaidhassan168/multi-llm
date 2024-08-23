@@ -73,15 +73,15 @@ const ConnectDatabase: React.FC<{ isOpen: boolean, onClose: () => void, onDataba
       console.log(response);
       if (response.ok) {
         const data = await response.json();
-        setFlashMessage({ type: 'success', message: `Success: ${JSON.stringify(data)}` });
+        setFlashMessage({ type: 'success', message: 'Success: ${JSON.stringify(data)}'});
         onDatabaseConnected(settings);
         onClose();
       } else {
         const errorData = await response.json();
-        setFlashMessage({ type: 'error', message: `Error: ${errorData.detail.title}: ${errorData.detail.detail}` });
+        setFlashMessage({ type: 'error', message: 'Error: ${errorData.detail.title}: ${errorData.detail.detail}' });
       }
     } catch (error) {
-      setFlashMessage({ type: 'error', message: `Error: ${error}` });
+      setFlashMessage({ type: 'error', message: 'Error: ${error}' });
     } finally {
       setIsLoading(false);
     }
@@ -162,8 +162,8 @@ const ConnectDatabase: React.FC<{ isOpen: boolean, onClose: () => void, onDataba
             </div>
           </div>
           {flashMessage && (
-            <div className={`text-sm ${flashMessage.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
-              {flashMessage.message}
+            <div className={`text-sm ${flashMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>
+            {flashMessage.message}
             </div>
           )}
           <DialogFooter>
