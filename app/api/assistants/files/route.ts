@@ -33,25 +33,30 @@ export async function POST(request: NextRequest) {
 }
 // list files in assistant's vector store
 export async function GET() {
-  const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
-  const fileList = await openai.beta.vectorStores.files.list(vectorStoreId);
+  try {
+      const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
+      const fileList = await openai.beta.vectorStores.files.list(vectorStoreId);
 
-  const filesArray = await Promise.all(
-    fileList.data.map(async (file) => {
-      const fileDetails = await openai.files.retrieve(file.id);
-      const vectorFileDetails = await openai.beta.vectorStores.files.retrieve(
-        vectorStoreId,
-        file.id
+      const filesArray = await Promise.all(
+        fileList.data.map(async (file) => {
+          const fileDetails = await openai.files.retrieve(file.id);
+          const vectorFileDetails = await openai.beta.vectorStores.files.retrieve(
+            vectorStoreId,
+            file.id
+          );
+          return {
+            file_id: file.id,
+            filename: fileDetails.filename,
+            status: vectorFileDetails.status,
+          };
+        })
       );
-      return {
-        file_id: file.id,
-        filename: fileDetails.filename,
-        status: vectorFileDetails.status,
-      };
-    })
-  );
 
-  return NextResponse.json(filesArray);
+      return NextResponse.json(filesArray);
+  } catch (error) {
+    console.error('Error listing files in vector store:', error);
+    return NextResponse.json({ error: 'Failed to list files' }, { status: 500 });
+  }
 }
 
 // delete file from assistant's vector store
@@ -59,10 +64,15 @@ export async function DELETE(request: NextRequest) {
   const body = await request.json();
   const fileId = body.fileId;
 
-  const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
-  await openai.beta.vectorStores.files.del(vectorStoreId, fileId); // delete file from vector store
+  try {
+      const vectorStoreId = await getOrCreateVectorStore(); // get or create vector store
+      await openai.beta.vectorStores.files.del(vectorStoreId, fileId); // delete file from vector store
 
-  return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting file from vector store:', error);
+    return NextResponse.json({ error: 'Failed to delete file' }, { status: 500 });
+  }
 }
 
 /* Helper functions */

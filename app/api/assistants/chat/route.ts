@@ -17,13 +17,25 @@ export async function POST(req: Request) {
   } = await req.json();
 
   // Create a thread if needed
-  const threadId = input.threadId ?? (await openai.beta.threads.create({})).id;
+  let threadId;
+  try {
+    threadId = input.threadId ?? (await openai.beta.threads.create({})).id;
+  } catch (error) {
+    console.error('Error creating thread:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 
   // Add a message to the thread
-  const createdMessage = await openai.beta.threads.messages.create(threadId, {
-    role: 'user',
-    content: input.message,
-  });
+  let createdMessage;
+  try {
+    createdMessage = await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: input.message,
+    });
+  } catch (error) {
+    console.error('Error adding message to thread:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 
   try {
     return AssistantResponse(

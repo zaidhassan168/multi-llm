@@ -81,7 +81,7 @@ const ConnectDatabase: React.FC<{ isOpen: boolean, onClose: () => void, onDataba
         setFlashMessage({ type: 'error', message: 'Error: ${errorData.detail.title}: ${errorData.detail.detail}' });
       }
     } catch (error) {
-      setFlashMessage({ type: 'error', message: 'Error: ${error}' });
+      setFlashMessage({ type: 'error', message: `Error: ${error}` });
     } finally {
       setIsLoading(false);
     }
