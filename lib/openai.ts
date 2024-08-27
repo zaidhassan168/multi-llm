@@ -9,7 +9,7 @@ const openai = new OpenAIApi({ apiKey: process.env.OPENAI_API_KEY });
 export const generateComment = async (codeSnippet: string) => {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // Use the appropriate model
+      model: 'gpt-4', // Use the appropriate model
       messages: [
         { role: 'system', content: 'You are a helpful assistant that provides detailed comments for code snippets.' },
         { role: 'user', content: `Provide a detailed comment for the following code:\n\n${codeSnippet}` }
@@ -18,8 +18,11 @@ export const generateComment = async (codeSnippet: string) => {
     });
     return response.choices[0].message.content?.trim();
   } catch (error) {
-    console.error(`Failed to generate comment: ${error.message}`);
+    if (error instanceof Error) {
+      console.error(`Failed to generate comment: ${error.message}`);
+    } else {
+      console.error('Failed to generate comment: An unknown error occurred');
+    }
     throw error;
   }
-};
-};
+}
