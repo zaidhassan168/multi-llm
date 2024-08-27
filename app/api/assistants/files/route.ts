@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading file to vector store:', error);
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+
+    return NextResponse.json({ error: error }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
 }
 // list files in assistant's vector store
 export async function GET() {

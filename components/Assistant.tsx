@@ -104,6 +104,7 @@ export default function ChatBotInterface() {
         })
 
         if (!response.ok) {
+          console.log('Error uploading file:', response)
           throw new Error('File upload failed')
         }
 
