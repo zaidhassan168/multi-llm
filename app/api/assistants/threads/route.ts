@@ -8,6 +8,6 @@ export async function POST() {
     const thread = await openai.beta.threads.create();
     return Response.json({ threadId: thread.id });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error }, { status: 500 });
   }
 }
