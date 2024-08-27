@@ -8,6 +8,7 @@ import UserProfile from '@/components/UserProfile';
 import GeminiChat from '@/components/GeminiChat';
 import CodeChat from '@/components/CodeChat';
 import Assistant from '@/components/Assistant';
+import ChatHistory from '@/components/ChatHistory';
 interface HomePageProps {
   email?: string;
 }
@@ -36,6 +37,7 @@ export default function HomePage({ email }: HomePageProps) {
         {currentComponent === 'gemini' && <GeminiChat />}
         {currentComponent === 'code' && <CodeChat />}
         {currentComponent === 'assistant' && <Assistant />}
+        {currentComponent === 'history' && <ChatHistory />}
         {/* ... your main content */}
       </main>
     </div>
