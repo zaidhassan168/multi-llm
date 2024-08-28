@@ -46,12 +46,12 @@ export async function POST(req: Request) {
       topP: 0.4,
       async onFinish({ text }) {
         // Save the assistant's response
-        await saveChat(email, conversationId, { content: text, timestamp: new Date(), model: 'gemini-1.5-flash' });
+        await saveChat(email, conversationId, {role: 'assistant', content: text, timestamp: new Date(), data: {model: 'gemini-1.5-flash'} });
       },
     });
 
     // Save the user's message
-    await saveChat(email, conversationId, { ...messages[messages.length - 1], timestamp: new Date(), model: 'gemini-1.5-flash' });
+    await saveChat(email, conversationId, { ...messages[messages.length - 1], timestamp: new Date(), data: {model: 'gemini-1.5-flash'} });
 
     // Respond with a streaming response
     return result.toAIStreamResponse()

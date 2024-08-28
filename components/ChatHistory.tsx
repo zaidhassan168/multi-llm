@@ -8,19 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2, MessageSquare, Send, Loader2 } from "lucide-react";
 import { useAuth } from '@/lib/hooks';
 import { useChat } from 'ai/react';
+import { Message as ChatMessage } from 'ai/react';
 
 type Conversation = {
   id: string;
   name: string;
   timestamp: number;
 };
-
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-  model?: string;
-};
-
 function ConversationSkeleton() {
   return (
     <div className="flex flex-col p-2 animate-pulse">
@@ -108,6 +102,7 @@ export default function EnhancedChatHistoryComponent() {
       }
       const loadedMessages = await response.json();
       setMessages(loadedMessages);
+      console.log('loadedMessages', loadedMessages);
     } catch (error) {
       console.error('Error loading conversation:', error);
     }
@@ -141,7 +136,7 @@ export default function EnhancedChatHistoryComponent() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSending(true);
-    handleSubmit(e).finally(() => setIsSending(false));
+    handleSubmit(e)
   };
   const handleModelChange = (newModel: string) => {
     setSelectedModel(newModel);
@@ -216,7 +211,10 @@ export default function EnhancedChatHistoryComponent() {
               <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg`}>
                 {message.content}
                 {message.role === 'assistant' && (
-                  <p className="mt-1 text-xs text-gray-500">{message.model}</p>
+                 <p className="mt-1 text-xs text-gray-500">
+                 {message.data && typeof message.data === 'object' && 'model' in message.data ? (message.data as any).model : 'No model available'}
+               </p>
+               
                 )}
               </div>
             </div>
