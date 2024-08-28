@@ -5,8 +5,8 @@ import { NextResponse } from 'next/server';
 import { streamText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
-
-async function saveChat(email: string, conversationId: string, message: any, model: string) {
+import { Message } from 'ai/react';
+async function saveChat(email: string, conversationId: string, message: Message) {
   if (!email || !conversationId) {
     console.error('Invalid email or conversationId:', { email, conversationId });
     throw new Error('Invalid email or conversationId');
@@ -18,7 +18,7 @@ async function saveChat(email: string, conversationId: string, message: any, mod
     await setDoc(
       chatRef,
       {
-        messages: arrayUnion({ ...message, model }),
+        messages: arrayUnion({ ...message }),
       },
       { merge: true }
     );
@@ -31,7 +31,7 @@ async function saveChat(email: string, conversationId: string, message: any, mod
 export async function POST(req: Request) {
   try {
     const { messages, email, conversationId, selectedModel } = await req.json();
-    console.log('messages', messages )
+    console.log('messages', messages)
     if (!email || !conversationId) {
       console.error('Missing email or conversationId in POST request');
       return NextResponse.json({ error: 'Missing email or conversationId' }, { status: 400 });
@@ -57,11 +57,11 @@ export async function POST(req: Request) {
       temperature: 0.7,
       topP: 0.4,
       async onFinish({ text }) {
-        await saveChat(email, conversationId, { role: 'assistant', content: text, timestamp: new Date() }, modelName);
+        await saveChat(email, conversationId, { id: crypto.randomUUID(), role: 'assistant', content: text, createdAt: new Date(), data: { model: modelName } });
       },
     });
 
-    await saveChat(email, conversationId, { ...messages[messages.length - 1], timestamp: new Date() }, modelName);
+    await saveChat(email, conversationId, { ...messages[messages.length - 1], id: crypto.randomUUID(), createdAt: new Date(), data: { model: modelName } });
     return result.toAIStreamResponse();
   } catch (error) {
     console.error('Error in POST handler:', error);
