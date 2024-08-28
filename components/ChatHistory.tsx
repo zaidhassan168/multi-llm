@@ -54,8 +54,18 @@ export default function ImprovedMultiModelChat() {
       selectedModel,
     },
     onFinish: (message) => {
-      updateConversationName(selectedConversation, message.content)
-      setIsSending(false)
+      updateConversationName(selectedConversation, message.content);
+      setIsSending(false);
+
+      // Ensure that the new message has the model data
+      if (message.data && typeof message.data === 'object' && 'model' in message.data) {
+        console.log('Model found in message:', message.data.model);
+      } else {
+        console.warn('Model not found in message:', message);
+      }
+
+      // Trigger a re-render if needed
+      setMessages(prevMessages => [...prevMessages]);
     },
   })
 
@@ -159,7 +169,11 @@ export default function ImprovedMultiModelChat() {
     setMessages([])
     setConversations(prev => [{ id: newId, name: 'New Conversation' }, ...prev])
   }
-
+  const modelImageMap: Record<string, string> = {
+    'gemini-1.5-flash': "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg",
+    'gpt-4o': "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+    // Add more models and their corresponding image URLs here
+  };
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -275,18 +289,20 @@ export default function ImprovedMultiModelChat() {
                   {message.role === 'assistant' && (
                     <div className="flex items-center mb-2">
                       <Avatar className="w-6 h-6 mr-2">
-                        <AvatarImage 
-                          src={message.data && typeof message.data === 'object' && 'model' in message.data 
-                            ? (message.data as any).model === 'gemini' 
-                              ? "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg"
-                              : "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg"
+
+                        <AvatarImage
+                          src={message.data && typeof message.data === 'object' && 'model' in message.data
+                            ? modelImageMap[(message.data as any).model] || "/placeholder.svg"
                             : "/placeholder.svg"}
-                          alt={(message.data && typeof message.data === 'object' && 'model' in message.data) ? (message.data as any).model : 'AI'}
+                          alt={(message.data && typeof message.data === 'object' && 'model' in message.data)
+                            ? (message.data as any).model
+                            : 'AI'}
                         />
+
                         <AvatarFallback>AI</AvatarFallback>
                       </Avatar>
                       <span className="font-semibold">
-                        {message.data && typeof message.data === 'object' && 'model' in message.data 
+                        {message.data && typeof message.data === 'object' && 'model' in message.data
                           ? (message.data as any).model.charAt(0).toUpperCase() + (message.data as any).model.slice(1)
                           : 'AI'}
                       </span>
