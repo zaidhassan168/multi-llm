@@ -127,7 +127,8 @@ export default function ImprovedMultiModelChat() {
 
   const updateConversationName = useCallback(async (id: string | null, content: string) => {
     if (!id) return;
-  
+    // TODO this is a temporary solution, it is calling api on every message sent we need to change it in furute
+
     try {
       const messages = [{ content }]; // Assuming you only have one message for naming
       const response = await fetch('/api/get-conv-name', {
@@ -137,10 +138,10 @@ export default function ImprovedMultiModelChat() {
         },
         body: JSON.stringify({ messages }),
       });
-  
+
       const data = await response.json();
       const generatedName = data.conversationName || content.slice(0, 30); // Fallback to content slice if API fails
-  
+
       // Update conversation name
       setConversations(prev =>
         prev.map(conv =>

@@ -15,7 +15,8 @@ import {
   MessageSquareIcon,
   CodeIcon,
   BotIcon,
-  HistoryIcon
+  HistoryIcon,
+  KanbanIcon
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAuth, signOut } from "firebase/auth";
@@ -59,6 +60,7 @@ export default function Sidebar({
     { icon: <CodeIcon className="w-5 h-5" />, label: "Code", id: "code" },
     { icon: <BotIcon className="w-5 h-5" />, label: "Assistant", id: "assistant" },
     { icon: <HistoryIcon className="w-5 h-5" />, label: "History", id: "history" },
+    { icon: <KanbanIcon className="w-5 h-5" />, label: "Kanban", id: "kanban" },
   ];
 
   return (
