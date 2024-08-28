@@ -1,17 +1,13 @@
-'use client'
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, MessageSquare, Send } from "lucide-react";
+import { Trash2, MessageSquare, Send, Loader2 } from "lucide-react";
 import { useAuth } from '@/lib/hooks';
 import { useChat } from 'ai/react';
-import { readStreamableValue } from 'ai/rsc';
-import { continueConversation } from '@/app/actions';
 
 type Conversation = {
   id: string;
@@ -22,11 +18,12 @@ type Conversation = {
 type Message = {
   role: 'user' | 'assistant';
   content: string;
+  model?: string;
 };
 
 function ConversationSkeleton() {
   return (
-    <div className="flex flex-col p-2">
+    <div className="flex flex-col p-2 animate-pulse">
       <div className="flex items-center justify-between">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-4 w-4 rounded-full" />
@@ -42,12 +39,25 @@ export default function EnhancedChatHistoryComponent() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('gemini');
-  const [input, setInput] = useState('');
-  const [conversation, setConversation] = useState<Message[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  const { messages, handleSubmit: handleGeminiSubmit, setMessages } = useChat({
-    api: '/api/geminiChat',
-    body: { email: user?.email, conversationId: selectedConversation },
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    isLoading: isChatLoading, 
+    setMessages 
+  } = useChat({
+    api: '/api/multi-model-chat',
+    body: { 
+      email: user?.email, 
+      conversationId: selectedConversation,
+      selectedModel,
+    },
+    onFinish: (message) => {
+      updateConversationName(selectedConversation, message.content);
+    },
   });
 
   const fetchConversations = useCallback(async () => {
@@ -82,7 +92,6 @@ export default function EnhancedChatHistoryComponent() {
       if (id === selectedConversation) {
         setSelectedConversation(null);
         setMessages([]);
-        setConversation([]);
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
@@ -99,11 +108,17 @@ export default function EnhancedChatHistoryComponent() {
       }
       const loadedMessages = await response.json();
       setMessages(loadedMessages);
-      setConversation(loadedMessages);
     } catch (error) {
       console.error('Error loading conversation:', error);
     }
   };
+
+  const updateConversationName = useCallback((id: string | null, content: string) => {
+    if (!id) return;
+    setConversations(prev => prev.map(conv =>
+      conv.id === id ? { ...conv, name: content.slice(0, 30), timestamp: Date.now() } : conv
+    ));
+  }, []);
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -116,51 +131,25 @@ export default function EnhancedChatHistoryComponent() {
     });
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
-
-    setIsLoading(true);
-    const userMessage: Message = { role: 'user', content: input };
-    setConversation(prev => [...prev, userMessage]);
-    setInput('');
-
-    try {
-      if (selectedModel === 'gemini') {
-        // Modify this part to correctly use handleGeminiSubmit
-        await handleGeminiSubmit();
-      } else if (selectedModel === 'chatgpt') {
-        const { messages, newMessage } = await continueConversation([
-          ...conversation,
-          userMessage,
-        ]);
-
-        let textContent = '';
-
-        for await (const delta of readStreamableValue(newMessage)) {
-          textContent = `${textContent}${delta}`;
-          setConversation([
-            ...messages,
-            { role: 'assistant', content: textContent } as Message,
-          ]);
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      handleSubmit(e as any);
     }
-  };
+  }, [handleSubmit]);
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSending(true);
+    handleSubmit(e).finally(() => setIsSending(false));
+  };
+  const handleModelChange = (newModel: string) => {
+    setSelectedModel(newModel);
+  };
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
       <div className="w-1/3 border-r border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">Chat History</h2>
         </div>
         <ScrollArea className="h-[calc(100vh-5rem)]">
@@ -207,11 +196,11 @@ export default function EnhancedChatHistoryComponent() {
         </ScrollArea>
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900 z-10">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
             {selectedConversation ? 'Conversation' : 'Select a Conversation'}
           </h2>
-          <Select value={selectedModel} onValueChange={setSelectedModel}>
+          <Select value={selectedModel} onValueChange={handleModelChange} >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
@@ -222,26 +211,29 @@ export default function EnhancedChatHistoryComponent() {
           </Select>
         </div>
         <ScrollArea className="flex-1 p-4">
-          {(selectedModel === 'gemini' ? messages : conversation).map((message, index) => (
+          {messages.map((message, index) => (
             <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-              <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'}`}>
+              <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg`}>
                 {message.content}
+                {message.role === 'assistant' && (
+                  <p className="mt-1 text-xs text-gray-500">{message.model}</p>
+                )}
               </div>
             </div>
           ))}
         </ScrollArea>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex space-x-2">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-900 z-10">
+          <form onSubmit={onSubmit} className="flex space-x-2">
             <input
               className="flex-1 p-2 border rounded-md dark:bg-gray-800 dark:text-white"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
             />
-            <Button type="submit" disabled={!selectedConversation || isLoading}>
-              <Send className="w-4 h-4 mr-2" />
-              Send
+            <Button type="submit" disabled={!selectedConversation || isSending}>
+              {isSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              {isSending ? 'Sending...' : 'Send'}
             </Button>
           </form>
         </div>
