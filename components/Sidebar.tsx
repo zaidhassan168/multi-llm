@@ -124,7 +124,7 @@ export default function Sidebar({
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
-                className={`w-full bg-red-500 hover:bg-red-600 text-white transition-all flex items-center justify-center gap-2 ${
+                className={`w-full  hover:bg-red-100 transition-all flex items-center justify-center gap-2 ${
                   isLoading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={handleLogout}
