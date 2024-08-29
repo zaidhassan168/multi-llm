@@ -6,7 +6,7 @@ export type Task = {
     time: number; // in hours
     efforts: 'backend' | 'frontend' | 'backend + frontend';
     assignee: string;
-    status: 'backlog' | 'todo' | 'in progress' | 'done';
+    status: 'backlog' | 'todo' | 'inProgress' | 'done';
     createdAt: Date;
   };
   
