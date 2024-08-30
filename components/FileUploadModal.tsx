@@ -1,14 +1,28 @@
 import React, { useState } from 'react'
-import { Dialog, DialogOverlay, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/hooks'
+import { useToast } from '@/components/ui/use-toast'
+import { UploadIcon, FileTextIcon, XIcon } from 'lucide-react'
+
 export function FileUploadModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
-const { user } = useAuth()
+  const { user } = useAuth()
+  const { toast } = useToast()
+
   const handleSubmit = async () => {
-    if (!text && !file) return
+    if (!text && !file) {
+      toast({
+        title: "Error",
+        description: "Please provide either text or a file to upload.",
+        variant: "destructive",
+      })
+      return
+    }
 
     let content = text
 
@@ -34,16 +48,25 @@ const { user } = useAuth()
 
       const result = await response.json()
       if (result.success) {
-        console.log('Tasks generated and saved:', result.tasks)
+        toast({
+          title: "Success",
+          description: `${result.tasks.length} tasks generated and saved.`,
+        })
       } else {
-        console.error('Failed to generate tasks:', result.error)
+        throw new Error(result.error)
       }
     } catch (error) {
       console.error('Error uploading file or sending message:', error)
+      toast({
+        title: "Error",
+        description: "Failed to generate tasks. Please try again.",
+        variant: "destructive",
+      })
     }
 
     onClose()
   }
+
   const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -55,22 +78,67 @@ const { user } = useAuth()
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogOverlay />
-      <DialogContent aria-label="File Upload Modal" className="bg-white p-6 rounded-lg">
-        <h2 className="text-lg font-bold">Upload a file or paste text</h2>
-        <textarea
-          className="w-full h-32 p-2 mt-4 border rounded-lg"
-          placeholder="Paste text here..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <div className="mt-4">
-          <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Upload Tasks</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="text-input">Paste text</Label>
+            <Textarea
+              id="text-input"
+              placeholder="Paste your tasks here, one per line..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="h-32 resize-none"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="file-input">Or upload a file</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="file-input"
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <Button
+                onClick={() => document.getElementById('file-input')?.click()}
+                variant="outline"
+                className="w-full"
+              >
+                {file ? (
+                  <>
+                    <FileTextIcon className="mr-2 h-4 w-4" />
+                    {file.name}
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="mr-2 h-4 w-4" />
+                    Choose file
+                  </>
+                )}
+              </Button>
+              {file && (
+                <Button
+                  onClick={() => setFile(null)}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  <XIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="mt-4 flex justify-end space-x-4">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} className="bg-blue-500 text-white">Submit</Button>
-        </div>
+        <DialogFooter>
+          <Button onClick={onClose} variant="outline">Cancel</Button>
+          <Button onClick={handleSubmit} className="bg-blue-500 hover:bg-blue-600">
+            <UploadIcon className="mr-2 h-4 w-4" />
+            Upload and Generate Tasks
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

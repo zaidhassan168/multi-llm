@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email');
+  console.log(email);
   if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
   const q = query(collection(db, 'kanban', email, 'tasks'));
