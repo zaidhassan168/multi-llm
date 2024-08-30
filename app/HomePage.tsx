@@ -10,6 +10,7 @@ import CodeChat from '@/components/CodeChat';
 import Assistant from '@/components/Assistant';
 import ChatHistory from '@/components/ChatHistory';
 import Kanban from '@/components/Kanban';
+import ProjectManagementDashboard from '@/components/ProjectManagementDashboard';
 interface HomePageProps {
   email?: string;
 }
@@ -32,6 +33,7 @@ export default function HomePage({ email }: HomePageProps) {
         onButtonClick={handleSidebarClick} // Add this prop
       />
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        {currentComponent === 'dashboard' && <ProjectManagementDashboard />}
         {currentComponent === 'chat' && <Chat />}
         {currentComponent === 'about' && <DatabaseChat />}
         {currentComponent === 'profile' && <UserProfile />}
@@ -40,6 +42,7 @@ export default function HomePage({ email }: HomePageProps) {
         {currentComponent === 'assistant' && <Assistant />}
         {currentComponent === 'history' && <ChatHistory />}
         {currentComponent === 'kanban' && <Kanban />}
+
         {/* ... your main content */}
       </main>
     </div>
