@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     // Instruction to generate tasks
     const systemInstruction = `Generate a list of tasks in JSON format based on the following content. The tasks should be structured as:
     {
-        "id": "string",
+        "id": "uuid string",
         "title": "string",
         "description": "string",
         "time": number,
