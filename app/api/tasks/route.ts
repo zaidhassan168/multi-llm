@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const { email, id, ...updates }: Partial<Task> & { email: string; id: string } = await request.json();
-  console.log(email, id, updates);
+  console.log('in api,',email, id, updates);
   if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
   const taskRef = doc(db, 'kanban', email, 'tasks', id);
