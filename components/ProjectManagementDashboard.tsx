@@ -1,66 +1,57 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertTriangle, BarChart2, CheckCircle2, Users, AlertCircle } from "lucide-react"
+import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
+import { Task, fetchTasks, updateTask, deleteTask } from '@/models/task'
+import { Project, Stage, fetchProjects, updateProject, deleteProject } from '@/models/project'
+import { Risk, fetchRisks, updateRisk, deleteRisk } from '@/models/risk'
+import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
-import { fetchTasks } from '@/models/task'
-import { fetchProjects } from '@/models/project'
-import { fetchEmployees } from '@/models/employee'
-import { fetchRisks } from '@/models/risk'
-import { Task } from '@/models/task'
-import { Project } from '@/models/project'
-import { Employee } from '@/models/employee'
-import { Risk } from '@/models/risk'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts'
-import { Tooltip, TooltipProvider } from './ui/tooltip'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { useToast } from "@/components/ui/use-toast"
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function ProjectManagementDashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [employees, setEmployees] = useState<Employee[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
-    const loadData = async () => {
-      if (user?.email) {
-        try {
-          const [tasksData, projectsData, employeesData, risksData] = await Promise.all([
-            fetchTasks(user.email),
-            fetchProjects(),
-            fetchEmployees(),
-            fetchRisks()
-          ])
-          setTasks(tasksData)
-          setProjects(projectsData)
-          setEmployees(employeesData)
-          setRisks(risksData)
-        } catch (error) {
-          console.error('Error loading data:', error)
-        }
-      }
+    if (user?.email) {
+      fetchAllData()
     }
-
-    loadData()
   }, [user])
 
-  const getProjectTasks = (projectId: string) =>
-    tasks.filter((task) => task.projectId === projectId)
-
-  const getProjectRisks = (projectId: string) =>
-    risks.filter((risk) => risk.projectId === projectId)
-
-  const getProjectProgress = (projectId: string) => {
-    const projectTasks = getProjectTasks(projectId)
-    const completedTasks = projectTasks.filter((task) => task.status === 'done').length
-    return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
+  const fetchAllData = async () => {
+    try {
+      const [tasksData, projectsData, risksData, employeesData] = await Promise.all([
+        fetchTasks(user?.email ?? ''),
+        fetchProjects(),
+        fetchRisks(),
+        fetchEmployees()
+      ])
+      setTasks(tasksData)
+      setProjects(projectsData)
+      setRisks(risksData)
+      setEmployees(employeesData)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch dashboard data',
+        variant: 'destructive'
+      })
+    }
   }
-
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
       case 'done': return 'text-green-600'
@@ -101,6 +92,12 @@ export default function ProjectManagementDashboard() {
     { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
   ]
 
+  const calculateProjectProgress = (project: Project): number => {
+    const projectTasks = tasks.filter(task => task.projectId === project.id)
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length
+    return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -126,7 +123,8 @@ export default function ProjectManagementDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{employees.length}</div>
             <p className="text-xs text-muted-foreground">
-              {employees.filter(e => e.availability && e.availability > 50).length} available            </p>
+              {employees.filter(e => e.availability && e.availability > 50).length} available
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -186,8 +184,7 @@ export default function ProjectManagementDashboard() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <TooltipProvider><Tooltip /></TooltipProvider>
-                      
+                      <Tooltip />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -216,7 +213,8 @@ export default function ProjectManagementDashboard() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <TooltipProvider><Tooltip /></TooltipProvider>                      <Legend />
+                      <Tooltip />
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -234,9 +232,9 @@ export default function ProjectManagementDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Project Name</TableHead>
+                    <TableHead>Manager</TableHead>
                     <TableHead>Progress</TableHead>
-                    <TableHead>Tasks</TableHead>
-                    <TableHead>Risks</TableHead>
+                    <TableHead>Current Stage</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -244,16 +242,14 @@ export default function ProjectManagementDashboard() {
                   {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">{project.name}</TableCell>
+                      <TableCell>{project.manager}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <Progress value={getProjectProgress(project.id)} className="w-[60%]" />
-                          <span className="ml-2">{getProjectProgress(project.id)}%</span>
+                          <Progress value={calculateProjectProgress(project)} className="w-[60%]" />
+                          <span className="ml-2">{calculateProjectProgress(project)}%</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getProjectTasks(project.id).filter(task => task.status === 'done').length} / {getProjectTasks(project.id).length} completed
-                      </TableCell>
-                      <TableCell>{getProjectRisks(project.id).length} identified</TableCell>
+                      <TableCell>{project.currentStage.name}</TableCell>
                       <TableCell>
                         <span className={`flex items-center ${getTrackStatusColor(project.onTrack)}`}>
                           {project.onTrack ? (
@@ -288,22 +284,24 @@ export default function ProjectManagementDashboard() {
                     <TableHead>Project</TableHead>
                     <TableHead>Risk Description</TableHead>
                     <TableHead>Severity</TableHead>
+                    <TableHead>Probability</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projects.flatMap((project) =>
-                    getProjectRisks(project.id).map((risk) => (
-                      <TableRow key={risk.id}>
-                        <TableCell className="font-medium">{project.name}</TableCell>
-                        <TableCell>{risk.description}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(risk.severity)}`}>
-                            {risk.severity}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  {risks.map((risk) => (
+                    <TableRow key={risk.id}>
+                      <TableCell className="font-medium">
+                        {projects.find(p => p.id === risk.projectId)?.name || 'Unknown Project'}
+                      </TableCell>
+                      <TableCell>{risk.description}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(risk.severity)}`}>
+                          {risk.severity}
+                        </span>
+                      </TableCell>
+                      <TableCell>{risk.probability}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -329,11 +327,15 @@ export default function ProjectManagementDashboard() {
                     <TableRow key={employee.id}>
                       <TableCell className="font-medium">{employee.name}</TableCell>
                       <TableCell>{employee.role}</TableCell>
-                      <TableCell>{employee.currentProject}</TableCell>
+                      <TableCell>{employee.currentProject || 'Not Assigned'}</TableCell>
                       <TableCell>
-                        <span className={`font-bold ${getAvailabilityColor(employee.availability ?? 0)}`}>
-                          {employee.availability ?? 0}%
-                        </span>
+                        {employee.availability !== undefined ? (
+                          <span className={`font-bold ${getAvailabilityColor(employee.availability)}`}>
+                            {employee.availability}%
+                          </span>
+                        ) : (
+                          'N/A'
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

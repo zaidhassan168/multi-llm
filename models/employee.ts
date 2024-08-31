@@ -8,7 +8,7 @@ type Employee = {
     email: string
   }
 
-  const API_URL = '/api/employees';
+  const API_URL = '/api/project-management/employees';
 
 export async function fetchEmployees(): Promise<Employee[]> {
     const response = await fetch(API_URL);

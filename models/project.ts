@@ -14,7 +14,7 @@ type Stage = {
     onTrack: boolean
   }
 
-  const API_URL = '/api/projects';
+  const API_URL = '/api/project-management/projects';
 
 export async function fetchProjects(): Promise<Project[]> {
     const response = await fetch(API_URL);

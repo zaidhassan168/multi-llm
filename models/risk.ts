@@ -7,7 +7,7 @@ type Risk = {
     probability: 'Low' | 'Medium' | 'High'
 
   }
-const API_URL = '/api/risks';
+const API_URL = '/api/project-management/risks';
 
 export async function fetchRisks(): Promise<Risk[]> {
     const response = await fetch(API_URL);
