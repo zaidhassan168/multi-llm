@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+import { createEmployee, Employee } from '@/models/employee';
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -20,18 +21,30 @@ export default function Register() {
   const router = useRouter();
 
   async function handleSubmit(event: FormEvent) {
-    setIsLoading(true);
     event.preventDefault();
-
+    setIsLoading(true);
     setError("");
-
+  
     if (password !== confirmation) {
       setError("Passwords don't match");
+      setIsLoading(false);
       return;
     }
-
+  
     try {
-      await createUserWithEmailAndPassword(getAuth(app), email, password);
+      // Create the user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(getAuth(app), email, password);
+      console.log("User created:", userCredential.user);
+      // After successful signup, create the employee
+      const newEmployee: Employee = {
+        id: userCredential.user.uid,
+        email: userCredential.user.email ?? "",
+        name: "",
+        role: "developer",
+      }
+        // Add other fields as need
+      await createEmployee(newEmployee); // Call the createEmployee API
+  
       setIsLoading(false);
       router.push("/login");
     } catch (e) {
@@ -39,7 +52,6 @@ export default function Register() {
       setIsLoading(false);
     }
   }
-
   return (
     <div className="flex items-center justify-center h-screen bg-background">
       <Card className="w-full max-w-md p-6 space-y-4">

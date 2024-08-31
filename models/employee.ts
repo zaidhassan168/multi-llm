@@ -2,7 +2,7 @@
 type Employee = {
     id: string
     name: string
-    role: string
+    role: 'developer' | 'management' | 'projectManaager'
     availability?: number
     currentProject?: string
     email: string

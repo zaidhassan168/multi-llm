@@ -7,6 +7,7 @@ type Task = {
     time: number; // in hours
     efforts: 'backend' | 'frontend' | 'backend + frontend';
     assignee: string;
+    assigneeId?: string;
     status: 'backlog' | 'todo' | 'inProgress' | 'done';
     createdAt?: Date;
     projectId?: string;
@@ -16,6 +17,7 @@ type Task = {
     comments?: Comment[];
     assigneeEmail?: string;
     reporterEmail?: string;
+    projectManagerId?: string;
     name?: string;
     };
     const API_URL = '/api/project-management/tasks';
