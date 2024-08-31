@@ -105,12 +105,13 @@ export default function ImprovedGeminiChat() {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
-
+  const [generatedConversationName, setGeneratedConversationName] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages, input, handleInputChange, handleSubmit, isLoading: isChatLoading, setMessages } = useChat({
     api: '/api/geminiChat',
-    body: { email: user?.email, conversationId },
+    body: { email: user?.email, conversationId, conversationName: generatedConversationName },
+
     onFinish: (message) => {
       updateConversationName(conversationId, message.content)
     },
@@ -188,12 +189,53 @@ export default function ImprovedGeminiChat() {
     }
   }, [user, conversationId, setMessages])
 
-  const updateConversationName = useCallback((id: string | null, content: string) => {
-    if (!id) return
-    setConversations(prev => prev.map(conv =>
-      conv.id === id ? { ...conv, name: content.slice(0, 30), timestamp: Date.now() } : conv
-    ))
-  }, [])
+  // const updateConversationNameFirebase = useCallback(async (id: string, name: string) => {
+  //   if (!user) return
+  //   try {
+  //     const response = await fetch(`/api/conversations/${id}?email=${user.email}`, {
+  //       method: 'PATCH',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ name }),
+  //     })
+  //     if (!response.ok) {
+  //       throw new Error('Failed to update conversation name')
+  //     }
+  //     setConversations(prev => prev.map(conv => (conv.id === id ? { ...conv, name } : conv)))
+  //   } catch (error) {
+  //     console.error('Error updating conversation name:', error)
+  //   }
+  // }, [user])
+
+  const updateConversationName = useCallback(async (id: string | null, content: string) => {
+    if (!id) return;
+    // TODO this is a temporary solution, it is calling api on every message sent we need to change it in furute
+
+    try {
+      const messages = [{ content }]; // Assuming you only have one message for naming
+      const response = await fetch('/api/get-conv-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+
+      const data = await response.json();
+      const generatedName = data.conversationName || content.slice(0, 30); // Fallback to content slice if API fails
+      setGeneratedConversationName(generatedName);
+      // Update conversation name
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id ? { ...conv, name: generatedName, timestamp: Date.now() } : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to generate conversation name:', error);
+      // Optionally handle error, e.g., by showing a notification or using a fallback name
+    }
+  }, []);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

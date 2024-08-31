@@ -12,7 +12,6 @@ import { useAuth } from '@/lib/hooks'
 import { useChat } from 'ai/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-
 type Conversation = {
   id: string
   name: string
@@ -57,14 +56,12 @@ export default function ImprovedMultiModelChat() {
       updateConversationName(selectedConversation, message.content);
       setIsSending(false);
 
-      // Ensure that the new message has the model data
       if (message.data && typeof message.data === 'object' && 'model' in message.data) {
         console.log('Model found in message:', message.data.model);
       } else {
         console.warn('Model not found in message:', message);
       }
 
-      // Trigger a re-render if needed
       setMessages(prevMessages => [...prevMessages]);
     },
   })
@@ -128,12 +125,34 @@ export default function ImprovedMultiModelChat() {
     }
   }
 
-  const updateConversationName = useCallback((id: string | null, content: string) => {
-    if (!id) return
-    setConversations(prev => prev.map(conv =>
-      conv.id === id ? { ...conv, name: content.slice(0, 30), timestamp: Date.now() } : conv
-    ))
-  }, [])
+  const updateConversationName = useCallback(async (id: string | null, content: string) => {
+    if (!id) return;
+    // TODO this is a temporary solution, it is calling api on every message sent we need to change it in furute
+
+    try {
+      const messages = [{ content }]; // Assuming you only have one message for naming
+      const response = await fetch('/api/get-conv-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+
+      const data = await response.json();
+      const generatedName = data.conversationName || content.slice(0, 30); // Fallback to content slice if API fails
+
+      // Update conversation name
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id ? { ...conv, name: generatedName, timestamp: Date.now() } : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to generate conversation name:', error);
+      // Optionally handle error, e.g., by showing a notification or using a fallback name
+    }
+  }, []);
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -174,11 +193,12 @@ export default function ImprovedMultiModelChat() {
     'gpt-4o': "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
     // Add more models and their corresponding image URLs here
   };
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Chat History</h2>
+      <div className="w-1/4 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Chat History</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -205,12 +225,12 @@ export default function ImprovedMultiModelChat() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="m-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
-                    <CardHeader className="p-4">
+                  <Card className="m-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                    <CardHeader className="p-3">
                       <CardTitle className="flex items-center justify-between">
                         <Button
                           variant="ghost"
-                          className="text-left w-full"
+                          className="text-left w-full p-0 truncate"
                           onClick={() => loadConversation(conv.id)}
                         >
                           <MessageSquare className="w-5 h-5 mr-2" />
@@ -229,12 +249,12 @@ export default function ImprovedMultiModelChat() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete Conversation</p>
+                              <p>Delete</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </CardTitle>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatTimestamp(Number(conv.id))}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatTimestamp(Number(conv.id))}</p>
                     </CardHeader>
                   </Card>
                 </motion.div>
@@ -244,12 +264,12 @@ export default function ImprovedMultiModelChat() {
         </ScrollArea>
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             {selectedConversation ? 'Conversation' : 'Select a Conversation'}
           </h2>
           <Select value={selectedModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[150px] text-sm">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
@@ -274,7 +294,7 @@ export default function ImprovedMultiModelChat() {
             </SelectContent>
           </Select>
         </div>
-        <ScrollArea className="flex-grow p-4">
+        <ScrollArea className="flex-grow p-3">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -283,13 +303,12 @@ export default function ImprovedMultiModelChat() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
-                className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
+                className={`mb-3 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
               >
-                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg max-w-[70%]`}>
+                <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg max-w-[70%]`}>
                   {message.role === 'assistant' && (
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-1">
                       <Avatar className="w-6 h-6 mr-2">
-
                         <AvatarImage
                           src={message.data && typeof message.data === 'object' && 'model' in message.data
                             ? modelImageMap[(message.data as any).model] || "/placeholder.svg"
@@ -298,34 +317,33 @@ export default function ImprovedMultiModelChat() {
                             ? (message.data as any).model
                             : 'AI'}
                         />
-
                         <AvatarFallback>AI</AvatarFallback>
                       </Avatar>
-                      <span className="font-semibold">
+                      <span className="font-semibold text-sm">
                         {message.data && typeof message.data === 'object' && 'model' in message.data
                           ? (message.data as any).model.charAt(0).toUpperCase() + (message.data as any).model.slice(1)
                           : 'AI'}
                       </span>
                     </div>
                   )}
-                  {message.content}
+                  <p className="text-sm">{message.content}</p>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </ScrollArea>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
           <form onSubmit={onSubmit} className="flex space-x-2">
             <input
-              className="flex-1 p-2 border rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+              className="flex-1 p-2 border rounded-md dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all duration-200"
               value={input}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
               disabled={!selectedConversation || isSending}
             />
-            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200">
+            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200 text-sm">
               {isSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               {isSending ? 'Sending...' : 'Send'}
             </Button>

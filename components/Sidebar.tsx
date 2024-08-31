@@ -15,7 +15,9 @@ import {
   MessageSquareIcon,
   CodeIcon,
   BotIcon,
-  HistoryIcon
+  HistoryIcon,
+  KanbanIcon,
+  BookDashedIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAuth, signOut } from "firebase/auth";
@@ -52,13 +54,15 @@ export default function Sidebar({
   };
 
   const navItems = [
-    { icon: <HomeIcon className="w-5 h-5" />, label: "Chat", id: "chat" },
+
+    { icon: <HomeIcon className="w-5 h-5" />, label: "Dashboard", id: "dashboard" },
     { icon: <UserIcon className="w-5 h-5" />, label: "About", id: "about" },
     { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Profile", id: "profile" },
     { icon: <MessageSquareIcon className="w-5 h-5" />, label: "Gemini", id: "gemini" },
     { icon: <CodeIcon className="w-5 h-5" />, label: "Code", id: "code" },
     { icon: <BotIcon className="w-5 h-5" />, label: "Assistant", id: "assistant" },
     { icon: <HistoryIcon className="w-5 h-5" />, label: "History", id: "history" },
+    { icon: <KanbanIcon className="w-5 h-5" />, label: "Kanban", id: "kanban" },
   ];
 
   return (

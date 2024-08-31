@@ -4,7 +4,7 @@ import { db } from '@/firebase'
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
 import { NextResponse } from 'next/server'
 import { Message } from 'ai/react'
-async function saveChat(email: string, conversationId: string, message: Message) {
+async function saveChat(email: string, conversationId: string, message: Message, conversationName: string) {
   if (!email || !conversationId) {
     console.error('Invalid email or conversationId:', { email, conversationId });
     throw new Error('Invalid email or conversationId');
@@ -14,9 +14,11 @@ async function saveChat(email: string, conversationId: string, message: Message)
     const chatRef = doc(db, 'chats', email, 'conversations', conversationId);
 
     await setDoc(chatRef, {
-      messages: arrayUnion(message)
-
+      messages: arrayUnion(message),
+      name: conversationName || message.content.slice(0, 30)
     }, { merge: true });
+    console.log('message',arrayUnion(message) )
+
   } catch (error) {
     console.error('Error saving chat:', error);
     throw error;
@@ -25,7 +27,7 @@ async function saveChat(email: string, conversationId: string, message: Message)
 
 export async function POST(req: Request) {
   try {
-    const { messages, email, conversationId } = await req.json();
+    const { messages, email, conversationId, conversationName } = await req.json();
 
     if (!email || !conversationId) {
       console.log('email:', email)
@@ -46,12 +48,12 @@ export async function POST(req: Request) {
       topP: 0.4,
       async onFinish({ text }) {
         // Save the assistant's response
-        await saveChat(email, conversationId, { id: crypto.randomUUID(), role: 'assistant', content: text, createdAt: new Date(), data: { model: 'gemini-1.5-flash' } });
+        await saveChat(email, conversationId, { id: crypto.randomUUID(), role: 'assistant', content: text, createdAt: new Date(), data: { model: 'gemini-1.5-flash' } },conversationName );
       },
     });
 
     // Save the user's message
-    await saveChat(email, conversationId, { ...messages[messages.length - 1], id: crypto.randomUUID(), timestamp: new Date(), data: { model: 'gemini-1.5-flash' } });
+    await saveChat(email, conversationId, { ...messages[messages.length - 1], id: crypto.randomUUID(), timestamp: new Date(), data: { model: 'gemini-1.5-flash' } }, conversationName);
 
     // Respond with a streaming response
     return result.toAIStreamResponse()
