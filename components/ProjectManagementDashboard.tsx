@@ -1,97 +1,65 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle } from "lucide-react"
-import { Task } from '@/types/tasks'
-import { Project, Employee, Risk} from '@/types/tasks'
+import { AlertTriangle, BarChart2, CheckCircle2, Users, AlertCircle } from "lucide-react"
 import { useAuth } from '@/lib/hooks'
+import { fetchTasks } from '@/models/task'
+import { fetchProjects } from '@/models/project'
+import { fetchEmployees } from '@/models/employee'
+import { fetchRisks } from '@/models/risk'
+import { Task } from '@/models/task'
+import { Project } from '@/models/project'
+import { Employee } from '@/models/employee'
+import { Risk } from '@/models/risk'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts'
+import { Tooltip, TooltipProvider } from './ui/tooltip'
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+
 export default function ProjectManagementDashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
-  const {user} = useAuth()
-  const fetchTasks = async () => {
-    try {
-      console.log(user
-      )
-      const response = await fetch(`/api/tasks?email=${user?.email}`)
-      const data = await response.json()
-      setTasks(data)
-    } catch (error) {
-      console.error('Error fetching tasks:', error)
-      // toast({
-      //   title: 'Error',
-      //   description: 'Failed to fetch tasks',
-      //   variant: 'destructive'
-      // })
-    }
-  }
+  const [risks, setRisks] = useState<Risk[]>([])
+  const { user } = useAuth()
+
   useEffect(() => {
-    if (user?.email) {
-      fetchTasks()
+    const loadData = async () => {
+      if (user?.email) {
+        try {
+          const [tasksData, projectsData, employeesData, risksData] = await Promise.all([
+            fetchTasks(user.email),
+            fetchProjects(),
+            fetchEmployees(),
+            fetchRisks()
+          ])
+          setTasks(tasksData)
+          setProjects(projectsData)
+          setEmployees(employeesData)
+          setRisks(risksData)
+        } catch (error) {
+          console.error('Error loading data:', error)
+        }
+      }
     }
+
+    loadData()
   }, [user])
 
-  useEffect(() => {
-    // Map tasks to projects and employees
-    const projectMap = new Map<string, Project>()
-    const employeeMap = new Map<string, Employee>()
+  const getProjectTasks = (projectId: string) =>
+    tasks.filter((task) => task.projectId === projectId)
 
-    tasks.forEach(task => {
-      const projectName = task.projectName || 'Unknown Project'
+  const getProjectRisks = (projectId: string) =>
+    risks.filter((risk) => risk.projectId === projectId)
 
-      // Map task to its project
-      if (!projectMap.has(projectName)) {
-        projectMap.set(projectName, {
-          id: projectName,
-          name: projectName,
-          progress: 0,
-          risks: [],
-          tasks: [],
-          currentStage: { name: '', completionTime: 0, owner: '' },
-          onTrack: true,
-        })
-      }
-      const project = projectMap.get(projectName)!
-      project.tasks.push(task)
-
-      // Calculate project progress
-      const completedTasks = project.tasks.filter(t => t.status === 'done').length
-      project.progress = Math.round((completedTasks / project.tasks.length) * 100)
-
-      // Assume last task is the current stage
-      const lastTask = project.tasks[project.tasks.length - 1]
-      project.currentStage = {
-        name: lastTask.title,
-        completionTime: lastTask.time,
-        owner: lastTask.assignee
-      }
-
-      // Map task to its employee
-      if (task.assignee) {
-        if (!employeeMap.has(task.assignee)) {
-          employeeMap.set(task.assignee, {
-            id: task.assignee,
-            name: task.assignee,
-            role: task.efforts, // Assuming role is related to effort
-            availability: 100, // Default value, could be calculated based on task load
-            currentProject: projectName
-          })
-        }
-        const employee = employeeMap.get(task.assignee)!
-        employee.currentProject = projectName
-        employee.availability -= 25 // Decrease availability for each assigned task (for example)
-      }
-    })
-
-    setProjects(Array.from(projectMap.values()))
-    setEmployees(Array.from(employeeMap.values()))
-  }, [tasks])
+  const getProjectProgress = (projectId: string) => {
+    const projectTasks = getProjectTasks(projectId)
+    const completedTasks = projectTasks.filter((task) => task.status === 'done').length
+    return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
+  }
 
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
@@ -121,6 +89,18 @@ export default function ProjectManagementDashboard() {
     return onTrack ? 'text-green-600' : 'text-red-600'
   }
 
+  const projectStatusData = [
+    { name: 'On Track', value: projects.filter(p => p.onTrack).length },
+    { name: 'Off Track', value: projects.filter(p => !p.onTrack).length },
+  ]
+
+  const taskStatusData = [
+    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: tasks.filter(t => t.status === 'inProgress').length },
+    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+  ]
+
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -133,6 +113,9 @@ export default function ProjectManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projects.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {projects.filter(p => p.onTrack).length} on track
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -142,6 +125,8 @@ export default function ProjectManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{employees.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {employees.filter(e => e.availability && e.availability > 50).length} available            </p>
           </CardContent>
         </Card>
         <Card>
@@ -150,7 +135,10 @@ export default function ProjectManagementDashboard() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{projects.reduce((acc, project) => acc + project.risks.length, 0)}</div>
+            <div className="text-2xl font-bold">{risks.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {risks.filter(r => r.severity === 'High').length} high severity
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -160,6 +148,9 @@ export default function ProjectManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{tasks.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {tasks.filter(t => t.status === 'done').length} completed
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -172,9 +163,71 @@ export default function ProjectManagementDashboard() {
           <TabsTrigger value="resources">Resource Management</TabsTrigger>
         </TabsList>
         <TabsContent value="ceo-overview">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={projectStatusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {projectStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <TooltipProvider><Tooltip /></TooltipProvider>
+                      
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Task Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={taskStatusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {taskStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <TooltipProvider><Tooltip /></TooltipProvider>                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="projects">
           <Card>
             <CardHeader>
-              <CardTitle>CEO Project Overview</CardTitle>
+              <CardTitle>Projects Status</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -182,9 +235,8 @@ export default function ProjectManagementDashboard() {
                   <TableRow>
                     <TableHead>Project Name</TableHead>
                     <TableHead>Progress</TableHead>
-                    <TableHead>Current Stage</TableHead>
-                    <TableHead>Stage Completion (Days)</TableHead>
-                    <TableHead>Stage Owner</TableHead>
+                    <TableHead>Tasks</TableHead>
+                    <TableHead>Risks</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -194,13 +246,14 @@ export default function ProjectManagementDashboard() {
                       <TableCell className="font-medium">{project.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <Progress value={project.progress} className="w-[60%]" />
-                          <span className="ml-2">{project.progress}%</span>
+                          <Progress value={getProjectProgress(project.id)} className="w-[60%]" />
+                          <span className="ml-2">{getProjectProgress(project.id)}%</span>
                         </div>
                       </TableCell>
-                      <TableCell>{project.currentStage.name}</TableCell>
-                      <TableCell>{project.currentStage.completionTime}</TableCell>
-                      <TableCell>{project.currentStage.owner}</TableCell>
+                      <TableCell>
+                        {getProjectTasks(project.id).filter(task => task.status === 'done').length} / {getProjectTasks(project.id).length} completed
+                      </TableCell>
+                      <TableCell>{getProjectRisks(project.id).length} identified</TableCell>
                       <TableCell>
                         <span className={`flex items-center ${getTrackStatusColor(project.onTrack)}`}>
                           {project.onTrack ? (
@@ -216,42 +269,6 @@ export default function ProjectManagementDashboard() {
                           )}
                         </span>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="projects">
-          <Card>
-            <CardHeader>
-              <CardTitle>Projects Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Project Name</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Tasks</TableHead>
-                    <TableHead>Risks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell className="font-medium">{project.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Progress value={project.progress} className="w-[60%]" />
-                          <span className="ml-2">{project.progress}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {project.tasks.filter(task => task.status === 'done').length} / {project.tasks.length} completed
-                      </TableCell>
-                      <TableCell>{project.risks.length} identified</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -275,7 +292,7 @@ export default function ProjectManagementDashboard() {
                 </TableHeader>
                 <TableBody>
                   {projects.flatMap((project) =>
-                    project.risks.map((risk) => (
+                    getProjectRisks(project.id).map((risk) => (
                       <TableRow key={risk.id}>
                         <TableCell className="font-medium">{project.name}</TableCell>
                         <TableCell>{risk.description}</TableCell>
@@ -314,8 +331,8 @@ export default function ProjectManagementDashboard() {
                       <TableCell>{employee.role}</TableCell>
                       <TableCell>{employee.currentProject}</TableCell>
                       <TableCell>
-                        <span className={`font-bold ${getAvailabilityColor(employee.availability)}`}>
-                          {employee.availability}%
+                        <span className={`font-bold ${getAvailabilityColor(employee.availability ?? 0)}`}>
+                          {employee.availability ?? 0}%
                         </span>
                       </TableCell>
                     </TableRow>

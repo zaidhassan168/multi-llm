@@ -2,7 +2,7 @@
 import { db } from '@/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
-import { Task } from '@/types/tasks';
+import { Task } from '@/models/task';
 
 export async function POST(request: Request) {
   const { email, title, description, time, efforts, assignee, status }: Task & { email: string } = await request.json();

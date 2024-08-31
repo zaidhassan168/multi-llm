@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
-
+import { addTask, fetchTasks, deleteTask, updateTask } from '@/models/task'
 import {
   ActivityIcon,
   BackpackIcon,
@@ -17,7 +17,7 @@ import {
   UserIcon,
   TagIcon
 } from 'lucide-react'
-import { Task } from '@/types/tasks'
+import { Task } from '@/models/task'
 import { TaskModal } from './TaskModal'
 import { FileUploadModal } from '@/components/FileUploadModal'
 import { Input } from '@/components/ui/input'
@@ -134,14 +134,25 @@ export default function Kanban() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
-  const { user } = useAuth()
+  const { user, loading } = useAuth(); // Use the updated useAuth hook
+  const [userEmail, setUserEmail] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
-    if (user?.email) {
-      fetchTasks()
-    }
-  }, [user])
+    const loadTasks = async () => {
+      if (user?.email) {
+        try {
+          const tasksData = await fetchTasks(user.email);
+          setTasks(tasksData);
+        } catch (error) {
+          console.error('Failed to load tasks');
+        }
+      }
+    };
+
+    loadTasks();
+  }, [user]);
+
 
   useEffect(() => {
     if (selectedTask) {
@@ -150,95 +161,57 @@ export default function Kanban() {
   }, [selectedTask])
 
   useEffect(() => {
-    const filtered = tasks.filter(task => 
+    const filtered = tasks.filter(task =>
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterEffort === 'all' || task.efforts === filterEffort)
     )
     setFilteredTasks(filtered)
   }, [tasks, searchTerm, filterEffort])
-
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch(`/api/tasks?email=${user?.email}`)
-      const data = await response.json()
-      setTasks(data)
-    } catch (error) {
-      console.error('Error fetching tasks:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch tasks',
-        variant: 'destructive'
-      })
+  const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
+    if (user?.email) {
+      try {
+        const createdTask = await addTask(newTask, user.email);
+        setTasks((prevTasks) => [...prevTasks, createdTask]);
+      } catch (error) {
+        console.error('Failed to add task');
+      }
     }
-  }
+  };
 
-  const addTask = async (task: Omit<Task, 'id'>) => {
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...task, email: user?.email }),
-      })
-      const data = await response.json()
-      setTasks(prevTasks => [...prevTasks, { ...task, id: data.id }])
+  const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
+    if (user?.email) {
+      try {
+        await updateTask(taskToUpdate, user.email);
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskToUpdate.id ? taskToUpdate : task))
+        );
+      } catch (error) {
+        console.error('Failed to update task');
+        toast({
+          title: "Error",
+          description: "Failed to update task. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      console.error('User email is not available');
       toast({
-        title: 'Success',
-        description: 'Task added successfully'
-      })
-    } catch (error) {
-      console.error('Error adding task:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to add task',
-        variant: 'destructive'
-      })
+        title: "Error",
+        description: "User information is not available. Please try logging in again.",
+        variant: "destructive",
+      });
     }
-  }
-
-  const updateTask = async (task: Task) => {
-    try {
-      await fetch('/api/tasks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...task, email: user?.email }),
-      })
-      setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? task : t))
-      toast({
-        title: 'Success',
-        description: 'Task updated successfully'
-      })
-    } catch (error) {
-      console.error('Error updating task:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to update task',
-        variant: 'destructive'
-      })
+  }, [user, toast]);
+  const handleDeleteTask = async (taskId: string) => {
+    if (user?.email) {
+      try {
+        await deleteTask(taskId, user.email);
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+      } catch (error) {
+        console.error('Failed to delete task');
+      }
     }
-  }
-
-  const deleteTask = async (id: string) => {
-    try {
-      await fetch('/api/tasks', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, email: user?.email }),
-      })
-      setTasks(prevTasks => prevTasks.filter(t => t.id !== id))
-      toast({
-        title: 'Success',
-        description: 'Task deleted successfully'
-      })
-    } catch (error) {
-      console.error('Error deleting task:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to delete task',
-        variant: 'destructive'
-      })
-    }
-  }
-
+  };
   const onDragEnd = useCallback(
     (result: DropResult) => {
       const { destination, source, draggableId } = result
@@ -258,24 +231,24 @@ export default function Kanban() {
         const taskIndex = prevTasks.findIndex(task => task.id === draggableId)
         if (taskIndex === -1) return prevTasks
 
-        const movedTask = { ...prevTasks[taskIndex] }
+        const movedTask = { ...prevTasks[taskIndex], status: destination.droppableId as Task['status'] }
         const updatedTasks = Array.from(prevTasks)
         updatedTasks.splice(taskIndex, 1)
-
-        if (source.droppableId !== destination.droppableId) {
-          movedTask.status = destination.droppableId as Task['status'];
-          updatedTasks.splice(destination.index, 0, movedTask)
-          updateTask(movedTask) 
-          return updatedTasks;
-        } 
-
         updatedTasks.splice(destination.index, 0, movedTask)
-        return updatedTasks;
+
+        // Only call handleUpdateTask if the status has changed
+        if (source.droppableId !== destination.droppableId) {
+          handleUpdateTask(movedTask)
+        }
+
+        return updatedTasks
       })
     },
-    [updateTask]
+    [handleUpdateTask]
   )
-
+  if (loading) {
+    return <div>Loading...</div>; // Optionally show loading indicator while waiting for user data
+  }
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="h-16 flex items-center justify-between px-6 bg-white shadow-sm">
@@ -357,27 +330,28 @@ export default function Kanban() {
         </DragDropContext>
       </main>
       <TaskModal
-  isOpen={isModalOpen}
-  onClose={() => {
-    setIsModalOpen(false)
-    setSelectedTask(null)
-  }}
-  task={selectedTask}
-  onEdit={() => {
-    // This will be called when the edit button is clicked
-    // You can add any additional logic here if needed
-  }}
-  onSave={(task) => {
-    if (task.id) {
-      updateTask(task)
-    } else {
-      addTask(task)
-    }
-    setIsModalOpen(false)
-    setSelectedTask(null)
-  }}
-  onDelete={deleteTask}
-/>
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedTask(null)
+        }}
+        task={selectedTask}
+        onEdit={() => {
+          // This will be called when the edit button is clicked
+          // You can add any additional logic here if needed
+        }}
+        onSave={(task) => {
+          if (task.id) {
+            handleUpdateTask
+              (task)
+          } else {
+            handleAddTask(task)
+          }
+          setIsModalOpen(false)
+          setSelectedTask(null)
+        }}
+        onDelete={handleDeleteTask}
+      />
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}

@@ -3,7 +3,7 @@ import { doc, setDoc } from 'firebase/firestore'
 import { NextResponse } from 'next/server'
 import Configuration from 'openai'
 import OpenAIApi from 'openai'
-import { Task } from '@/types/tasks'
+import { Task } from '@/models/task'
 
 // Set up OpenAI configuration
 const configuration = new Configuration({

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Task } from '@/types/tasks'
+import { Task } from '@/models/task'
 import { CalendarIcon, EditIcon, SaveIcon, TrashIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -40,7 +40,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
     assignee: '',
     status: 'backlog',
     createdAt: new Date(),
-    projectName: '',
+    projectId: '',
     reporter: '',
     priority: 'low',
     dueDate: undefined,
@@ -62,7 +62,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
         assignee: '',
         status: 'backlog',
         createdAt: new Date(),
-        projectName: '',
+        projectId: '',
         reporter: '',
         priority: 'low',
         dueDate: undefined,
@@ -131,7 +131,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               <Input
                 id="projectName"
                 name="projectName"
-                value={formData.projectName}
+                value={formData.projectId}
                 onChange={handleChange}
                 disabled={!isEditMode && !!task}
                 className="border-blue-200 focus:border-blue-400"
