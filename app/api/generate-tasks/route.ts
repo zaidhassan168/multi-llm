@@ -1,7 +1,7 @@
 import { db } from '@/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import { NextResponse } from 'next/server'
-import  Configuration from 'openai'
+import Configuration from 'openai'
 import OpenAIApi from 'openai'
 import { Task } from '@/types/tasks'
 
@@ -41,16 +41,22 @@ export async function POST(req: Request) {
     }
 
     // Instruction to generate tasks
-    const systemInstruction = `Generate a list of tasks in JSON format based on the following content. The tasks should be structured as:
+    const systemInstruction = `Generate a list of tasks in JSON format based on the following content. fiels with ? are optional, if they are available generate. The tasks should be structured as:
     {
-        "id": "uuid string",
-        "title": "string",
-        "description": "string",
-        "time": number,
-        "efforts": "backend" | "frontend" | "backend + frontend",
-        "assignee": "string",
-        "status": "backlog" | "todo" | "inProgress" | "done",
-        "createdAt": "Date"
+    id: string;
+    title: string;
+    description: string;
+    time: number; // in hours
+    efforts: 'backend' | 'frontend' | 'backend + frontend';
+    assignee: string;
+    status: 'backlog' | 'todo' | 'inProgress' | 'done';
+    createdAt?: Date;
+    projectName?: string;
+    reporter?: string;    priority?: 'low' | 'medium' | 'high';
+    dueDate?: Date;
+    comments?: Comment[];
+    assgneeEmail?: string;
+    reporterEmail?: string;
     }`
 
     // Call the OpenAI model

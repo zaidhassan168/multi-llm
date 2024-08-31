@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
+
 import {
   ActivityIcon,
   BackpackIcon,
@@ -30,7 +31,6 @@ const columns = [
   { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
   { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
-
 const TaskItem = ({ task, index, onClick }: { task: Task; index: number; onClick: () => void }) => {
   const getEffortColor = (effort: string) => {
     switch (effort) {
@@ -41,14 +41,26 @@ const TaskItem = ({ task, index, onClick }: { task: Task; index: number; onClick
     }
   }
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'low': return 'border-l-green-500'
+      case 'medium': return 'border-l-yellow-500'
+      case 'high': return 'border-l-red-500'
+      case 'urgent': return 'border-l-red-500'
+      case 'critical': return 'border-l-red-500'
+      case 'null': return 'border-l-gray-400'
+      default: return 'border-l-gray-400'
+    }
+  }
+
   return (
     <Draggable draggableId={task.id} index={index}>
-      {(provided: { innerRef: React.LegacyRef<HTMLDivElement> | undefined; draggableProps: React.JSX.IntrinsicAttributes & React.ClassAttributes<HTMLDivElement> & React.HTMLAttributes<HTMLDivElement>; dragHandleProps: React.JSX.IntrinsicAttributes & React.ClassAttributes<HTMLDivElement> & React.HTMLAttributes<HTMLDivElement> }) => (
+      {(provided) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className="bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200"
+          className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200 border-l-4 ${getPriorityColor(task.priority || 'null')} ${(task.priority === 'urgent' || task.priority === 'critical') ? 'border-r-4 border-r-red-500' : ''}`}
           onClick={onClick}
         >
           <h3 className="font-semibold text-sm mb-1">{task.title}</h3>
@@ -74,6 +86,7 @@ const TaskItem = ({ task, index, onClick }: { task: Task; index: number; onClick
   )
 }
 
+
 const Column = ({ id, title, icon: Icon, color, tasks, onTaskClick }: {
   id: string;
   title: string;
@@ -92,7 +105,7 @@ const Column = ({ id, title, icon: Icon, color, tasks, onTaskClick }: {
         </span>
       </h2>
       <Droppable droppableId={id}>
-        {(provided: { innerRef: React.LegacyRef<HTMLDivElement> | undefined; droppableProps: React.JSX.IntrinsicAttributes & React.ClassAttributes<HTMLDivElement> & React.HTMLAttributes<HTMLDivElement>; placeholder: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined }) => (
+        {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
@@ -113,7 +126,6 @@ const Column = ({ id, title, icon: Icon, color, tasks, onTaskClick }: {
     </div>
   )
 }
-
 export default function Kanban() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
@@ -121,7 +133,7 @@ export default function Kanban() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterEffort, setFilterEffort] = useState('all') // Changed default value to "all"
+  const [filterEffort, setFilterEffort] = useState('all')
   const { user } = useAuth()
   const { toast } = useToast()
 
@@ -140,7 +152,7 @@ export default function Kanban() {
   useEffect(() => {
     const filtered = tasks.filter(task => 
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterEffort === 'all' || task.efforts === filterEffort) // Updated filter condition
+      (filterEffort === 'all' || task.efforts === filterEffort)
     )
     setFilteredTasks(filtered)
   }, [tasks, searchTerm, filterEffort])
@@ -251,13 +263,14 @@ export default function Kanban() {
         updatedTasks.splice(taskIndex, 1)
 
         if (source.droppableId !== destination.droppableId) {
-          movedTask.status = destination.droppableId as Task['status']
-          updateTask(movedTask)
-        }
+          movedTask.status = destination.droppableId as Task['status'];
+          updatedTasks.splice(destination.index, 0, movedTask)
+          updateTask(movedTask) 
+          return updatedTasks;
+        } 
 
         updatedTasks.splice(destination.index, 0, movedTask)
-
-        return updatedTasks
+        return updatedTasks;
       })
     },
     [updateTask]
@@ -307,7 +320,7 @@ export default function Kanban() {
               <SelectValue placeholder="Filter by effort" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All efforts</SelectItem> {/* Changed from empty string to "all" */}
+              <SelectItem value="all">All efforts</SelectItem>
               <SelectItem value="backend">Backend</SelectItem>
               <SelectItem value="frontend">Frontend</SelectItem>
               <SelectItem value="backend + frontend">Backend + Frontend</SelectItem>
@@ -344,43 +357,30 @@ export default function Kanban() {
         </DragDropContext>
       </main>
       <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        task={selectedTask}
-        onSave={(task) => {
-          if (task.id) {
-            updateTask(task)
-          } else {
-            addTask(task)
-          }
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        onDelete={deleteTask}
-      />
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false)
+    setSelectedTask(null)
+  }}
+  task={selectedTask}
+  onEdit={() => {
+    // This will be called when the edit button is clicked
+    // You can add any additional logic here if needed
+  }}
+  onSave={(task) => {
+    if (task.id) {
+      updateTask(task)
+    } else {
+      addTask(task)
+    }
+    setIsModalOpen(false)
+    setSelectedTask(null)
+  }}
+  onDelete={deleteTask}
+/>
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        // onUpload={async (text: string) => {
-        //   const newTasks = text.split('\n').map(line => ({
-        //     title: line.trim(),
-        //     description: '',
-        //     status: 'backlog' as const,
-        //     time: 0,
-        //     efforts: 'backend',
-        //     assignee: '',
-        //     createdAt: new Date(),
-        //   }))
-        
-        //   for (const task of newTasks) {
-        //     await addTask(task)
-        //   }
-        
-        //   setIsUploadModalOpen(false)
-        // }}
       />
     </div>
   )

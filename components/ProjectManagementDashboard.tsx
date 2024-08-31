@@ -7,122 +7,97 @@ import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle } from "lucide-react"
-
-interface Risk {
-  id: string
-  description: string
-  severity: 'Low' | 'Medium' | 'High'
-}
-
-interface Task {
-  id: string
-  name: string
-  status: 'Not Started' | 'In Progress' | 'Completed'
-  assignee: string
-}
-
-interface Stage {
-  name: string
-  completionTime: number
-  owner: string
-}
-
-interface Project {
-  id: string
-  name: string
-  progress: number
-  risks: Risk[]
-  tasks: Task[]
-  currentStage: Stage
-  onTrack: boolean
-}
-
-interface Employee {
-  id: string
-  name: string
-  role: string
-  availability: number
-  currentProject: string
-}
-
+import { Task } from '@/types/tasks'
+import { Project, Employee, Risk} from '@/types/tasks'
+import { useAuth } from '@/lib/hooks'
 export default function ProjectManagementDashboard() {
+  const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  const {user} = useAuth()
+  const fetchTasks = async () => {
+    try {
+      console.log(user
+      )
+      const response = await fetch(`/api/tasks?email=${user?.email}`)
+      const data = await response.json()
+      setTasks(data)
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+      // toast({
+      //   title: 'Error',
+      //   description: 'Failed to fetch tasks',
+      //   variant: 'destructive'
+      // })
+    }
+  }
+  useEffect(() => {
+    if (user?.email) {
+      fetchTasks()
+    }
+  }, [user])
 
   useEffect(() => {
-    // In a real application, you would fetch this data from an API
-    const mockProjects: Project[] = [
-      {
-        id: '1',
-        name: 'Website Redesign',
-        progress: 65,
-        risks: [
-          { id: '1', description: 'Delayed content delivery', severity: 'Medium' },
-          { id: '2', description: 'Browser compatibility issues', severity: 'Low' },
-        ],
-        tasks: [
-          { id: '1', name: 'Design homepage', status: 'Completed', assignee: 'Alice Johnson' },
-          { id: '2', name: 'Implement responsive layout', status: 'In Progress', assignee: 'Bob Smith' },
-          { id: '3', name: 'Content migration', status: 'Not Started', assignee: 'Charlie Brown' },
-        ],
-        currentStage: { name: 'Development', completionTime: 14, owner: 'Bob Smith' },
-        onTrack: true,
-      },
-      {
-        id: '2',
-        name: 'Mobile App Development',
-        progress: 30,
-        risks: [
-          { id: '3', description: 'API integration delays', severity: 'High' },
-          { id: '4', description: 'Performance issues on older devices', severity: 'Medium' },
-        ],
-        tasks: [
-          { id: '4', name: 'Design user interface', status: 'Completed', assignee: 'Diana Prince' },
-          { id: '5', name: 'Implement authentication', status: 'In Progress', assignee: 'Ethan Hunt' },
-          { id: '6', name: 'Develop offline mode', status: 'Not Started', assignee: 'Fiona Gallagher' },
-        ],
-        currentStage: { name: 'Design', completionTime: 7, owner: 'Diana Prince' },
-        onTrack: false,
-      },
-      {
-        id: '3',
-        name: 'CRM Integration',
-        progress: 80,
-        risks: [
-          { id: '5', description: 'Data migration errors', severity: 'High' },
-          { id: '6', description: 'User adoption challenges', severity: 'Medium' },
-        ],
-        tasks: [
-          { id: '7', name: 'Database schema design', status: 'Completed', assignee: 'George Orwell' },
-          { id: '8', name: 'API development', status: 'Completed', assignee: 'Huxley Brave' },
-          { id: '9', name: 'User training materials', status: 'In Progress', assignee: 'Iris West' },
-        ],
-        currentStage: { name: 'Testing', completionTime: 5, owner: 'Fiona Gallagher' },
-        onTrack: true,
-      },
-    ]
+    // Map tasks to projects and employees
+    const projectMap = new Map<string, Project>()
+    const employeeMap = new Map<string, Employee>()
 
-    const mockEmployees: Employee[] = [
-      { id: '1', name: 'Alice Johnson', role: 'UX Designer', availability: 25, currentProject: 'Website Redesign' },
-      { id: '2', name: 'Bob Smith', role: 'Frontend Developer', availability: 0, currentProject: 'Website Redesign' },
-      { id: '3', name: 'Charlie Brown', role: 'Content Strategist', availability: 75, currentProject: 'Website Redesign' },
-      { id: '4', name: 'Diana Prince', role: 'UI Designer', availability: 50, currentProject: 'Mobile App Development' },
-      { id: '5', name: 'Ethan Hunt', role: 'Backend Developer', availability: 0, currentProject: 'Mobile App Development' },
-      { id: '6', name: 'Fiona Gallagher', role: 'QA Engineer', availability: 100, currentProject: 'CRM Integration' },
-      { id: '7', name: 'George Orwell', role: 'Database Administrator', availability: 25, currentProject: 'CRM Integration' },
-      { id: '8', name: 'Huxley Brave', role: 'Full Stack Developer', availability: 0, currentProject: 'CRM Integration' },
-      { id: '9', name: 'Iris West', role: 'Technical Writer', availability: 50, currentProject: 'CRM Integration' },
-    ]
+    tasks.forEach(task => {
+      const projectName = task.projectName || 'Unknown Project'
 
-    setProjects(mockProjects)
-    setEmployees(mockEmployees)
-  }, [])
+      // Map task to its project
+      if (!projectMap.has(projectName)) {
+        projectMap.set(projectName, {
+          id: projectName,
+          name: projectName,
+          progress: 0,
+          risks: [],
+          tasks: [],
+          currentStage: { name: '', completionTime: 0, owner: '' },
+          onTrack: true,
+        })
+      }
+      const project = projectMap.get(projectName)!
+      project.tasks.push(task)
+
+      // Calculate project progress
+      const completedTasks = project.tasks.filter(t => t.status === 'done').length
+      project.progress = Math.round((completedTasks / project.tasks.length) * 100)
+
+      // Assume last task is the current stage
+      const lastTask = project.tasks[project.tasks.length - 1]
+      project.currentStage = {
+        name: lastTask.title,
+        completionTime: lastTask.time,
+        owner: lastTask.assignee
+      }
+
+      // Map task to its employee
+      if (task.assignee) {
+        if (!employeeMap.has(task.assignee)) {
+          employeeMap.set(task.assignee, {
+            id: task.assignee,
+            name: task.assignee,
+            role: task.efforts, // Assuming role is related to effort
+            availability: 100, // Default value, could be calculated based on task load
+            currentProject: projectName
+          })
+        }
+        const employee = employeeMap.get(task.assignee)!
+        employee.currentProject = projectName
+        employee.availability -= 25 // Decrease availability for each assigned task (for example)
+      }
+    })
+
+    setProjects(Array.from(projectMap.values()))
+    setEmployees(Array.from(employeeMap.values()))
+  }, [tasks])
 
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
-      case 'Completed': return 'text-green-600'
-      case 'In Progress': return 'text-yellow-600'
-      case 'Not Started': return 'text-red-600'
+      case 'done': return 'text-green-600'
+      case 'inProgress': return 'text-yellow-600'
+      case 'todo': return 'text-red-600'
       default: return 'text-gray-600'
     }
   }
@@ -184,7 +159,7 @@ export default function ProjectManagementDashboard() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{projects.reduce((acc, project) => acc + project.tasks.length, 0)}</div>
+            <div className="text-2xl font-bold">{tasks.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -274,7 +249,7 @@ export default function ProjectManagementDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {project.tasks.filter(task => task.status === 'Completed').length} / {project.tasks.length} completed
+                        {project.tasks.filter(task => task.status === 'done').length} / {project.tasks.length} completed
                       </TableCell>
                       <TableCell>{project.risks.length} identified</TableCell>
                     </TableRow>
