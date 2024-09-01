@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
-import { addTask, fetchTasks, deleteTask, updateTask } from '@/models/task'
+import { addTask, fetchTasksEmail, deleteTask, updateTask } from '@/models/task'
 import {
   ActivityIcon,
   BackpackIcon,
@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
+import { Employee, fetchEmployees, fetchEmployee } from '@/models/employee'
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -145,12 +145,15 @@ export default function Kanban() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
   const { user, loading } = useAuth()
+  const [employee, setEmployee] = useState<Employee | null>(null)
   const { toast } = useToast()
 
   const fetchTasksData = useCallback(async () => {
     if (user?.email) {
       try {
-        const tasksData = await fetchTasks(user.email)
+        const emp = await fetchEmployee(user.email)
+        console.log(emp)
+        const tasksData = await fetchTasksEmail(user.email, emp.role)
         setTasks(tasksData)
       } catch (error) {
         console.error('Failed to load tasks')
@@ -164,6 +167,7 @@ export default function Kanban() {
   }, [user, toast])
 
   useEffect(() => {
+    
     fetchTasksData()
   }, [fetchTasksData])
 
@@ -175,7 +179,7 @@ export default function Kanban() {
 
   const filteredTasksMemo = useMemo(() => {
     return tasks.filter(task =>
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterEffort === 'all' || task.efforts === filterEffort)
     )
   }, [tasks, searchTerm, filterEffort])

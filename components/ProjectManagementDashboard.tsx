@@ -7,13 +7,15 @@ import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown,PlusCircle } from "lucide-react"
-import { Task, fetchTasks, updateTask, deleteTask,fetchTasksAll } from '@/models/task'
+import { Task, updateTask, deleteTask,fetchTasksAll } from '@/models/task'
 import { Project, Stage, fetchProjects, updateProject, deleteProject, createProject } from '@/models/project'
 import { Risk, fetchRisks, updateRisk, deleteRisk } from '@/models/risk'
 import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
+import AddProjectDialog from "@/components/AddProjectDialog"
+
 import {
   Dialog,
   DialogContent,
@@ -330,9 +332,9 @@ export default function ProjectManagementDashboard() {
                           <span className="ml-2">{calculateProjectProgress(project)}%</span>
                         </div>
                       </TableCell>
-                      <TableCell>{project.currentStage.name}</TableCell>
+                      <TableCell>{project.currentStage?.name || 'N/A'}</TableCell>
                       <TableCell>
-                        <span className={`flex items-center ${getTrackStatusColor(project.onTrack)}`}>
+                        <span className={`flex items-center ${getTrackStatusColor(project.onTrack ?? false)}`}>
                           {project.onTrack ? (
                             <>
                               <CheckCircle2 className="mr-1 h-4 w-4" />
@@ -347,9 +349,7 @@ export default function ProjectManagementDashboard() {
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  ))}                </TableBody>              </Table>
             </CardContent>
           </Card>
         </TabsContent>
