@@ -10,6 +10,7 @@ import CodeChat from '@/components/CodeChat';
 import Assistant from '@/components/Assistant';
 import ChatHistory from '@/components/ChatHistory';
 import Kanban from '@/components/Kanban';
+import EmployeeManagement from '@/components/Employees';
 import ProjectManagementDashboard from '@/components/ProjectManagementDashboard';
 interface HomePageProps {
   email?: string;
@@ -37,12 +38,13 @@ export default function HomePage({ email }: HomePageProps) {
         {currentComponent === 'chat' && <Chat />}
         {currentComponent === 'about' && <DatabaseChat />}
         {currentComponent === 'profile' && <UserProfile />}
+
         {currentComponent === 'gemini' && <GeminiChat />}
         {currentComponent === 'code' && <CodeChat />}
         {currentComponent === 'assistant' && <Assistant />}
         {currentComponent === 'history' && <ChatHistory />}
         {currentComponent === 'kanban' && <Kanban />}
-
+        {currentComponent === 'employees' && <EmployeeManagement />}
         {/* ... your main content */}
       </main>
     </div>

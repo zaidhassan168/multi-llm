@@ -6,15 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
-import { Task, fetchTasks, updateTask, deleteTask } from '@/models/task'
-import { Project, Stage, fetchProjects, updateProject, deleteProject } from '@/models/project'
+import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown,PlusCircle } from "lucide-react"
+import { Task, fetchTasks, updateTask, deleteTask,fetchTasksAll } from '@/models/task'
+import { Project, Stage, fetchProjects, updateProject, deleteProject, createProject } from '@/models/project'
 import { Risk, fetchRisks, updateRisk, deleteRisk } from '@/models/risk'
 import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function ProjectManagementDashboard() {
@@ -24,7 +33,8 @@ export default function ProjectManagementDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const { user } = useAuth()
   const { toast } = useToast()
-
+  const [newProjectName, setNewProjectName] = useState('')
+  const [newProjectManager, setNewProjectManager] = useState('')
   useEffect(() => {
     if (user?.email) {
       fetchAllData()
@@ -34,7 +44,7 @@ export default function ProjectManagementDashboard() {
   const fetchAllData = async () => {
     try {
       const [tasksData, projectsData, risksData, employeesData] = await Promise.all([
-        fetchTasks(user?.email ?? ''),
+        fetchTasksAll(),
         fetchProjects(),
         fetchRisks(),
         fetchEmployees()
@@ -97,7 +107,40 @@ export default function ProjectManagementDashboard() {
     const completedTasks = projectTasks.filter(task => task.status === 'done').length
     return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
   }
+  const handleAddProject = async () => {
+    if (!newProjectName || !newProjectManager) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      })
+      return
+    }
 
+    try {
+      const newProject: Omit<Project, 'id'> = {
+        name: newProjectName,
+        manager: newProjectManager,
+        currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
+        onTrack: true,
+      }
+      await createProject(newProject)
+      await fetchAllData()
+      toast({
+        title: "Success",
+        description: "New project added successfully",
+      })
+      setNewProjectName('')
+      setNewProjectManager('')
+    } catch (error) {
+      console.error('Error adding new project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to add new project",
+        variant: "destructive",
+      })
+    }
+  }
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -105,40 +148,58 @@ export default function ProjectManagementDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">Projects</CardTitle>
             <BarChart2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projects.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {projects.filter(p => p.onTrack).length} on track
-            </p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs text-muted-foreground">
+                {projects.filter(p => p.onTrack).length} on track
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Add Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Project</DialogTitle>
+                    <DialogDescription>Enter the details for the new project.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="manager" className="text-right">
+                        Manager
+                      </Label>
+                      <Input
+                        id="manager"
+                        value={newProjectManager}
+                        onChange={(e) => setNewProjectManager(e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddProject}>Add Project</Button>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{employees.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {employees.filter(e => e.availability && e.availability > 50).length} available
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Risks</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{risks.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {risks.filter(r => r.severity === 'High').length} high severity
-            </p>
-          </CardContent>
-        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
@@ -149,6 +210,26 @@ export default function ProjectManagementDashboard() {
             <p className="text-xs text-muted-foreground">
               {tasks.filter(t => t.status === 'done').length} completed
             </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Risk Overview</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{risks.length} Total</div>
+            <div className="flex justify-between mt-2">
+              <span className="text-xs text-red-600 font-semibold">
+                {risks.filter(r => r.severity === 'High').length} High
+              </span>
+              <span className="text-xs text-yellow-600 font-semibold">
+                {risks.filter(r => r.severity === 'Medium').length} Medium
+              </span>
+              <span className="text-xs text-green-600 font-semibold">
+                {risks.filter(r => r.severity === 'Low').length} Low
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>

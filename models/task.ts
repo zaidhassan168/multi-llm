@@ -39,7 +39,23 @@ export const fetchTasks = async (email: string): Promise<Task[]> => {
     throw error;
   }
 };
-
+export const fetchTasksAll = async (): Promise<Task[]> => {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+      throw new Error('Failed to fetch tasks');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch tasks',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
 export const addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Task> => {
   try {
     const response = await fetch(API_URL, {

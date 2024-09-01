@@ -63,7 +63,8 @@ export default function Sidebar({
     { icon: <BotIcon className="w-5 h-5" />, label: "Assistant", id: "assistant" },
     { icon: <HistoryIcon className="w-5 h-5" />, label: "History", id: "history" },
     { icon: <KanbanIcon className="w-5 h-5" />, label: "Kanban", id: "kanban" },
-  ];
+    { icon: <BookDashedIcon className="w-5 h-5" />, label: "Employees", id: "employees" },
+  ]; 
 
   return (
     <TooltipProvider>
