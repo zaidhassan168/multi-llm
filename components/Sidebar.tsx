@@ -64,6 +64,7 @@ export default function Sidebar({
     { icon: <HistoryIcon className="w-5 h-5" />, label: "History", id: "history" },
     { icon: <KanbanIcon className="w-5 h-5" />, label: "Kanban", id: "kanban" },
     { icon: <BookDashedIcon className="w-5 h-5" />, label: "Employees", id: "employees" },
+    { icon: <MailIcon className="w-5 h-5" />, label: "Tasks", id: "tasks" },
   ]; 
 
   return (

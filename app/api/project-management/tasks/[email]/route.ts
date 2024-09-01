@@ -24,7 +24,6 @@ export async function GET(request: Request, { params }: { params: { email: strin
     }
     
     const querySnapshot = await getDocs(q);
-    console.log("querySnapshot", querySnapshot);
     const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     // console.log("tasks", tasks);
     return NextResponse.json(tasks);

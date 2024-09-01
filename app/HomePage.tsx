@@ -12,6 +12,7 @@ import ChatHistory from '@/components/ChatHistory';
 import Kanban from '@/components/Kanban';
 import EmployeeManagement from '@/components/Employees';
 import ProjectManagementDashboard from '@/components/ProjectManagementDashboard';
+import TaskSwiper from '@/components/TaskSwiper';
 interface HomePageProps {
   email?: string;
 }
@@ -45,6 +46,7 @@ export default function HomePage({ email }: HomePageProps) {
         {currentComponent === 'history' && <ChatHistory />}
         {currentComponent === 'kanban' && <Kanban />}
         {currentComponent === 'employees' && <EmployeeManagement />}
+        {currentComponent === 'tasks' && <TaskSwiper />}
         {/* ... your main content */}
       </main>
     </div>

@@ -18,7 +18,6 @@ import {
   ClockIcon,
   UserIcon,
   TagIcon,
-  FilterIcon,
   RefreshCw
 } from 'lucide-react'
 import { Task } from '@/models/task'
@@ -29,7 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Employee, fetchEmployees, fetchEmployee } from '@/models/employee'
+import { Employee, fetchEmployee } from '@/models/employee'
+
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -54,7 +54,6 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
       case 'high': return 'border-l-red-500'
       case 'urgent': return 'border-l-red-500'
       case 'critical': return 'border-l-red-500'
-      case 'null': return 'border-l-gray-400'
       default: return 'border-l-gray-400'
     }
   }
@@ -144,7 +143,7 @@ export default function Kanban() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
-  const { user, loading } = useAuth()
+  const { user } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const { toast } = useToast()
 
@@ -152,7 +151,7 @@ export default function Kanban() {
     if (user?.email) {
       try {
         const emp = await fetchEmployee(user.email)
-        console.log(emp)
+        setEmployee(emp)
         const tasksData = await fetchTasksEmail(user.email, emp.role)
         setTasks(tasksData)
       } catch (error) {
@@ -167,7 +166,6 @@ export default function Kanban() {
   }, [user, toast])
 
   useEffect(() => {
-    
     fetchTasksData()
   }, [fetchTasksData])
 
@@ -292,10 +290,6 @@ export default function Kanban() {
     },
     [handleUpdateTask]
   )
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
-  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
