@@ -12,6 +12,8 @@ type Stage = {
     stages?: Stage[]
     currentStage?: Stage
     onTrack?: boolean
+    taskIds?: string[]; // Array to store associated task IDs
+    stageIds?: string[];
   }
 
   const API_URL = '/api/project-management/projects';

@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown,PlusCircle } from "lucide-react"
-import { Task, updateTask, deleteTask,fetchTasksAll } from '@/models/task'
+import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown, PlusCircle } from "lucide-react"
+import { Task, updateTask, deleteTask, fetchTasksAll } from '@/models/task'
 import { Project, Stage, fetchProjects, updateProject, deleteProject, createProject } from '@/models/project'
 import { Risk, fetchRisks, updateRisk, deleteRisk } from '@/models/risk'
 import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/models/employee'
@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/hooks'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
 import AddProjectDialog from "@/components/AddProjectDialog"
+import Link from 'next/link'
 
 import {
   Dialog,
@@ -324,7 +325,11 @@ export default function ProjectManagementDashboard() {
                 <TableBody>
                   {projects.map((project) => (
                     <TableRow key={project.id}>
-                      <TableCell className="font-medium">{project.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link href={`/project/${project.id}`}>
+                          {project.name}
+                        </Link>
+                      </TableCell>
                       <TableCell>{project.manager}</TableCell>
                       <TableCell>
                         <div className="flex items-center">

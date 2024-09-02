@@ -104,6 +104,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
               value={newProjectManager}
               onChange={(e) => setNewProjectManager(e.target.value)}
               className="col-span-3 border p-2 rounded"
+              aria-label="Select Project Manager"
             >
               <option value="" disabled>Select Manager</option>
               {projectManagers.map(manager => (

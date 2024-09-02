@@ -1,5 +1,13 @@
 // /types/task.ts
 import { toast } from '@/components/ui/use-toast';
+type Comment = {
+    id: string;
+    content: string;
+    author: string;
+    createdAt: Date;
+    taskId: string;
+    };
+
 type Task = {
     id: string;
     title: string;
