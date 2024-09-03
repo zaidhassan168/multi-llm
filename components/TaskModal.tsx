@@ -36,6 +36,8 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
   const [isEditMode, setIsEditMode] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [developers, setDevelopers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
     title: '',
     description: '',
@@ -80,12 +82,20 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const projectsData = await fetchProjects()
-      setProjects(projectsData.map(p => ({ id: p.id, name: p.name })))
+      setIsLoading(true);
+      try {
+        const projectsData = await fetchProjects()
+        setProjects(projectsData.map(p => ({ id: p.id, name: p.name })))
 
-      const developersData = await fetchEmployees()
-      const devs = developersData.filter(emp => emp.role === 'developer')
-      setDevelopers(devs.map(dev => ({ id: dev.id, name: dev.name, email: dev.email })))
+        const developersData = await fetchEmployees()
+        const devs = developersData.filter(emp => emp.role === 'developer')
+        setDevelopers(devs.map(dev => ({ id: dev.id, name: dev.name, email: dev.email })))
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load projects and developers data');
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     fetchInitialData()

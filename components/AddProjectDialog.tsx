@@ -14,14 +14,18 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectManager, setNewProjectManager] = useState('')
   const [projectManagers, setProjectManagers] = useState<Employee[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
   const { toast } = useToast()
 
   useEffect(() => {
     const fetchProjectManagers = async () => {
       try {
+        setIsLoading(true)
         const employees = await fetchEmployees()
-        const managers = employees.filter(emp => emp.role === 'projectManaager')
+        const managers = employees.filter(emp => emp.role === 'projectManager')
         setProjectManagers(managers)
+        setIsLoading(true)
       } catch (error: unknown) {
         console.error('Error fetching project managers:', error instanceof Error ? error.message : String(error))
         toast({
@@ -29,6 +33,8 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
           description: `Failed to fetch project managers: ${error instanceof Error ? error.message : 'Unknown error'}`,
           variant: 'destructive',
         })
+        setIsLoading(true)
+
       }
     }
 
@@ -49,7 +55,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
       const newProject = {
         name: newProjectName,
         manager: newProjectManager,
-        currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
+        // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
         onTrack: true,
       }
       await createProject(newProject)
@@ -73,7 +79,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" aria-label="Add new project">
           <PlusCircle className="h-4 w-4 mr-1" />
           Add Project
         </Button>
@@ -99,22 +105,29 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
             <Label htmlFor="manager" className="text-right">
               Manager
             </Label>
-            <select
-              id="manager"
-              value={newProjectManager}
-              onChange={(e) => setNewProjectManager(e.target.value)}
-              className="col-span-3 border p-2 rounded"
-              aria-label="Select Project Manager"
-            >
-              <option value="" disabled>Select Manager</option>
-              {projectManagers.map(manager => (
-                <option key={manager.id} value={manager.email}>{manager.name} ({manager.email})</option>
-              ))}
-            </select>
+            {isLoading ? (
+              <p>Loading project managers...</p>
+            ) : (
+              <select
+                id="manager"
+                value={newProjectManager}
+                onChange={(e) => setNewProjectManager(e.target.value)}
+                className="col-span-3 border p-2 rounded"
+                aria-label="Select Project Manager"
+              >
+                <option value="" disabled>Select Manager</option>
+                {projectManagers.map(manager => (
+                  <option key={manager.id} value={manager.email}>{manager.name} ({manager.email})</option>
+                ))}
+              </select>
+            )}
           </div>
           {/* Add more fields here if needed */}
         </div>
-        <Button onClick={handleAddProject}>Add Project</Button>
+        <Button onClick={handleAddProject} disabled={!newProjectName || !newProjectManager}
+        >         Add Project
+        </Button>
+
       </DialogContent>
     </Dialog>
   )

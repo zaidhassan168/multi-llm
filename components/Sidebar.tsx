@@ -1,44 +1,34 @@
+// Sidebar.tsx
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  BriefcaseIcon,
-  HomeIcon,
-  LogOutIcon,
-  MailIcon,
-  UserIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  MessageSquareIcon,
-  CodeIcon,
-  BotIcon,
-  HistoryIcon,
-  KanbanIcon,
-  BookDashedIcon,
-} from "lucide-react";
+import { BriefcaseIcon, HomeIcon, LogOutIcon, MailIcon, UserIcon, ArrowLeftIcon, ArrowRightIcon, CodeIcon, BotIcon, HistoryIcon, BookDashedIcon } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
   email?: string;
+  isCollapsed: boolean;
+  onCollapseToggle: () => void;
 }
 
-export default function Sidebar({ email }: SidebarProps) {
+export default function Sidebar({ email, isCollapsed, onCollapseToggle }: SidebarProps) {
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const router = useRouter();
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
       await signOut(getAuth(app));
       await fetch("/api/logout");
-      window.location.href = "/login";
+      router.push('/login');  
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -72,7 +62,7 @@ export default function Sidebar({ email }: SidebarProps) {
             variant="ghost"
             size="icon"
             className={`ml-auto transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={onCollapseToggle}
           >
             <ArrowLeftIcon className="w-5 h-5" />
           </Button>

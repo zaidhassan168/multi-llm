@@ -124,7 +124,7 @@ export default function ProjectManagementDashboard() {
       const newProject: Omit<Project, 'id'> = {
         name: newProjectName,
         manager: newProjectManager,
-        currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
+        // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
         onTrack: true,
       }
       await createProject(newProject)

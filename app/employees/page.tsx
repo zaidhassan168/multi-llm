@@ -66,7 +66,7 @@ export default function EmployeeManagement() {
     const employeeData: Partial<Employee> = {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
-      role: formData.get('role') as 'developer' | 'management' | 'projectManaager',
+      role: formData.get('role') as 'developer' | 'management' | 'projectManager',
       availability: Number(formData.get('availability')),
       projectId: selectedProjects
     }
