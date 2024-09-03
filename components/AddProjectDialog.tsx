@@ -22,18 +22,18 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
         const employees = await fetchEmployees()
         const managers = employees.filter(emp => emp.role === 'projectManaager')
         setProjectManagers(managers)
-      } catch (error) {
-        console.error('Error fetching project managers:', error)
+      } catch (error: unknown) {
+        console.error('Error fetching project managers:', error instanceof Error ? error.message : String(error))
         toast({
           title: 'Error',
-          description: 'Failed to fetch project managers',
+          description: `Failed to fetch project managers: ${error instanceof Error ? error.message : 'Unknown error'}`,
           variant: 'destructive',
         })
       }
     }
 
     fetchProjectManagers()
-  }, [])
+  }, [toast])
 
   const handleAddProject = async () => {
     if (!newProjectName || !newProjectManager) {
