@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { app } from "../../firebase";
+import { app,db } from "../../firebase";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+import { createEmployee, Employee } from '@/models/employee';
+import { doc, collection, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -19,19 +22,62 @@ export default function Register() {
   const [isLoading, setIsLoading ] = useState(false);
   const router = useRouter();
 
+  async function getEmployeeByEmail(email: string): Promise<Employee | null> {
+    try {
+      // Reference the document in the 'employees' collection with the email as the document ID
+      const employeeDocRef = doc(db, 'employees', email);
+      
+      // Fetch the document
+      const employeeSnapshot = await getDoc(employeeDocRef);
+      
+      // Check if the document exists and return the data
+      if (employeeSnapshot.exists()) {
+        return employeeSnapshot.data() as Employee;
+      } else {
+        console.log('No such employee!');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching employee:', error);
+      return null;
+    }
+  }
+         
   async function handleSubmit(event: FormEvent) {
-    setIsLoading(true);
     event.preventDefault();
-
+    setIsLoading(true);
     setError("");
-
+  
     if (password !== confirmation) {
       setError("Passwords don't match");
+      setIsLoading(false);
       return;
     }
-
+  
     try {
-      await createUserWithEmailAndPassword(getAuth(app), email, password);
+      // Create the user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(getAuth(app), email, password);
+      console.log("User created:", userCredential.user);
+      // After successful signup, create the employee
+      let newEmployee: Employee
+      const existingEmployee = await getEmployeeByEmail(userCredential.user.email ?? "")
+      console.log("Existing Employee:", existingEmployee);
+      if (existingEmployee) {
+        newEmployee = {
+          ...existingEmployee,
+          id: userCredential.user.uid,
+        }
+      } else {
+        newEmployee = {
+          id: userCredential.user.uid,
+          email: userCredential.user.email ?? "",
+          name: "",
+          role: "undefined",
+        }
+      }
+        // Add other fields as need
+      await createEmployee(newEmployee); // Call the createEmployee API
+  
       setIsLoading(false);
       router.push("/login");
     } catch (e) {
@@ -39,7 +85,6 @@ export default function Register() {
       setIsLoading(false);
     }
   }
-
   return (
     <div className="flex items-center justify-center h-screen bg-background">
       <Card className="w-full max-w-md p-6 space-y-4">

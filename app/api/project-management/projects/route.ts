@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/firebase'
-import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore'
 
 // Fetch all projects
 export async function GET() {
@@ -18,12 +18,19 @@ export async function GET() {
 // Create a new project
 export async function POST(req: Request) {
   try {
-    const project = await req.json()
-    const projectRef = await addDoc(collection(db, 'projects'), project)
-    return NextResponse.json({ id: projectRef.id, ...project })
+    const project = await req.json();
+
+    // Generate a document reference with a new unique ID
+    const projectRef = doc(collection(db, 'projects'));
+
+    // Set the project data, including the generated ID
+    await setDoc(projectRef, { ...project, id: projectRef.id });
+
+    // Return the project data including the generated ID
+    return NextResponse.json({ id: projectRef.id, ...project });
   } catch (error) {
-    console.error('Error creating project:', error)
-    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
+    console.error('Error creating project:', error);
+    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }
 

@@ -1,31 +1,22 @@
-import React, { Suspense } from "react"
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth"
-import { app } from "../firebase"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Mail, UserRound, UserCircleIcon } from "lucide-react"
+"use client";
 
-function getUserPromise(): Promise<FirebaseUser> {
-  return new Promise((resolve, reject) => {
-    const auth = getAuth(app)
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        unsubscribe()
-        if (user) {
-          resolve(user)
-        } else {
-          reject(new Error("User not logged in"))
-        }
-      },
-      reject
-    )
-  })
-}
+import React from "react";
+import { useAuth } from "@/lib/hooks";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Mail, UserRound, UserCircleIcon } from "lucide-react";
 
 function UserData() {
-  const user = React.use(getUserPromise())
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (!user) {
+    return <Card className="w-full max-w-md mx-auto"><CardContent>User not logged in</CardContent></Card>;
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -60,15 +51,11 @@ function UserData() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function UserProfile() {
-  return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <UserData />
-    </Suspense>
-  )
+  return <UserData />;
 }
 
 function LoadingSkeleton() {
@@ -90,5 +77,5 @@ function LoadingSkeleton() {
         ))}
       </CardContent>
     </Card>
-  )
+  );
 }

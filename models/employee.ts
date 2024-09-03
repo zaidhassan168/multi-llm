@@ -2,10 +2,11 @@
 type Employee = {
     id: string
     name: string
-    role: string
+    role: 'developer' | 'management' | 'projectManaager' |'undefined'
     availability?: number
     currentProject?: string
     email: string
+    projectId?: string | string[]
   }
 
   const API_URL = '/api/project-management/employees';
@@ -13,6 +14,12 @@ type Employee = {
 export async function fetchEmployees(): Promise<Employee[]> {
     const response = await fetch(API_URL);
     if (!response.ok) throw new Error('Failed to fetch employees');
+    return response.json();
+}
+
+export async function fetchEmployee(email: string ): Promise<Employee> {
+    const response = await fetch(`${API_URL}/${email}`);
+    if (!response.ok) throw new Error('Failed to fetch employee');
     return response.json();
 }
 
@@ -27,7 +34,7 @@ export async function createEmployee(employee: Omit<Employee, 'id'>): Promise<Em
 }
 
 export async function updateEmployee(employee: Employee): Promise<Employee> {
-    const response = await fetch(`${API_URL}/${employee.id}`, {
+    const response = await fetch(API_URL, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(employee),
@@ -37,8 +44,9 @@ export async function updateEmployee(employee: Employee): Promise<Employee> {
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(API_URL, {
         method: 'DELETE',
+        body: JSON.stringify({ id }),
     });
     if (!response.ok) throw new Error('Failed to delete employee');
 }
