@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/firebase'
-import { doc, collection, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 
 // Fetch all employees
 export async function GET() {
@@ -19,9 +19,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const employee = await req.json()
-    const employeeRef = doc(db, 'employees', employee.email)
-    await setDoc(employeeRef, employee)
-    return NextResponse.json({ id: employee.email, ...employee })
+    const employeeRef = await addDoc(collection(db, 'employees'), employee)
+    return NextResponse.json({ id: employeeRef.id, ...employee })
   } catch (error) {
     console.error('Error creating employee:', error)
     return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 })
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const employee = await req.json()
-    const employeeRef = doc(db, 'employees', employee.email)
+    const employeeRef = doc(db, 'employees', employee.id)
     await updateDoc(employeeRef, employee)
     return NextResponse.json(employee)
   } catch (error) {
@@ -44,8 +43,8 @@ export async function PATCH(req: Request) {
 // Delete an employee
 export async function DELETE(req: Request) {
   try {
-    const { email } = await req.json()
-    const employeeRef = doc(db, 'employees', email)
+    const { id } = await req.json()
+    const employeeRef = doc(db, 'employees', id)
     await deleteDoc(employeeRef)
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -11,8 +11,6 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { fetchProjects } from '@/models/project'
-import { fetchEmployees } from '@/models/employee'
 
 type TaskModalProps = {
   isOpen: boolean
@@ -34,8 +32,6 @@ const priorityColors = {
 
 export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: TaskModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-  const [developers, setDevelopers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
     title: '',
     description: '',
@@ -77,19 +73,6 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       setIsEditMode(true)
     }
   }, [task])
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      const projectsData = await fetchProjects()
-      setProjects(projectsData.map(p => ({ id: p.id, name: p.name })))
-
-      const developersData = await fetchEmployees()
-      const devs = developersData.filter(emp => emp.role === 'developer')
-      setDevelopers(devs.map(dev => ({ id: dev.id, name: dev.name, email: dev.email })))
-    }
-
-    fetchInitialData()
-  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -142,26 +125,17 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="projectId" className="text-blue-700 font-semibold">
+              <Label htmlFor="projectName" className="text-blue-700 font-semibold">
                 Project Name
               </Label>
-              <Select
-                name="projectId"
+              <Input
+                id="projectName"
+                name="projectName"
                 value={formData.projectId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
+                onChange={handleChange}
                 disabled={!isEditMode && !!task}
-              >
-                <SelectTrigger className="border-blue-200 focus:border-blue-400">
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                className="border-blue-200 focus:border-blue-400"
+              />
             </div>
           </div>
           <div className="space-y-2">
@@ -260,77 +234,33 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="assignee" className="text-blue-700 font-semibold">
-                Assignee
-              </Label>
-              <Select
-                name="assignee"
-                value={formData.assignee}
-                onValueChange={(value) => {
-                  console.log("Selected Assignee ID:", value); // Log the selected value (Assignee ID)
-
-                  const selectedDev = developers.find(dev => dev.name === value);
-
-                  if (selectedDev) {
-                    console.log("Selected Developer:", selectedDev); // Log the selected developer's details
-
-                    setFormData(prev => {
-                      const updatedFormData = {
-                        ...prev,
-                        assignee: selectedDev.name,
-                        assigneeEmail: selectedDev.email,
-                      };
-
-                      console.log("Updated Task Data:", updatedFormData); // Log the updated task data
-
-                      return updatedFormData;
-                    });
-                  }
-                }}
-                disabled={!isEditMode && !!task}
-              >
-                <SelectTrigger className="border-blue-200 focus:border-blue-400">
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {developers.map((dev) => (
-                    <SelectItem key={dev.id} value={dev.name}>
-                      {dev.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dueDate" className="text-blue-700 font-semibold">
-                Due Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal border-blue-200 focus:border-blue-400",
-                      !formData.dueDate && "text-muted-foreground"
-                    )}
-                    disabled={!isEditMode && !!task}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.dueDate ? format(formData.dueDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.dueDate}
-                    onSelect={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="dueDate" className="text-blue-700 font-semibold">
+              Due Date
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal border-blue-200 focus:border-blue-400",
+                    !formData.dueDate && "text-muted-foreground"
+                  )}
+                  disabled={!isEditMode && !!task}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.dueDate ? format(formData.dueDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.dueDate}
+                  onSelect={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           {isEditMode && (
             <div className="flex justify-between">

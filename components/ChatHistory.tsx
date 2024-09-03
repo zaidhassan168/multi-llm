@@ -84,7 +84,6 @@ export default function ImprovedMultiModelChat() {
   }, [user])
 
   useEffect(() => {
-    console.log("user", user)
     fetchConversations()
   }, [fetchConversations])
 

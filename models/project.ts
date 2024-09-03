@@ -10,10 +10,8 @@ type Stage = {
     name: string
     manager: string
     stages?: Stage[]
-    currentStage?: Stage
-    onTrack?: boolean
-    taskIds?: string[]; // Array to store associated task IDs
-    stageIds?: string[];
+    currentStage: Stage
+    onTrack: boolean
   }
 
   const API_URL = '/api/project-management/projects';
@@ -25,7 +23,6 @@ export async function fetchProjects(): Promise<Project[]> {
 }
 
 export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
-    // add the id in the prject 
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

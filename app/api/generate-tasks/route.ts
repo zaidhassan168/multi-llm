@@ -15,7 +15,7 @@ const openai = new OpenAIApi({ apiKey: process.env.OPENAI_API_KEY });
 // Utility function to save a task to Firebase
 async function saveTaskToFirebase(email: string, task: Task) {
   try {
-    const taskRef = doc(db, 'tasks', task.id)
+    const taskRef = doc(db, 'kanban', email, 'tasks', task.id)
     await setDoc(taskRef, task, { merge: true })
   } catch (error) {
     console.error('Error saving task to Firebase:', error)

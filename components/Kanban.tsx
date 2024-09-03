@@ -1,11 +1,9 @@
-'use client'
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
-import { addTask, fetchTasksEmail, deleteTask, updateTask } from '@/models/task'
+import { addTask, fetchTasks, deleteTask, updateTask } from '@/models/task'
 import {
   ActivityIcon,
   BackpackIcon,
@@ -17,18 +15,15 @@ import {
   SearchIcon,
   ClockIcon,
   UserIcon,
-  TagIcon,
-  RefreshCw
+  TagIcon
 } from 'lucide-react'
 import { Task } from '@/models/task'
-import { TaskModal } from '@/components/TaskModal'
+import { TaskModal } from './TaskModal'
 import { FileUploadModal } from '@/components/FileUploadModal'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Employee, fetchEmployee } from '@/models/employee'
 
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
@@ -36,8 +31,7 @@ const columns = [
   { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
   { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
-
-const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: number; onClick: () => void }) => {
+const TaskItem = ({ task, index, onClick }: { task: Task; index: number; onClick: () => void }) => {
   const getEffortColor = (effort: string) => {
     switch (effort) {
       case 'backend': return 'bg-purple-200 text-purple-800'
@@ -54,6 +48,7 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
       case 'high': return 'border-l-red-500'
       case 'urgent': return 'border-l-red-500'
       case 'critical': return 'border-l-red-500'
+      case 'null': return 'border-l-gray-400'
       default: return 'border-l-gray-400'
     }
   }
@@ -89,9 +84,10 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
       )}
     </Draggable>
   )
-})
+}
 
-const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }: {
+
+const Column = ({ id, title, icon: Icon, color, tasks, onTaskClick }: {
   id: string;
   title: string;
   icon: React.ElementType;
@@ -100,41 +96,36 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
   onTaskClick: (task: Task) => void;
 }) => {
   return (
-    <Card className={`w-80 ${color}`}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-gray-700 flex items-center">
-          <Icon className="mr-2 h-4 w-4" />
-          {title}
-          <Badge variant="secondary" className="ml-auto">
-            {tasks.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-2">
-        <Droppable droppableId={id}>
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto"
-            >
-              {tasks.map((task, index) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  onClick={() => onTaskClick(task)}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </CardContent>
-    </Card>
+    <div className={`w-80 ${color} rounded-lg p-4 shadow-md`}>
+      <h2 className="mb-4 text-sm font-semibold text-gray-700 flex items-center">
+        <Icon className="mr-2 h-4 w-4" />
+        {title}
+        <span className="ml-auto bg-white text-gray-600 rounded-full px-2 py-1 text-xs">
+          {tasks.length}
+        </span>
+      </h2>
+      <Droppable droppableId={id}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto"
+          >
+            {tasks.map((task, index) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                index={index}
+                onClick={() => onTaskClick(task)}
+              />
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </div>
   )
-})
-
+}
 export default function Kanban() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
@@ -143,31 +134,25 @@ export default function Kanban() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
-  const { user } = useAuth()
-  const [employee, setEmployee] = useState<Employee | null>(null)
+  const { user, loading } = useAuth(); // Use the updated useAuth hook
+  const [userEmail, setUserEmail] = useState('')
   const { toast } = useToast()
 
-  const fetchTasksData = useCallback(async () => {
-    if (user?.email) {
-      try {
-        const emp = await fetchEmployee(user.email)
-        setEmployee(emp)
-        const tasksData = await fetchTasksEmail(user.email, emp.role)
-        setTasks(tasksData)
-      } catch (error) {
-        console.error('Failed to load tasks')
-        toast({
-          title: "Error",
-          description: "Failed to load tasks. Please try again.",
-          variant: "destructive",
-        })
-      }
-    }
-  }, [user, toast])
-
   useEffect(() => {
-    fetchTasksData()
-  }, [fetchTasksData])
+    const loadTasks = async () => {
+      if (user?.email) {
+        try {
+          const tasksData = await fetchTasks(user.email);
+          setTasks(tasksData);
+        } catch (error) {
+          console.error('Failed to load tasks');
+        }
+      }
+    };
+
+    loadTasks();
+  }, [user]);
+
 
   useEffect(() => {
     if (selectedTask) {
@@ -175,88 +160,58 @@ export default function Kanban() {
     }
   }, [selectedTask])
 
-  const filteredTasksMemo = useMemo(() => {
-    return tasks.filter(task =>
-      task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+  useEffect(() => {
+    const filtered = tasks.filter(task =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterEffort === 'all' || task.efforts === filterEffort)
     )
+    setFilteredTasks(filtered)
   }, [tasks, searchTerm, filterEffort])
-
-  useEffect(() => {
-    setFilteredTasks(filteredTasksMemo)
-  }, [filteredTasksMemo])
-
   const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
     if (user?.email) {
       try {
-        const createdTask = await addTask(newTask, user.email)
-        setTasks((prevTasks) => [...prevTasks, createdTask])
-        setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask]);
-
-        toast({
-          title: "Success",
-          description: "Task added successfully.",
-        })
+        const createdTask = await addTask(newTask, user.email);
+        setTasks((prevTasks) => [...prevTasks, createdTask]);
       } catch (error) {
-        console.error('Failed to add task')
-        toast({
-          title: "Error",
-          description: "Failed to add task. Please try again.",
-          variant: "destructive",
-        })
+        console.error('Failed to add task');
       }
     }
-  }
+  };
 
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {
-        await updateTask(taskToUpdate, user.email)
+        await updateTask(taskToUpdate, user.email);
         setTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === taskToUpdate.id ? taskToUpdate : task))
-        )
-        toast({
-          title: "Success",
-          description: "Task updated successfully.",
-        })
+        );
       } catch (error) {
-        console.error('Failed to update task')
+        console.error('Failed to update task');
         toast({
           title: "Error",
           description: "Failed to update task. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     } else {
-      console.error('User email is not available')
+      console.error('User email is not available');
       toast({
         title: "Error",
         description: "User information is not available. Please try logging in again.",
         variant: "destructive",
-      })
+      });
     }
-  }, [user, toast])
-
+  }, [user, toast]);
   const handleDeleteTask = async (taskId: string) => {
     if (user?.email) {
       try {
-        await deleteTask(taskId, user.email)
-        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
-        toast({
-          title: "Success",
-          description: "Task deleted successfully.",
-        })
+        await deleteTask(taskId, user.email);
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
       } catch (error) {
-        console.error('Failed to delete task')
-        toast({
-          title: "Error",
-          description: "Failed to delete task. Please try again.",
-          variant: "destructive",
-        })
+        console.error('Failed to delete task');
       }
     }
-  }
-
+  };
   const onDragEnd = useCallback(
     (result: DropResult) => {
       const { destination, source, draggableId } = result
@@ -281,6 +236,7 @@ export default function Kanban() {
         updatedTasks.splice(taskIndex, 1)
         updatedTasks.splice(destination.index, 0, movedTask)
 
+        // Only call handleUpdateTask if the status has changed
         if (source.droppableId !== destination.droppableId) {
           handleUpdateTask(movedTask)
         }
@@ -290,7 +246,9 @@ export default function Kanban() {
     },
     [handleUpdateTask]
   )
-
+  if (loading) {
+    return <div>Loading...</div>; // Optionally show loading indicator while waiting for user data
+  }
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="h-16 flex items-center justify-between px-6 bg-white shadow-sm">
@@ -301,8 +259,7 @@ export default function Kanban() {
         <div className="flex space-x-4">
           <Button
             onClick={() => setIsUploadModalOpen(true)}
-            variant="outline"
-            className="bg-purple-50 text-purple-700 hover:bg-purple-100"
+            className="bg-purple-500 hover:bg-purple-600 text-white"
           >
             <UploadIcon className="mr-2 h-4 w-4" />
             Upload Tasks
@@ -342,16 +299,12 @@ export default function Kanban() {
               <SelectItem value="backend + frontend">Backend + Frontend</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={fetchTasksData} className="flex items-center">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
         </div>
         <div className="flex items-center space-x-4">
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="outline" className="text-sm">
             Total Tasks: {tasks.length}
           </Badge>
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="outline" className="text-sm">
             Filtered Tasks: {filteredTasks.length}
           </Badge>
         </div>
@@ -389,7 +342,8 @@ export default function Kanban() {
         }}
         onSave={(task) => {
           if (task.id) {
-            handleUpdateTask(task)
+            handleUpdateTask
+              (task)
           } else {
             handleAddTask(task)
           }
