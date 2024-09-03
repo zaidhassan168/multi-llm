@@ -112,17 +112,17 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
       throw new Error('Failed to update task');
     }
 
-    // toast({
-    //   title: 'Success',
-    //   description: 'Task updated successfully',
-    // });
+    toast({
+      title: 'Success',
+      description: 'Task updated successfully',
+    });
   } catch (error) {
     console.error('Error updating task:', error);
-    // toast({
-    //   title: 'Error',
-    //   description: 'Failed to update task',
-    //   variant: 'destructive',
-    // });
+    toast({
+      title: 'Error',
+      description: 'Failed to update task',
+      variant: 'destructive',
+    });
     throw error;
   }
 };

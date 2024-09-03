@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { Task } from '@/models/task'
-import { TaskModal } from './TaskModal'
+import { TaskModal } from '@/components/TaskModal'
 import { FileUploadModal } from '@/components/FileUploadModal'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
