@@ -4,53 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142 86% 28%;
-    --primary-foreground: 356 29% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 45%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142 86% 28%;
-    --radius: 0.5rem;
+    --background: 0 0% 97%; /* Muted white */
+    --foreground: 240 9% 25%; /* Softer dark text */
+    --card: 0 0% 98%; /* Very light card background */
+    --card-foreground: 240 10% 25%; /* Dark card text */
+    --popover: 0 0% 98%; /* Same as card background */
+    --popover-foreground: 240 10% 25%; /* Popover text */
+    --primary: 142 65% 40%; /* Muted green (original color toned down) */
+    --primary-foreground: 142 15% 97%; /* Soft off-white for text on primary */
+    --secondary: 240 15% 92%; /* Muted light blue */
+    --secondary-foreground: 240 8% 20%; /* Softer dark text for secondary */
+    --muted: 240 10% 95%; /* Muted background */
+    --muted-foreground: 240 10% 40%; /* Muted darker text */
+    --accent: 356 70% 90%; /* Soft, light muted red */
+    --accent-foreground: 356 25% 20%; /* Darker text for accents */
+    --destructive: 0 60% 50%; /* Muted red for destructive */
+    --destructive-foreground: 0 0% 98%; /* White for destructive text */
+    --border: 240 8% 88%; /* Softer border color */
+    --input: 240 5% 90%; /* Muted input background */
+    --ring: 142 55% 40%; /* Muted ring */
+    --radius: 0.375rem; /* Soft rounded corners */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 240 5% 12%; /* Muted dark background */
+    --foreground: 240 6% 85%; /* Light muted text */
+    --card: 240 6% 15%; /* Muted dark card background */
+    --card-foreground: 240 5% 85%; /* Light card text */
+    --popover: 240 5% 15%; /* Same dark muted background */
+    --popover-foreground: 240 6% 85%; /* Popover text */
+    --primary: 142 50% 45%; /* Muted green for dark mode */
+    --primary-foreground: 142 20% 95%; /* Soft white for text */
+    --secondary: 240 7% 25%; /* Muted blue for dark mode */
+    --secondary-foreground: 240 6% 80%; /* Softer text */
+    --muted: 240 5% 30%; /* Muted background for muted components */
+    --muted-foreground: 240 10% 65%; /* Slightly lighter muted text */
+    --accent: 356 45% 40%; /* Muted red */
+    --accent-foreground: 356 35% 85%; /* Soft text for accents */
+    --destructive: 0 55% 40%; /* Muted red for destructive actions */
+    --destructive-foreground: 0 0% 95%; /* White for destructive actions */
+    --border: 240 8% 18%; /* Muted dark borders */
+    --input: 240 8% 20%; /* Dark input background */
+    --ring: 142 45% 40%; /* Muted green ring for interactive elements */
   }
 }
 
@@ -61,26 +56,68 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  a {
+    @apply text-primary; /* Primary color for links */
+    transition: color 0.2s ease;
+  }
+  a:hover {
+    @apply text-primary-foreground; /* Slightly lighter text on hover */
+  }
+
+  button {
+    @apply transition-all duration-150 ease-in-out;
+  }
+  button:hover {
+    @apply shadow-sm; /* Soft shadow on hover for subtle interaction */
+  }
+
+  input, textarea {
+    @apply bg-input border border-input text-foreground rounded-lg;
+    @apply focus:ring-2 focus:ring-primary; /* Subtle ring for focused inputs */
+  }
+
+  .dark input, .dark textarea {
+    @apply bg-input border border-border text-foreground;
+    @apply focus:ring-2 focus:ring-primary;
+  }
 }
 
 @layer utilities {
+  /* Scrollbar customization with muted tones */
   .scrollbar::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   .scrollbar::-webkit-scrollbar-track {
+    background: var(--muted);
     border-radius: 100vh;
-    background: #ffffff;
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
-    background: #a9b9cb;
+    background: var(--border);
     border-radius: 100vh;
-    border: 3px solid #f6f7ed;
+    border: 2px solid var(--input);
   }
 
   .scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #c0a0b9;
+    background: var(--accent);
+  }
+
+  /* Subtle button states */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .btn-primary:hover {
+    @apply bg-primary-foreground text-primary; /* Reverse colors on hover */
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground;
+  }
+  .btn-secondary:hover {
+    @apply bg-muted text-muted-foreground;
   }
 }

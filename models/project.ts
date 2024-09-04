@@ -1,11 +1,6 @@
 //models\project.ts
 
-type Stage = {  
-    id: string  
-    name: string  
-    completionTime: number  
-    owner: string  
-  }  
+import { Stage } from './stage';
   
   type Project = {  
     id: string  

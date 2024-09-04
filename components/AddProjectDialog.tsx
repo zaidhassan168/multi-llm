@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -9,12 +7,16 @@ import { useToast } from "@/components/ui/use-toast"
 import { createProject } from '@/models/project'
 import { Employee, fetchEmployees } from '@/models/employee'
 import { PlusCircle } from "lucide-react"
+import { ProcessSelector } from './ProcessSelector'
+import { Stage } from '@/models/project'
+import { motion } from 'framer-motion'
 
 export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: () => void }) {
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectManager, setNewProjectManager] = useState('')
   const [projectManagers, setProjectManagers] = useState<Employee[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedProcesses, setSelectedProcesses] = useState<Stage[]>([])
 
   const { toast } = useToast()
 
@@ -25,7 +27,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
         const employees = await fetchEmployees()
         const managers = employees.filter(emp => emp.role === 'projectManager')
         setProjectManagers(managers)
-        setIsLoading(true)
+        setIsLoading(false)
       } catch (error: unknown) {
         console.error('Error fetching project managers:', error instanceof Error ? error.message : String(error))
         toast({
@@ -33,8 +35,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
           description: `Failed to fetch project managers: ${error instanceof Error ? error.message : 'Unknown error'}`,
           variant: 'destructive',
         })
-        setIsLoading(true)
-
+        setIsLoading(false)
       }
     }
 
@@ -55,17 +56,19 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
       const newProject = {
         name: newProjectName,
         manager: newProjectManager,
-        // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
+        stages: selectedProcesses,
+        currentStage: selectedProcesses[0],
         onTrack: true,
       }
       await createProject(newProject)
-      onProjectAdded() // Trigger refresh of projects in the parent component
+      onProjectAdded()
       toast({
         title: "Success",
         description: "New project added successfully",
       })
       setNewProjectName('')
       setNewProjectManager('')
+      setSelectedProcesses([])
     } catch (error) {
       console.error('Error adding new project:', error)
       toast({
@@ -84,27 +87,27 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
           Add Project
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Project</DialogTitle>
           <DialogDescription>Enter the details for the new project.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
+        <motion.div
+          className="space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
             <Input
               id="name"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
-              className="col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="manager" className="text-right">
-              Manager
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="manager">Manager</Label>
             {isLoading ? (
               <p>Loading project managers...</p>
             ) : (
@@ -112,7 +115,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
                 id="manager"
                 value={newProjectManager}
                 onChange={(e) => setNewProjectManager(e.target.value)}
-                className="col-span-3 border p-2 rounded"
+                className="w-full border p-2 rounded"
                 aria-label="Select Project Manager"
               >
                 <option value="" disabled>Select Manager</option>
@@ -122,12 +125,15 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
               </select>
             )}
           </div>
-          {/* Add more fields here if needed */}
-        </div>
-        <Button onClick={handleAddProject} disabled={!newProjectName || !newProjectManager}
-        >         Add Project
-        </Button>
-
+          <ProcessSelector onProcessesSelected={setSelectedProcesses} />
+          <Button 
+            onClick={handleAddProject} 
+            disabled={!newProjectName || !newProjectManager || selectedProcesses.length === 0}
+            className="w-full"
+          >
+            Add Project
+          </Button>
+        </motion.div>
       </DialogContent>
     </Dialog>
   )

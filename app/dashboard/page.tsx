@@ -160,45 +160,7 @@ export default function ProjectManagementDashboard() {
               <p className="text-xs text-muted-foreground">
                 {projects.filter(p => p.onTrack).length} on track
               </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add Project
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Project</DialogTitle>
-                    <DialogDescription>Enter the details for the new project.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Name
-                      </Label>
-                      <Input
-                        id="name"
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="manager" className="text-right">
-                        Manager
-                      </Label>
-                      <Input
-                        id="manager"
-                        value={newProjectManager}
-                        onChange={(e) => setNewProjectManager(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleAddProject}>Add Project</Button>
-                </DialogContent>
-              </Dialog>
+              <AddProjectDialog onProjectAdded={fetchAllData} />
             </div>
           </CardContent>
         </Card>
