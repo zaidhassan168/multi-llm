@@ -1,34 +1,49 @@
-// Sidebar.tsx
-"use client";
-
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BriefcaseIcon, HomeIcon, LogOutIcon, MailIcon, UserIcon, ArrowLeftIcon, ArrowRightIcon, CodeIcon, BotIcon, HistoryIcon, BookDashedIcon } from "lucide-react";
+import {
+  BriefcaseIcon,
+  HomeIcon,
+  LogOutIcon,
+  MailIcon,
+  UserIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  MessageSquareIcon,
+  CodeIcon,
+  BotIcon,
+  HistoryIcon,
+  KanbanIcon,
+  BookDashedIcon,
+} from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
 import { useRouter } from "next/navigation";
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
-  email?: string;
+  email: string | null;
   isCollapsed: boolean;
-  onCollapseToggle: () => void;
+  toggleSidebar: () => void;
 }
 
-export default function Sidebar({ email, isCollapsed, onCollapseToggle }: SidebarProps) {
+export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarProps) {
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { setIsAuthenticated, setEmail } = useAuth();
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
       await signOut(getAuth(app));
       await fetch("/api/logout");
-      router.push('/login');  
+      setIsAuthenticated(false);
+      setEmail(null);
+      router.push('/login');
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -50,7 +65,7 @@ export default function Sidebar({ email, isCollapsed, onCollapseToggle }: Sideba
   ];
 
   return (
-    <TooltipProvider>
+       <TooltipProvider>
       <div
         className={`bg-gradient-to-b from-gray-50 to-white border-r flex flex-col h-screen transition-all duration-300 ease-in-out ${
           isCollapsed ? "w-20" : "w-64"
@@ -62,7 +77,7 @@ export default function Sidebar({ email, isCollapsed, onCollapseToggle }: Sideba
             variant="ghost"
             size="icon"
             className={`ml-auto transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
-            onClick={onCollapseToggle}
+            onClick={toggleSidebar}
           >
             <ArrowLeftIcon className="w-5 h-5" />
           </Button>
