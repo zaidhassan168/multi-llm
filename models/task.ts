@@ -1,5 +1,6 @@
 // /types/task.ts
 import { toast } from '@/components/ui/use-toast';
+import { Stage } from './stage';
 type Comment = {
     id: string;
     content: string;
@@ -29,6 +30,7 @@ type Task = {
     projectManagerId?: string;
     projectManagerEmail?: string;
     stageId?: string;
+    stage?: Stage;
     name?: string;
     };
     const API_URL = '/api/project-management/tasks';

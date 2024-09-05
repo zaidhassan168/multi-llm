@@ -7,6 +7,7 @@ type Stage = {
     owner: string  
     processGroup?: string  // Process Group (e.g., "Planning", "Executing")
     knowledgeArea?: string 
+    taskIds?: string[] // Consider changing to Task[] if you have a Task type
   }  
 
   export async function fetchStages(): Promise<Stage[]> {

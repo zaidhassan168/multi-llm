@@ -9,7 +9,7 @@ import { Stage } from './stage';
     stages?: Stage[]  
     currentStage?: Stage  
     onTrack?: boolean  
-    tasks?: string[] // Consider changing to Task[] if you have a Task type  
+    taskIds?: string[] // Consider changing to Task[] if you have a Task type  
   } 
 
   const API_URL = '/api/project-management/projects';

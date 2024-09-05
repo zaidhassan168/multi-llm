@@ -22,6 +22,7 @@ export default function ProjectDetails() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [expandedStatuses, setExpandedStatuses] = useState<string[]>([])
+  const [currentStageProgress, setCurrentStageProgress] = useState<number>(0)
   const params = useParams()
   const projectId = params.projectId as string
   const { toast } = useToast()
@@ -74,11 +75,29 @@ export default function ProjectDetails() {
       prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
     )
   }
-
+  const calculateStageProgress = (): number => {
+    // Ensure project and currentStage exist, and currentStage has taskIds
+    if (!project?.currentStage?.taskIds) return 0
+  
+    // Find tasks associated with the current stage
+    const stageTasks = project.currentStage.taskIds
+      .map(taskId => tasks.find(t => t.id === taskId))  // Map task IDs to actual tasks
+      .filter((task): task is Task => Boolean(task))    // Filter out undefined tasks
+  
+    if (stageTasks.length === 0) return 0  // Fallback if no valid tasks are found
+  
+    // Calculate the number of completed tasks
+    const completedTasks = stageTasks.filter(task => task.status === 'done').length
+    
+    // Return the percentage of completed tasks
+    
+    return Math.round((completedTasks / stageTasks.length) * 100)
+  }
   const calculateProjectProgress = (): number => {
     const completedTasks = tasks.filter(task => task.status === 'done').length
     return tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0
   }
+  
 
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
@@ -226,8 +245,23 @@ export default function ProjectDetails() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+        {project.currentStage && (
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <CardTitle className="text-lg">Current Stage</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Progress value={calculateStageProgress()} className="w-[80%]" />
+                <span className="ml-2 font-bold">{calculateStageProgress()}%</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Current Stage: {project.currentStage.name} (Owner: {project.currentStage.owner})
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {/* <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="text-lg">Current Stage</CardTitle>
           </CardHeader>
@@ -237,7 +271,7 @@ export default function ProjectDetails() {
               Owner: {project.currentStage?.owner || 'N/A'}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
           <CardHeader>

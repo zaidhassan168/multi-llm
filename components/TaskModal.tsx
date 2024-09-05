@@ -34,8 +34,9 @@ const priorityColors = {
 
 export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: TaskModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; stages: { id: string; name: string }[] }[]>([]);
   const [developers, setDevelopers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [stages, setStages] = useState<{ id: string; name: string }[]>([]); // Store the stages of the selected project
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
@@ -53,6 +54,8 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
     comments: [],
     assigneeEmail: '',
     reporterEmail: '',
+    stageId: '',  // Add stageId here
+    stage: undefined, // Add stage name
   })
 
   useEffect(() => {
@@ -75,6 +78,8 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
         comments: [],
         assigneeEmail: '',
         reporterEmail: '',
+        stageId: '',  // Add stageId here
+        stage: undefined, // Add stage name
       })
       setIsEditMode(true)
     }
@@ -85,7 +90,11 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       setIsLoading(true);
       try {
         const projectsData = await fetchProjects()
-        setProjects(projectsData.map(p => ({ id: p.id, name: p.name })))
+        setProjects(projectsData.map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          stages: p.stages?.map(stage => ({ id: stage.id, name: stage.name })) || [] 
+        })))
 
         const developersData = await fetchEmployees()
         const devs = developersData.filter(emp => emp.role === 'developer')
@@ -100,6 +109,16 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
 
     fetchInitialData()
   }, [])
+
+  const handleProjectChange = (projectId: string) => {
+    setFormData(prev => ({ ...prev, projectId }));
+    const selectedProject = projects.find(p => p.id === projectId);
+
+    // Set stages for the selected project directly from project data
+    if (selectedProject) {
+      setStages(selectedProject.stages); // Use stages stored in project
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -116,7 +135,6 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
     setIsEditMode(true)
     onEdit()
   }
-
   const taskPriorities = ['low', 'medium', 'high', 'urgent', 'critical', 'null']
 
   return (
@@ -158,7 +176,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               <Select
                 name="projectId"
                 value={formData.projectId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
+                onValueChange={(value) => handleProjectChange(value)}  // Set stages when project is selected
                 disabled={!isEditMode && !!task}
               >
                 <SelectTrigger className="border-blue-200 focus:border-blue-400">
@@ -174,6 +192,30 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               </Select>
             </div>
           </div>
+          {stages?.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="stageId" className="text-blue-700 font-semibold">
+                Stage
+              </Label>
+              <Select
+                name="stageId"
+                value={formData.stageId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, stageId: value }))}
+                disabled={!isEditMode && !!task}
+              >
+                <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                  <SelectValue placeholder="Select stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stages.map((stage) => (
+                    <SelectItem key={stage.id} value={stage.id}>
+                      {stage.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-blue-700 font-semibold">
               Description
