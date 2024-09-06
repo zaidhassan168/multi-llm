@@ -14,9 +14,9 @@ export async function GET(request: Request, { params }: { params: { email: strin
 
     let q;
     if (role === 'projectManager') {
-      q = query(collection(db, 'tasks'), where('reporterEmail', '==', email));
+      q = query(collection(db, 'tasks'), where('reporter.email', '==', email));
     } else if (role === 'developer') {
-      q = query(collection(db, 'tasks'), where('assigneeEmail', '==', email));
+      q = query(collection(db, 'tasks'), where('assignee.email', '==', email));
     } else if (role === 'management') {
       q = query(collection(db, 'tasks'));
     } else {
@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: { params: { email: strin
     
     const querySnapshot = await getDocs(q);
     const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // console.log("tasks", tasks);
+    console.log("tasks", tasks);
     return NextResponse.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
