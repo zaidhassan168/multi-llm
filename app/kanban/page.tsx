@@ -29,7 +29,8 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
-
+import { TaskSummary } from '@/models/summaries'
+import { Project, updateProject, addTaskToProjectAndStage} from '@/models/project'
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -81,7 +82,7 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
-              {task.assignee}
+              {task.assignee?.name}
             </Badge>
           </div>
           <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1" />
@@ -140,6 +141,8 @@ export default function Kanban() {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
@@ -187,26 +190,45 @@ export default function Kanban() {
   }, [filteredTasksMemo])
 
   const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
-    if (user?.email) {
+    if (user?.email && newTask.projectId) {
       try {
-        const createdTask = await addTask(newTask, user.email)
-        setTasks((prevTasks) => [...prevTasks, createdTask])
+        // Add the task to Firestore
+        const createdTask = await addTask(newTask, user.email);
+  
+        // Update the state with the new task
+        setTasks((prevTasks) => [...prevTasks, createdTask]);
         setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask]);
-
-        toast({
-          title: "Success",
-          description: "Task added successfully.",
-        })
+        console.log('Task added successfully:', createdTask);
+        // Create a TaskSummary for the new task
+        const taskSummary: TaskSummary = {
+          id: createdTask.id,
+          title: newTask.title,
+          status: newTask.status,
+          assignee: newTask.assignee.name,
+          time: newTask.time.toString(),
+        };
+        if (newTask.projectId && newTask.stageId) {
+          addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId);
+        }
+        // Find the project in the existing projects list
+        
       } catch (error) {
-        console.error('Failed to add task')
+        console.error('Failed to add task', error);
         toast({
           title: "Error",
           description: "Failed to add task. Please try again.",
           variant: "destructive",
-        })
+        });
       }
+    } else {
+      console.error('User email or project ID is missing');
+      toast({
+        title: "Error",
+        description: "Please select a project before adding tasks.",
+        variant: "destructive",
+      });
     }
-  }
+  };  
 
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {

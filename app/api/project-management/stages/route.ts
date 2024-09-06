@@ -19,7 +19,7 @@ export async function GET() {
 // Create a new stage
 export async function POST(req: Request) {
   try {
-    const stage = await req.json() as Omit<Stage, 'id'>
+    const stage: Omit<Stage, 'id'> = await req.json();
     const stageRef = doc(collection(db, 'stages')) // Auto-generate ID using Firestore
     await setDoc(stageRef, stage)
     return NextResponse.json({ id: stageRef.id, ...stage })

@@ -1,16 +1,20 @@
 //models\project.ts
 
 import { Stage } from './stage';
-  
-  type Project = {  
-    id: string  
-    name: string  
-    manager: string  
-    stages?: Stage[]  
-    currentStage?: Stage  
-    onTrack?: boolean  
-    taskIds?: string[] // Consider changing to Task[] if you have a Task type  
-  } 
+import { Task } from './task';
+import { Employee } from './employee';
+import { EmployeeSummary, StageSummary, TaskSummary } from './summaries';
+type Project = {  
+  id: string;  
+  name: string;  
+  currentStage?: StageSummary;  // Link to the current stage summary
+  onTrack?: boolean;  // Whether the project is on track
+  stages?: Stage[];  // Summaries of all stages
+  tasks?: TaskSummary[];    // Summaries of key tasks
+  manager: EmployeeSummary;
+  resources?: EmployeeSummary[]// Summaries of employees working on the project
+};
+
 
   const API_URL = '/api/project-management/projects';
 
@@ -50,3 +54,15 @@ export async function deleteProject(id: string): Promise<void> {
     if (!response.ok) throw new Error('Failed to delete project');
 }
   export type { Project, Stage }
+
+
+  export const addTaskToProjectAndStage = async (task: TaskSummary, projectId: string, stageId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/${projectId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, stageId }),  // Only send the task object
+    });
+
+    if (!response.ok) throw new Error('Failed to add task');
+    return response.json();
+};

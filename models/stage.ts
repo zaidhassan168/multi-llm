@@ -1,14 +1,18 @@
 
 
+import { TaskSummary } from "./summaries";
 type Stage = {  
-    id: string  
-    name: string  
-    completionTime: number  
-    owner: string  
-    processGroup?: string  // Process Group (e.g., "Planning", "Executing")
-    knowledgeArea?: string 
-    taskIds?: string[] // Consider changing to Task[] if you have a Task type
-  }  
+  id: string;  
+  name: string;  
+  completionTime: number;  
+  owner: string;  
+  processGroup?: string;  // Process Group (e.g., "Planning", "Executing")
+  knowledgeArea?: string;  
+  taskIds?: string[];  // Array of task IDs within this stage
+  employeeIds?: string[];  // Array of employee IDs working on this stage
+  progress?: number;
+  tasks?:  TaskSummary[];  // Array of task summaries within this stage
+};
 
   export async function fetchStages(): Promise<Stage[]> {
     const response = await fetch('/api/project-management/stages');

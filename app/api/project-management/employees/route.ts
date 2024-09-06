@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/firebase'
 import { doc, collection, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
-
+import { Employee } from '@/models/employee';
 // Fetch all employees
 export async function GET() {
   try {
@@ -18,7 +18,7 @@ export async function GET() {
 // Create a new employee
 export async function POST(req: Request) {
   try {
-    const employee = await req.json()
+    const employee: Omit<Employee, 'id'> = await req.json();
     const employeeRef = doc(db, 'employees', employee.email)
     await setDoc(employeeRef, employee)
     return NextResponse.json({ id: employee.email, ...employee })
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 // Update an existing employee
 export async function PATCH(req: Request) {
   try {
-    const employee = await req.json()
+    const employee: Employee = await req.json();
     const employeeRef = doc(db, 'employees', employee.email)
     await updateDoc(employeeRef, employee)
     return NextResponse.json(employee)

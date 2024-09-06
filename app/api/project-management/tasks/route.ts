@@ -5,10 +5,9 @@ import { NextResponse } from 'next/server';
 import { Task } from '@/models/task';
 import { report } from 'process';
 import { randomUUID } from 'crypto';
-
 export async function POST(request: Request) {
   try {
-    const { task, email }: { task: Omit<Task, 'id'>, email: string } = await request.json();
+     const { task, email }: { task: Omit<Task, 'id'>, email: string } = await request.json();
     
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -21,7 +20,6 @@ export async function POST(request: Request) {
       ...task,
       id: taskRef.id, // Use the auto-generated ID
       createdAt: new Date(),
-      reporterEmail: email,
     };
 
     // Save the document in Firestore

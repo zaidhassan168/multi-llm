@@ -1,13 +1,15 @@
 //models\employee.ts
 type Employee = {
-    id: string
-    name: string
-    role: 'developer' | 'management' | 'projectManager' | 'undefined'  
-    availability?: number
-    currentProject?: string
-    email: string
-    projectId?: string | string[]
-  }
+    id: string;
+    name: string;
+    role: 'developer' | 'management' | 'projectManager' | 'undefined';  
+    availability?: number;  // Percentage of availability
+    currentProject?: string;  // Current project ID
+    email: string;
+    projectIds?: string[];  // List of projects the employee is involved in
+    taskIds?: string[];  // List of tasks assigned to this employee
+  };
+  
 
   const API_URL = '/api/project-management/employees';
 

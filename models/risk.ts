@@ -1,12 +1,12 @@
 //models\risk.ts
 type Risk = {
-    id: string
-    description: string
-    severity: 'Low' | 'Medium' | 'High'
-    projectId: string
-    probability: 'Low' | 'Medium' | 'High'
-
-  }
+    id: string;
+    description: string;
+    severity: 'Low' | 'Medium' | 'High';
+    projectId: string;
+    probability: 'Low' | 'Medium' | 'High';
+  };
+  
 const API_URL = '/api/project-management/risks';
 
 export async function fetchRisks(): Promise<Risk[]> {  

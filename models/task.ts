@@ -1,6 +1,8 @@
 // /types/task.ts
 import { toast } from '@/components/ui/use-toast';
+import { Employee } from './employee';
 import { Stage } from './stage';
+import { EmployeeSummary } from './summaries';
 type Comment = {
     id: string;
     content: string;
@@ -9,30 +11,23 @@ type Comment = {
     taskId: string;
     };
 
-type Task = {
-    id: string;
-    title: string;
-    description: string;
-    time: number; // in hours
-    efforts: 'backend' | 'frontend' | 'backend + frontend';
-    assignee: string;
-    assigneeId?: string;
-    status: 'backlog' | 'todo' | 'inProgress' | 'done';
-    createdAt?: Date;
-    projectId?: string;
-    projectName?: string;
-    reporter?: string;
-    priority?: 'low' | 'medium' | 'high' | 'urgent' | 'critical' | 'null';
-    dueDate?: Date;
-    comments?: Comment[];
-    assigneeEmail?: string;
-    reporterEmail?: string;
-    projectManagerId?: string;
-    projectManagerEmail?: string;
-    stageId?: string;
-    stage?: Stage;
-    name?: string;
+    type Task = {
+      id: string;
+      title: string;
+      description: string;
+      time: number; // in hours
+      efforts: 'backend' | 'frontend' | 'backend + frontend';
+      assignee: EmployeeSummary
+      status: 'backlog' | 'todo' | 'inProgress' | 'done';
+      createdAt?: Date;
+      projectId?: string;
+      stageId?: string;  // Associated stage
+      priority?: 'low' | 'medium' | 'high' | 'urgent' | 'critical' | 'null';
+      dueDate?: Date;
+      comments?: Comment[];
+      reporter?: EmployeeSummary
     };
+    
     const API_URL = '/api/project-management/tasks';
 
 export const fetchTasksEmail = async (email: string, role: string): Promise<Task[]> => {

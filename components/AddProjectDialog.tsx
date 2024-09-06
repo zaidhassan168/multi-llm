@@ -10,10 +10,10 @@ import { PlusCircle } from "lucide-react"
 import { ProcessSelector } from './ProcessSelector'
 import { Stage } from '@/models/project'
 import { motion } from 'framer-motion'
-
+import { EmployeeSummary } from '@/models/summaries'
 export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: () => void }) {
   const [newProjectName, setNewProjectName] = useState('')
-  const [newProjectManager, setNewProjectManager] = useState('')
+  const [newProjectManager, setNewProjectManager] = useState<EmployeeSummary | null>(null)
   const [projectManagers, setProjectManagers] = useState<Employee[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProcesses, setSelectedProcesses] = useState<Stage[]>([])
@@ -41,7 +41,22 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
 
     fetchProjectManagers()
   }, [toast])
-
+  const handleManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedManager = projectManagers.find(manager => manager.id === e.target.value);
+    if (selectedManager) {
+      const manager: EmployeeSummary = {
+        id: selectedManager.id,
+        name: selectedManager.name,
+        email: selectedManager.email,
+        role: selectedManager.role,
+        // Add any other fields that EmployeeSummary requires
+      };
+      setNewProjectManager(manager);
+      console.log(manager);
+    } else {
+      setNewProjectManager(null);
+    }
+  };
   const handleAddProject = async () => {
     if (!newProjectName || !newProjectManager) {
       toast({
@@ -67,7 +82,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
         description: "New project added successfully",
       })
       setNewProjectName('')
-      setNewProjectManager('')
+      setNewProjectManager(null)
       setSelectedProcesses([])
     } catch (error) {
       console.error('Error adding new project:', error)
@@ -107,24 +122,28 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="manager">Manager</Label>
-            {isLoading ? (
-              <p>Loading project managers...</p>
-            ) : (
-              <select
-                id="manager"
-                value={newProjectManager}
-                onChange={(e) => setNewProjectManager(e.target.value)}
-                className="w-full border p-2 rounded"
-                aria-label="Select Project Manager"
-              >
-                <option value="" disabled>Select Manager</option>
-                {projectManagers.map(manager => (
-                  <option key={manager.id} value={manager.email}>{manager.name} ({manager.email})</option>
-                ))}
-              </select>
-            )}
-          </div>
+      <Label htmlFor="manager">Manager</Label>
+      {isLoading ? (
+        <p>Loading project managers...</p>
+      ) : (
+        <select
+          id="manager"
+          value={newProjectManager ? newProjectManager.email : ''}
+          onChange={(e) => {
+            handleManagerChange(e);
+          }}
+          className="w-full border p-2 rounded"
+          aria-label="Select Project Manager"
+        >
+          <option value="" disabled>Select Manager</option>
+          {projectManagers.map(manager => (
+            <option key={manager.id} value={manager.id}>
+              {manager.name} ({manager.email})
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
           <ProcessSelector onProcessesSelected={setSelectedProcesses} />
           <Button 
             onClick={handleAddProject} 
