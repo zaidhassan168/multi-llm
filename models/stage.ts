@@ -46,12 +46,23 @@ type Stage = {
   }
 
   export async function deleteStage(id: string): Promise<void> {
-    const response = await fetch(`/api/project-management/stages/${id}`, {
+    const response = await fetch(`/api/project-management/projectStages/stages/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) {
       throw new Error(`Failed to delete stage: ${response.status} ${response.statusText}`);
     }
+  }
+
+
+  //funtion to fetch the stage of the project
+  export async function fetchProjectStages(projectId: string): Promise<Stage> {
+   const response = await fetch(`/api/project-management/stages/projectStages?projectId=${projectId}`);
+   console.log("response", response)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stage: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
   }
 
   export type { Stage };

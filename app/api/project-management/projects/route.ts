@@ -3,13 +3,19 @@ import { db } from '@/firebase'
 import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { Project } from '@/models/project'
 import { Stage } from '@/models/stage';
+import { StageSummary } from '@/models/summaries';
+import { Console } from 'console';
 
 // Fetch all projects
 export async function GET() {
   try {
     const projectsCollection = collection(db, 'projects')
+    const stagesCollection = collection(db, 'projects', 'CUoQzHAT4p1VtPTex6oA', 'stages')
+    const stagesSnapshot = await getDocs(stagesCollection)
+    const stages = stagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
     const projectsSnapshot = await getDocs(projectsCollection)
     const projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log("stages", stages[0]); 
     return NextResponse.json(projects)
   } catch (error) {
     console.error('Error fetching projects:', error)
@@ -21,6 +27,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const projectData: Omit<Project, 'id'> = await req.json();
+    console.log("projectData", projectData);
 
     // Start a new batch
     const batch = writeBatch(db);
@@ -33,6 +40,8 @@ export async function POST(req: Request) {
     const project: Project = {
       ...projectData,
       id: projectId,
+      stages: projectData.stages || [], // Initialize with an empty array of stages
+      resources: [], // Initialize with an empty array of resources
       tasks: [], // Initialize with an empty array of task summaries
     };
 

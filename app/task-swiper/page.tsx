@@ -156,7 +156,7 @@ export default function TaskSwiper() {
                     {currentTask.priority}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-500">Assignee: {currentTask.assignee}</p>
+                <p className="text-sm text-gray-500">Assignee: {currentTask.assignee.name}</p>
                 <p className="text-sm font-semibold mt-2">Status: {currentTask.status}</p>
               </CardContent>
             </Card>

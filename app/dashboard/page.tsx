@@ -17,16 +17,6 @@ import { useToast } from "@/components/ui/use-toast"
 import AddProjectDialog from "@/components/AddProjectDialog"
 import Link from 'next/link'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function ProjectManagementDashboard() {
@@ -110,40 +100,40 @@ export default function ProjectManagementDashboard() {
     const completedTasks = projectTasks.filter(task => task.status === 'done').length
     return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
   }
-  const handleAddProject = async () => {
-    if (!newProjectName || !newProjectManager) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      })
-      return
-    }
+  // const handleAddProject = async () => {
+  //   if (!newProjectName || !newProjectManager) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Please fill in all fields",
+  //       variant: "destructive",
+  //     })
+  //     return
+  //   }
 
-    try {
-      const newProject: Omit<Project, 'id'> = {
-        name: newProjectName,
-        manager: newProjectManager,
-        // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
-        onTrack: true,
-      }
-      await createProject(newProject)
-      await fetchAllData()
-      toast({
-        title: "Success",
-        description: "New project added successfully",
-      })
-      setNewProjectName('')
-      setNewProjectManager('')
-    } catch (error) {
-      console.error('Error adding new project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to add new project",
-        variant: "destructive",
-      })
-    }
-  }
+  //   try {
+  //     const newProject: Omit<Project, 'id'> = {
+  //       name: newProjectName,
+  //       manager: newProjectManager,
+  //       // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
+  //       onTrack: true,
+  //     }
+  //     await createProject(newProject)
+  //     await fetchAllData()
+  //     toast({
+  //       title: "Success",
+  //       description: "New project added successfully",
+  //     })
+  //     setNewProjectName('')
+  //     setNewProjectManager('')
+  //   } catch (error) {
+  //     console.error('Error adding new project:', error)
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to add new project",
+  //       variant: "destructive",
+  //     })
+  //   }
+  // }
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -292,7 +282,7 @@ export default function ProjectManagementDashboard() {
                           {project.name}
                         </Link>
                       </TableCell>
-                      <TableCell>{project.manager}</TableCell>
+                      <TableCell>{project.manager.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           <Progress value={calculateProjectProgress(project)} className="w-[60%]" />

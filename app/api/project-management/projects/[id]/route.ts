@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { TaskSummary } from '@/models/summaries';
 import { Project } from '@/models/project';
 import { Stage } from '@/models/stage';
-
+// funtion to add a task to a project
 export async function POST(request: Request, { params }: { params: { id: string } }) {
     try {
         const projectId = params.id;
