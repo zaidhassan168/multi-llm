@@ -31,6 +31,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
 import { TaskSummary } from '@/models/summaries'
 import { Project, updateProject, addTaskToProjectAndStage} from '@/models/project'
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "@/firebase";
+
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -229,7 +232,35 @@ export default function Kanban() {
       });
     }
   };  
-
+  // useEffect(() => {
+  //   if (user?.email) {
+  //     const q = query(collection(db, "tasks"));
+  
+  //     const unsubscribe = onSnapshot(q, (snapshot) => {
+  //       snapshot.docChanges().forEach((change) => {
+  //         const updatedTask = change.doc.data() as Task;
+  
+  //         if (change.type === "modified") {
+  //           // Show toast notification when a task is updated
+  //           console.log('Task updated realtime :', updatedTask);
+  //           toast({
+  //             title: "Task Updated",
+  //             description: `${updatedTask.title} has been updated.`,
+  //             variant: "default",
+  //           });
+  
+  //           // Update the task in the state
+  //           setTasks((prevTasks) =>
+  //             prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+  //           );
+  //         }
+  //       });
+  //     });
+  
+  //     // Cleanup listener when the component unmounts
+  //     return () => unsubscribe();
+  //   }
+  // }, [user, toast, setTasks]);
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {

@@ -26,8 +26,7 @@ export default function ProjectManagementDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const { user } = useAuth()
   const { toast } = useToast()
-  const [newProjectName, setNewProjectName] = useState('')
-  const [newProjectManager, setNewProjectManager] = useState('')
+
   useEffect(() => {
     if (user?.email) {
       fetchAllData()
@@ -55,11 +54,13 @@ export default function ProjectManagementDashboard() {
       })
     }
   }
+
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
       case 'done': return 'text-green-600'
       case 'inProgress': return 'text-yellow-600'
-      case 'todo': return 'text-red-600'
+      case 'todo': return 'text-blue-600'
+      case 'backlog': return 'text-gray-600'
       default: return 'text-gray-600'
     }
   }
@@ -100,40 +101,7 @@ export default function ProjectManagementDashboard() {
     const completedTasks = projectTasks.filter(task => task.status === 'done').length
     return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
   }
-  // const handleAddProject = async () => {
-  //   if (!newProjectName || !newProjectManager) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Please fill in all fields",
-  //       variant: "destructive",
-  //     })
-  //     return
-  //   }
 
-  //   try {
-  //     const newProject: Omit<Project, 'id'> = {
-  //       name: newProjectName,
-  //       manager: newProjectManager,
-  //       // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
-  //       onTrack: true,
-  //     }
-  //     await createProject(newProject)
-  //     await fetchAllData()
-  //     toast({
-  //       title: "Success",
-  //       description: "New project added successfully",
-  //     })
-  //     setNewProjectName('')
-  //     setNewProjectManager('')
-  //   } catch (error) {
-  //     console.error('Error adding new project:', error)
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to add new project",
-  //       variant: "destructive",
-  //     })
-  //   }
-  // }
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -167,6 +135,7 @@ export default function ProjectManagementDashboard() {
             </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Risk Overview</CardTitle>
@@ -187,15 +156,29 @@ export default function ProjectManagementDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{employees.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {employees.filter(e => e.availability && e.availability > 50).length} available
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="ceo-overview" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="ceo-overview">CEO Overview</TabsTrigger>
-          <TabsTrigger value="projects">Projects Overview</TabsTrigger>
-          <TabsTrigger value="risks">Risk Register</TabsTrigger>
-          <TabsTrigger value="resources">Resource Management</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="risks">Risks</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
         </TabsList>
+
         <TabsContent value="ceo-overview">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
@@ -258,6 +241,7 @@ export default function ProjectManagementDashboard() {
             </Card>
           </div>
         </TabsContent>
+
         <TabsContent value="projects">
           <Card>
             <CardHeader>
@@ -278,7 +262,7 @@ export default function ProjectManagementDashboard() {
                   {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/project/${project.id}`}>
+                        <Link href={`/project/${project.id}`} className="text-blue-600 hover:underline">
                           {project.name}
                         </Link>
                       </TableCell>
@@ -306,10 +290,13 @@ export default function ProjectManagementDashboard() {
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))}                </TableBody>              </Table>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="risks">
           <Card>
             <CardHeader>
@@ -345,6 +332,7 @@ export default function ProjectManagementDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="resources">
           <Card>
             <CardHeader>
