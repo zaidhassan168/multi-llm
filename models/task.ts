@@ -75,7 +75,7 @@ export const addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Ta
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task, email }), // Pass the task and email as is
     });
-
+    console.log('Response status:', response);
     if (!response.ok) {
       throw new Error('Failed to add task');
     }

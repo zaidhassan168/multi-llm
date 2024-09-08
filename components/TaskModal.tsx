@@ -85,6 +85,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       setIsLoading(true)
       try {
         const projectsData = await fetchProjects()
+        console.log('projectsData:', projectsData.forEach(p => console.log(p.stages)))
         setProjects(projectsData.map(p => ({ 
           id: p.id, 
           name: p.name, 

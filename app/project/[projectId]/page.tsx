@@ -37,7 +37,7 @@ import { Employee, fetchEmployees } from "@/models/employee";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertOctagon, AlertTriangle } from "lucide-react";
 import { Transition } from "@headlessui/react";
-
+import { EditProjectDialog } from "@/components/EditProjectDialog";
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -222,8 +222,8 @@ export default function ProjectDetails() {
                 <User className="mr-2 h-4 w-4 text-primary" />
                 <span className="font-medium">Assignee:</span>
               </div>
-              <p className="text-sm pl-6">{task.assignee.name}</p>
-            </div>
+              <p className="text-sm pl-6">{task.assignee?.name || 'Unknown'}</p>
+              </div>
             <div className="space-y-1">
               <div className="flex items-center text-sm">
                 <User className="mr-2 h-4 w-4 text-primary" />
@@ -306,7 +306,11 @@ export default function ProjectDetails() {
       <h1 className="text-3xl font-bold mb-6">
         {project.name} - Project Details
       </h1>
-
+      <EditProjectDialog
+  project={project}
+  processes={project.stages}
+  // onSave={fetchProjectData}
+/>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
           <CardHeader>

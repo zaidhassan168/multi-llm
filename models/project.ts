@@ -10,7 +10,8 @@ type Project = {
   currentStage?: StageSummary;  // Link to the current stage summary
   onTrack?: boolean;  // Whether the project is on track
   stages?: Stage[];  // Summaries of all stages
-  tasks?: TaskSummary[];    // Summaries of key tasks
+  tasks?: TaskSummary[]; 
+  taskids?: string[];
   manager: EmployeeSummary;
   resources?: EmployeeSummary[]// Summaries of employees working on the project
 };
@@ -26,6 +27,14 @@ type Project = {
     return response.json();  
   }  
 
+  // funtion to fetch the oneproject data using project id 
+  export async function getProjectById(projectId: string): Promise<Project> {
+    const response = await fetch(`${API_URL}/${projectId}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch project with ID ${projectId}: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+}
 export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
     // add the id in the prject 
     const response = await fetch(API_URL, {
@@ -38,7 +47,7 @@ export async function createProject(project: Omit<Project, 'id'>): Promise<Proje
 }
 
 export async function updateProject(project: Project): Promise<Project> {
-    const response = await fetch(`${API_URL}/${project.id}`, {
+    const response = await fetch(API_URL, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),

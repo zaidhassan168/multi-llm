@@ -49,27 +49,27 @@ export async function POST(req: Request) {
     batch.set(projectRef, project);
 
     // If there's an initial stage in the project data, create it as a subcollection
-    if (projectData.stages && projectData.stages.length > 0) {
-      const initialStage = projectData.stages[0];
-      const stageRef = doc(collection(db, 'projects', projectId, 'stages'));
-      const stage: Stage = {
-        ...initialStage,
-        id: stageRef.id,
-        taskIds: [],
-        tasks: [],
-      };
+    // if (projectData.stages && projectData.stages.length > 0) {
+    //   const initialStage = projectData.stages[0];
+    //   console.log("initialStage", initialStage);
+    //   const stageRef = doc(collection(db, 'projects', projectId, 'stages'));
+    //   const stage: Stage = {
+    //     ...initialStage,
+    //     taskIds: [],
+    //     tasks: [],
+    //   };
 
-      // Set the initial stage data in the batch
-      batch.set(stageRef, stage);
+    //   // Set the initial stage data in the batch
+    //   batch.set(stageRef, stage);
 
-      // Update the project with the current stage reference
-      batch.update(projectRef, { 
-        currentStage: {
-          id: stage.id,
-          name: stage.name,
-        }
-      });
-    }
+    //   // Update the project with the current stage reference
+    //   batch.update(projectRef, { 
+    //     currentStage: {
+    //       id: stage.id,
+    //       name: stage.name,
+    //     }
+    //   });
+    // }
 
     // Commit the batch
     await batch.commit();
@@ -86,8 +86,20 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const project: Project = await req.json();
+    console.log("project", project);
     const projectRef = doc(db, 'projects', project.id)
     await updateDoc(projectRef, project)
+    if (project.stages && project.stages.length > 0) {
+      const stagesCollectionRef = collection(projectRef, 'stages'); // Reference to the stages sub-collection
+
+      // Add each stage with auto-generated Firebase doc ID
+      await Promise.all(
+        project.stages.map(async (stage: Stage) => {
+          await addDoc(stagesCollectionRef, stage); // Add stage with auto-generated ID
+        })
+      );
+    }
+
     return NextResponse.json(project)
   } catch (error) {
     console.error('Error updating project:', error)

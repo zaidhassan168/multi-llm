@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Task, fetchTasksEmail, updateTask } from '@/models/task'
-import { RefreshCw, ChevronUpIcon, ChevronDownIcon, Inbox, ListTodo, Activity, CheckCircle } from 'lucide-react'
+import { RefreshCw, ChevronUpIcon, ChevronDownIcon, Inbox, ListTodo, Activity, CheckCircle, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { Employee, fetchEmployee } from '@/models/employee'
 
 const statusOrder = ['backlog', 'todo', 'inProgress', 'done']
@@ -77,8 +77,8 @@ export default function TaskSwiper() {
       const updatedTask = { ...tasks[currentTaskIndex], status: newStatus }
       try {
         await updateTask(updatedTask, user?.email || '')
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
             task.id === updatedTask.id ? updatedTask : task
           )
         )
@@ -97,16 +97,41 @@ export default function TaskSwiper() {
     }
   }
 
+  const handlePriorityChange = async (newPriority: Task['priority']) => {
+    if (tasks[currentTaskIndex]) {
+      const updatedTask = { ...tasks[currentTaskIndex], priority: newPriority }
+      try {
+        await updateTask(updatedTask, user?.email || '')
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        )
+        toast({
+          title: 'Success',
+          description: `Task priority updated to ${newPriority}`,
+        })
+      } catch (error) {
+        console.error('Failed to update task priority:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to update task priority. Please try again.',
+          variant: 'destructive',
+        })
+      }
+    }
+  }
+
   const moveToNextTask = () => {
     setSwipeDirection('up')
-    setCurrentTaskIndex(prevIndex => 
+    setCurrentTaskIndex(prevIndex =>
       prevIndex < tasks.length - 1 ? prevIndex + 1 : prevIndex
     )
   }
 
   const moveToPreviousTask = () => {
     setSwipeDirection('down')
-    setCurrentTaskIndex(prevIndex => 
+    setCurrentTaskIndex(prevIndex =>
       prevIndex > 0 ? prevIndex - 1 : prevIndex
     )
   }
@@ -125,17 +150,30 @@ export default function TaskSwiper() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-md h-screen flex flex-col">
+    <div className="container mx-auto p-4 max-w-md h-screen flex flex-col relative">
       <h1 className="text-2xl font-bold mb-4 text-center">Task Swiper</h1>
+
+      {/* Left and Right icons for computer screens */}
+      <div className="hidden md:block absolute left-0 top-1/2 transform -translate-y-1/2">
+        <Button size="icon" onClick={moveToPreviousTask}>
+          <ChevronLeftIcon className="h-6 w-6" />
+        </Button>
+      </div>
+      <div className="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2">
+        <Button size="icon" onClick={moveToNextTask}>
+          <ChevronRightIcon className="h-6 w-6" />
+        </Button>
+      </div>
+
       <div className="flex-grow flex items-center justify-center mb-4 relative">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentTask.id}
             initial={{ opacity: 0, scale: 0.8, y: swipeDirection === 'up' ? 300 : -300 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ 
-              opacity: 0, 
-              scale: 0.8, 
+            exit={{
+              opacity: 0,
+              scale: 0.8,
               y: swipeDirection === 'up' ? -300 : 300
             }}
             transition={{ type: 'spring', stiffness: 500, damping: 30, duration: 0.2 }}
@@ -143,7 +181,14 @@ export default function TaskSwiper() {
             className="cursor-grab active:cursor-grabbing w-full max-w-sm"
             onAnimationComplete={() => setSwipeDirection(null)}
           >
-            <Card className="border-4 shadow-lg" style={{ borderColor: priorityColors[currentTask.priority as keyof typeof priorityColors].split(' ')[1].replace('text-', '') }}>
+            <Card
+              className="border-4 shadow-lg"
+              style={{
+                borderColor: currentTask.priority
+                  ? priorityColors[currentTask.priority as keyof typeof priorityColors].split(' ')[1].replace('text-', '')
+                  : '#d1d5db', // Muted gray fallback (bg-gray-300)
+              }}
+            >
               <CardHeader>
                 <CardTitle className="text-xl">{currentTask.title}</CardTitle>
               </CardHeader>
@@ -156,14 +201,31 @@ export default function TaskSwiper() {
                     {currentTask.priority}
                   </Badge>
                 </div>
+
+                <div className="flex justify-center space-x-2 mb-4">
+                  {Object.keys(priorityColors).map((priority) => (
+                    <Button
+                      key={priority}
+                      onClick={() => handlePriorityChange(priority as Task['priority'])}
+                      size="sm"
+                      className={priorityColors[priority as keyof typeof priorityColors]}
+                    >
+                      {priority}
+                    </Button>
+                  ))}
+                </div>
+
                 <p className="text-sm text-gray-500">Assignee: {currentTask.assignee.name}</p>
                 <p className="text-sm font-semibold mt-2">Status: {currentTask.status}</p>
               </CardContent>
+
             </Card>
           </motion.div>
         </AnimatePresence>
+
+        {/* Status Buttons */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-        {statusOrder.map((status) => {
+          {statusOrder.map((status) => {
             const IconComponent = statusIcons[status as keyof typeof statusIcons]
             return (
               <div key={status} className="flex flex-col items-center">
@@ -183,21 +245,23 @@ export default function TaskSwiper() {
           })}
         </div>
       </div>
+
+      {/* Bottom Actions */}
       <div className="text-center text-gray-500 text-sm mb-4">
         Swipe up for next task, down for previous task
       </div>
       <div className="flex justify-between mb-4">
-        <Button 
-          onClick={fetchTasks} 
-          variant="outline" 
+        <Button
+          onClick={fetchTasks}
+          variant="outline"
           size="sm"
           className="flex-1 mr-2"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
-        <Button 
-          onClick={() => setShowTaskList(!showTaskList)} 
+        <Button
+          onClick={() => setShowTaskList(!showTaskList)}
           className="flex-1 ml-2"
           variant="outline"
         >
@@ -221,7 +285,7 @@ export default function TaskSwiper() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card 
+                <Card
                   className={`cursor-pointer ${index === currentTaskIndex ? 'border-blue-500 border-2' : ''}`}
                   onClick={() => setCurrentTaskIndex(index)}
                 >

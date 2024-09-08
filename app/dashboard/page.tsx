@@ -266,7 +266,7 @@ export default function ProjectManagementDashboard() {
                           {project.name}
                         </Link>
                       </TableCell>
-                      <TableCell>{project.manager.name}</TableCell>
+                      <TableCell>{project?.manager?.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           <Progress value={calculateProjectProgress(project)} className="w-[60%]" />

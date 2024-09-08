@@ -232,35 +232,35 @@ export default function Kanban() {
       });
     }
   };  
-  // useEffect(() => {
-  //   if (user?.email) {
-  //     const q = query(collection(db, "tasks"));
+  useEffect(() => {
+    if (user?.email) {
+      const q = query(collection(db, "tasks"));
   
-  //     const unsubscribe = onSnapshot(q, (snapshot) => {
-  //       snapshot.docChanges().forEach((change) => {
-  //         const updatedTask = change.doc.data() as Task;
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const updatedTask = change.doc.data() as Task;
   
-  //         if (change.type === "modified") {
-  //           // Show toast notification when a task is updated
-  //           console.log('Task updated realtime :', updatedTask);
-  //           toast({
-  //             title: "Task Updated",
-  //             description: `${updatedTask.title} has been updated.`,
-  //             variant: "default",
-  //           });
+          if (change.type === "modified") {
+            // Show toast notification when a task is updated
+            console.log('Task updated realtime :', updatedTask);
+            toast({
+              title: "Task Updated",
+              description: `${updatedTask.title} has been updated.`,
+              variant: "default",
+            });
   
-  //           // Update the task in the state
-  //           setTasks((prevTasks) =>
-  //             prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-  //           );
-  //         }
-  //       });
-  //     });
+            // Update the task in the state
+            setTasks((prevTasks) =>
+              prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+            );
+          }
+        });
+      });
   
-  //     // Cleanup listener when the component unmounts
-  //     return () => unsubscribe();
-  //   }
-  // }, [user, toast, setTasks]);
+      // Cleanup listener when the component unmounts
+      return () => unsubscribe();
+    }
+  }, [user, toast, setTasks]);
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {

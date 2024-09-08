@@ -92,3 +92,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ error: 'Failed to add task' }, { status: 500 });
     }
 }
+
+// // write the method to fetch the single  project and  collection stages in its document and collection tasks in its document
+// export async function GET(request: Request, { params }: { params: { id: string } }) {
+//     try {
+//         const projectId = params.id;
+//         if (!projectId) {
+//             return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
+//         }
+//         const projectRef = doc(db, 'projects', projectId);
+//         const projectDoc = await getDoc(projectRef);
+//         if (!projectDoc.exists()) {
+//             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+//         }
+//         const
+//         projectData = projectDoc.data() as Project;
+//         const stagesRef = collection(db, 'projects', projectId, 'stages');
+//         const stagesSnapshot = await getDocs(stagesRef);
+//         const stages = stagesSnapshot.docs.map(doc => doc.data() as Stage);
+//         const tasksRef = collection(db, 'projects', projectId, 'stages', stages[0].id, 'tasks')

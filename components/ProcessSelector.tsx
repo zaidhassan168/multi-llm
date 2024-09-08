@@ -10,6 +10,7 @@ import { fetchStages } from '@/models/stage'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"  // Assuming you have a Tooltip component
 
 type ProcessSelectorProps = {
+  previousProcesses?: Stage[]
   onProcessesSelected: (processes: Stage[]) => void
 }
 
@@ -21,9 +22,10 @@ const processGroups = [
   { name: 'Closing', color: 'text-purple-700' },
 ]
 
-export function ProcessSelector({ onProcessesSelected }: ProcessSelectorProps) {
+export function ProcessSelector({ onProcessesSelected, previousProcesses }: ProcessSelectorProps) {
   const [stages, setStages] = useState<Stage[]>([])
-  const [selectedProcesses, setSelectedProcesses] = useState<Stage[]>([])
+  // set the previous processes
+  const [selectedProcesses, setSelectedProcesses] = useState<Stage[]>(previousProcesses || [])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
