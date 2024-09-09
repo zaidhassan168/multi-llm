@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { Task } from '@/models/task';
 import { report } from 'process';
 import { randomUUID } from 'crypto';
+import { updateProjectStage } from '@/utils/ayncfunctions/addTaskToStage';
 export async function POST(request: Request) {
   try {
      const { task, email }: { task: Omit<Task, 'id'>, email: string } = await request.json();
@@ -52,6 +53,7 @@ export async function PATCH(request: Request) {
 
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
+  updateProjectStage({ ...updates, id });
 
   return NextResponse.json({ success: true });
 }

@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
     // Call the OpenAI model
     const response = await openai.chat.completions.create({
-      model: 'gpt-4', // Use the appropriate model version
+      model: 'gpt-4o', // Use the appropriate model version
       messages: [
         { role: 'system', content: systemInstruction },
         { role: 'user', content: userMessage },

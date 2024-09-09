@@ -11,7 +11,11 @@ type Stage = {
   taskIds?: string[];  // Array of task IDs within this stage
   employeeIds?: string[];  // Array of employee IDs working on this stage
   progress?: number;
-  tasks?:  TaskSummary[];  // Array of task summaries within this stage
+  tasks?:  TaskSummary[];
+  totalTaskHours?: Number;
+  taskHoursCompleted?: Number;
+  completedTasks?: Number;
+  totalTasks?: Number;
 };
 
   export async function fetchStages(): Promise<Stage[]> {

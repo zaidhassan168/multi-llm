@@ -18,7 +18,8 @@ import {
   ClockIcon,
   UserIcon,
   TagIcon,
-  RefreshCw
+  RefreshCw,
+  Loader2Icon
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -30,9 +31,9 @@ import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
 import { TaskSummary } from '@/models/summaries'
-import { Project, updateProject, addTaskToProjectAndStage} from '@/models/project'
-import { collection, onSnapshot, query } from "firebase/firestore";
-import { db } from "@/firebase";
+import { Project, updateProject, addTaskToProjectAndStage } from '@/models/project'
+import { collection, onSnapshot, query, where } from "firebase/firestore"
+import { db } from "@/firebase"
 
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
@@ -120,7 +121,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto"
+              className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
             >
               {tasks.map((task, index) => (
                 <TaskItem
@@ -145,28 +146,31 @@ export default function Kanban() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
   const { user } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchTasksData = useCallback(async () => {
     if (user?.email) {
       try {
+        setIsLoading(true)
         const emp = await fetchEmployee(user.email)
         setEmployee(emp)
         const tasksData = await fetchTasksEmail(user.email, emp.role)
         setTasks(tasksData)
       } catch (error) {
-        console.error('Failed to load tasks')
+        console.error('Failed to load tasks', error)
         toast({
           title: "Error",
           description: "Failed to load tasks. Please try again.",
           variant: "destructive",
         })
+      } finally {
+        setIsLoading(false)
       }
     }
   }, [user, toast])
@@ -195,90 +199,87 @@ export default function Kanban() {
   const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
     if (user?.email && newTask.projectId) {
       try {
-        // Add the task to Firestore
-        const createdTask = await addTask(newTask, user.email);
-  
-        // Update the state with the new task
-        setTasks((prevTasks) => [...prevTasks, createdTask]);
-        setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask]);
-        console.log('Task added successfully:', createdTask);
-        // Create a TaskSummary for the new task
+        const createdTask = await addTask(newTask, user.email)
+        setTasks((prevTasks) => [...prevTasks, createdTask])
+        setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask])
+        console.log('Task added successfully:', createdTask)
         const taskSummary: TaskSummary = {
           id: createdTask.id,
           title: newTask.title,
           status: newTask.status,
           assignee: newTask.assignee.name,
           time: newTask.time.toString(),
-        };
-        if (newTask.projectId && newTask.stageId) {
-          addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId);
         }
-        // Find the project in the existing projects list
-        
+        if (newTask.projectId && newTask.stageId) {
+          addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId)
+        }
+        toast({
+          title: "Success",
+          description: "Task added successfully.",
+        })
       } catch (error) {
-        console.error('Failed to add task', error);
+        console.error('Failed to add task', error)
         toast({
           title: "Error",
           description: "Failed to add task. Please try again.",
           variant: "destructive",
-        });
+        })
       }
     } else {
-      console.error('User email or project ID is missing');
+      console.error('User email or project ID is missing')
       toast({
         title: "Error",
         description: "Please select a project before adding tasks.",
         variant: "destructive",
-      });
+      })
     }
-  };  
+  }
+
   useEffect(() => {
     if (user?.email) {
-      const q = query(collection(db, "tasks"));
-  
+      const q = query(collection(db, "tasks"), where("assignee.email", "==", user.email))
       const unsubscribe = onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-          const updatedTask = change.doc.data() as Task;
-  
-          if (change.type === "modified") {
-            // Show toast notification when a task is updated
-            console.log('Task updated realtime :', updatedTask);
-            toast({
-              title: "Task Updated",
-              description: `${updatedTask.title} has been updated.`,
-              variant: "default",
-            });
-  
-            // Update the task in the state
-            setTasks((prevTasks) =>
-              prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-            );
+          const updatedTask = change.doc.data() as Task
+          if (change.type === "added" || change.type === "modified") {
+            setTasks((prevTasks) => {
+              const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id)
+              if (existingTaskIndex !== -1) {
+                const newTasks = [...prevTasks]
+                newTasks[existingTaskIndex] = updatedTask
+                return newTasks
+              } else {
+                return [...prevTasks, updatedTask]
+              }
+            })
+          } else if (change.type === "removed") {
+            setTasks((prevTasks) => prevTasks.filter(task => task.id !== updatedTask.id))
           }
-        });
-      });
-  
-      // Cleanup listener when the component unmounts
-      return () => unsubscribe();
+        })
+      })
+      return () => unsubscribe()
     }
-  }, [user, toast, setTasks]);
+  }, [user])
+
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {
         await updateTask(taskToUpdate, user.email)
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === taskToUpdate.id ? taskToUpdate : task))
-        )
         toast({
           title: "Success",
           description: "Task updated successfully.",
         })
       } catch (error) {
-        console.error('Failed to update task')
+        console.error('Failed to update task', error)
         toast({
           title: "Error",
           description: "Failed to update task. Please try again.",
           variant: "destructive",
         })
+        // Revert the task to its previous state in the UI
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskToUpdate.id ? { ...task, status: task.status } : task))
+        )
       }
     } else {
       console.error('User email is not available')
@@ -300,7 +301,7 @@ export default function Kanban() {
           description: "Task deleted successfully.",
         })
       } catch (error) {
-        console.error('Failed to delete task')
+        console.error('Failed to delete task', error)
         toast({
           title: "Error",
           description: "Failed to delete task. Please try again.",
@@ -325,24 +326,35 @@ export default function Kanban() {
         return
       }
 
+      // Optimistically update the UI
       setTasks((prevTasks) => {
-        const taskIndex = prevTasks.findIndex(task => task.id === draggableId)
-        if (taskIndex === -1) return prevTasks
-
-        const movedTask = { ...prevTasks[taskIndex], status: destination.droppableId as Task['status'] }
-        const updatedTasks = Array.from(prevTasks)
-        updatedTasks.splice(taskIndex, 1)
-        updatedTasks.splice(destination.index, 0, movedTask)
-
-        if (source.droppableId !== destination.droppableId) {
-          handleUpdateTask(movedTask)
-        }
-
+        const updatedTasks = prevTasks.map((task) => {
+          if (task.id === draggableId) {
+            return { ...task, status: destination.droppableId as Task['status'] }
+          }
+          return task
+        })
         return updatedTasks
       })
+
+      // Update the backend
+      const taskToUpdate = tasks.find(task => task.id === draggableId)
+      if (taskToUpdate && taskToUpdate.status !== destination.droppableId) {
+        const updatedTask = { ...taskToUpdate, status: destination.droppableId as Task['status'] }
+        handleUpdateTask(updatedTask)
+      }
     },
-    [handleUpdateTask]
+    [tasks, handleUpdateTask]
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2Icon className="animate-spin h-8 w-8 text-blue-500" />
+        <span className="ml-2 text-lg font-semibold">Loading tasks...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">

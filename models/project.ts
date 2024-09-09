@@ -13,7 +13,14 @@ type Project = {
   tasks?: TaskSummary[]; 
   taskids?: string[];
   manager: EmployeeSummary;
-  resources?: EmployeeSummary[]// Summaries of employees working on the project
+  resources?: EmployeeSummary[]
+  totalTasks?: Number
+  totalTasksCompleted?: Number
+  totalTasksIncomplete?: Number
+  totalTasksOverdue?: Number
+  totalTasksOnTrack?: Number
+  totalTasksHours?: Number
+  tasksHoursCompleted?: Number
 };
 
 
