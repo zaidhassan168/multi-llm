@@ -1,5 +1,7 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -57,35 +59,36 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
   })
 
   useEffect(() => {
-    if (task) {
-      setFormData(task)
-      setIsEditMode(false)
-    } else {
-      setFormData({
-        title: '',
-        description: '',
-        time: 0,
-        efforts: 'backend',
-        assignee: {} as EmployeeSummary,
-        status: 'backlog',
-        createdAt: new Date(),
-        projectId: '',
-        reporter: {} as EmployeeSummary,
-        priority: 'low',
-        dueDate: undefined,
-        comments: [],
-        stageId: '',
-      })
-      setIsEditMode(true)
+    if (isOpen) {
+      if (task) {
+        setFormData(task)
+        setIsEditMode(false)
+      } else {
+        setFormData({
+          title: '',
+          description: '',
+          time: 0,
+          efforts: 'backend',
+          assignee: {} as EmployeeSummary,
+          status: 'backlog',
+          createdAt: new Date(),
+          projectId: '',
+          reporter: {} as EmployeeSummary,
+          priority: 'low',
+          dueDate: undefined,
+          comments: [],
+          stageId: '',
+        })
+        setIsEditMode(true)
+      }
     }
-  }, [task])
+  }, [task, isOpen])
 
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoading(true)
       try {
         const projectsData = await fetchProjects()
-        console.log('projectsData:', projectsData.forEach(p => console.log(p.stages)))
         setProjects(projectsData.map(p => ({ 
           id: p.id, 
           name: p.name, 
@@ -103,8 +106,10 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       }
     }
 
-    fetchInitialData()
-  }, [])
+    if (isOpen) {
+      fetchInitialData()
+    }
+  }, [isOpen])
 
   const handleProjectChange = (projectId: string) => {
     setFormData(prev => ({ ...prev, projectId }))
@@ -123,6 +128,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
     e.preventDefault()
     onSave(task ? { ...formData, id: task.id } : formData as Task)
     setIsEditMode(false)
+    onClose()
   }
 
   const handleEdit = () => {
@@ -133,22 +139,22 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
   const taskPriorities = ['low', 'medium', 'high', 'urgent', 'critical', 'null']
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] bg-white">
-        <DialogHeader>
-          <DialogTitle className="flex justify-between items-center text-3xl font-bold text-gray-800">
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] md:w-[700px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex justify-between items-center text-3xl font-bold text-gray-800">
             <span>{task ? (isEditMode ? 'Edit Task' : 'Task Details') : 'Add New Task'}</span>
             {task && !isEditMode && (
-              <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100">
+              <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100 rounded-full">
                 <EditIcon className="h-5 w-5 text-gray-600" />
               </Button>
             )}
-          </DialogTitle>
-          <DialogDescription className="text-gray-600">
+          </SheetTitle>
+          <SheetDescription className="text-gray-600">
             {task ? (isEditMode ? 'Edit the details of your task.' : 'View task details.') : 'Add a new task to your board.'}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+          </SheetDescription>
+        </SheetHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-gray-700 font-semibold">
@@ -160,7 +166,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                 value={formData.title}
                 onChange={handleChange}
                 required
-                disabled={!isEditMode && !!task}
+                disabled={!isEditMode}
                 className="border-gray-300 focus:border-blue-500"
               />
             </div>
@@ -173,7 +179,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                   name="projectId"
                   value={formData.projectId}
                   onValueChange={handleProjectChange}
-                  disabled={!isEditMode && !!task}
+                  disabled={!isEditMode}
                 >
                   <SelectTrigger className="border-gray-300 focus:border-blue-500">
                     <SelectValue placeholder="Select project" />
@@ -196,7 +202,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     name="stageId"
                     value={formData.stageId}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, stageId: value }))}
-                    disabled={!isEditMode && !!task}
+                    disabled={!isEditMode}
                   >
                     <SelectTrigger className="border-gray-300 focus:border-blue-500">
                       <SelectValue placeholder="Select stage" />
@@ -222,7 +228,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                 value={formData.description}
                 onChange={handleChange}
                 required
-                disabled={!isEditMode && !!task}
+                disabled={!isEditMode}
                 className="border-gray-300 focus:border-blue-500 h-24"
               />
             </div>
@@ -242,7 +248,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     value={formData.time}
                     onChange={handleChange}
                     required
-                    disabled={!isEditMode && !!task}
+                    disabled={!isEditMode}
                     className="border-gray-300 focus:border-blue-500"
                   />
                 </div>
@@ -257,7 +263,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     name="efforts"
                     value={formData.efforts}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, efforts: value as Task['efforts'] }))}
-                    disabled={!isEditMode && !!task}
+                    disabled={!isEditMode}
                   >
                     <SelectTrigger className="border-gray-300 focus:border-blue-500">
                       <SelectValue placeholder="Select efforts" />
@@ -282,7 +288,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     name="status"
                     value={formData.status}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Task['status'] }))}
-                    disabled={!isEditMode && !!task}
+                    disabled={!isEditMode}
                   >
                     <SelectTrigger className="border-gray-300 focus:border-blue-500">
                       <SelectValue placeholder="Select status" />
@@ -306,7 +312,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     name="priority"
                     value={formData.priority}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as Task['priority'] }))}
-                    disabled={!isEditMode && !!task}
+                    disabled={!isEditMode}
                   >
                     <SelectTrigger className={`border-2 ${priorityColors[formData.priority as keyof typeof priorityColors]}`}>
                       <SelectValue placeholder="Select priority" />
@@ -347,7 +353,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                       }));
                     }
                   }}
-                  disabled={!isEditMode && !!task}
+                  disabled={!isEditMode}
                 >
                   <SelectTrigger className="border-gray-300 focus:border-blue-500">
                     <SelectValue placeholder="Select assignee" />
@@ -376,7 +382,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                         "w-full justify-start text-left font-normal border-gray-300 focus:border-blue-500",
                         !formData.dueDate && "text-muted-foreground"
                       )}
-                      disabled={!isEditMode && !!task}
+                      disabled={!isEditMode}
                     >
                       {formData.dueDate ? format(formData.dueDate, "PPP") : <span>Pick a date</span>}
                     </Button>
@@ -395,7 +401,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
           </div>
           {isEditMode && (
             <div className="flex justify-between pt-6">
-              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2">
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2 rounded-full">
                 <SaveIcon className="h-4 w-4" />
                 {task ? 'Update' : 'Add'} Task
               </Button>
@@ -407,7 +413,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     onDelete(task.id)
                     onClose()
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full"
                 >
                   <TrashIcon className="h-4 w-4" />
                   Delete Task
@@ -416,7 +422,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
             </div>
           )}
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
