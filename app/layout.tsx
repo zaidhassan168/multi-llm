@@ -4,7 +4,8 @@ import Layout from '@/components/Layout';
 import { AuthProvider } from '../contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
-
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -26,6 +27,8 @@ export default function RootLayout({
               {children}
             </Layout>
             <Toaster />
+            <Analytics />
+            <SpeedInsights />
           </AuthProvider>
         </ThemeProvider>
       </body>
