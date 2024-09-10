@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from './ui/loading-spinner'
 import { usePathname, useRouter } from 'next/navigation'
+import { ScrollArea } from './ui/scroll-area'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -45,14 +46,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar
-        email={email}
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-      />
-      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {children}
-      </main>
+      {/* Sidebar with fixed height and non-scrollable */}
+      <div className="h-screen sticky top-0">
+        <Sidebar
+          email={email}
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+        />
+      </div>
+      
+      {/* Main content area with scroll */}
+      <ScrollArea className="flex-1 h-screen overflow-auto">
+        <main className="flex-1 flex flex-col min-h-screen">
+          {children}
+        </main>
+      </ScrollArea>
     </div>
   )
 }

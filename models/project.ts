@@ -14,6 +14,7 @@ type Project = {
   taskids?: string[];
   manager: EmployeeSummary;
   resources?: EmployeeSummary[]
+  progress?: Number;
   totalTasks?: Number
   totalTasksCompleted?: Number
   totalTasksIncomplete?: Number

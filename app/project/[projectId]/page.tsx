@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +31,7 @@ import {
   Flag,
   MessageSquare,
   ChevronDown,
+  CheckSquare, XSquare, TrendingUp
 } from "lucide-react";
 import { Task, fetchTasksAll } from "@/models/task";
 import { Project, fetchProjects } from "@/models/project";
@@ -38,6 +40,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { AlertOctagon, AlertTriangle } from "lucide-react";
 import { Transition } from "@headlessui/react";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
+import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -111,8 +114,8 @@ export default function ProjectDetails() {
     if (!project?.currentStage?.tasks) return 0;
 
     const stageTasks = project.currentStage.tasks
-      // .map((taskId) => tasks.find((t) => t.id === taskId))
-      // .filter((task): task is Task => Boolean(task));
+    // .map((taskId) => tasks.find((t) => t.id === taskId))
+    // .filter((task): task is Task => Boolean(task));
 
     if (stageTasks.length === 0) return 0;
 
@@ -123,12 +126,7 @@ export default function ProjectDetails() {
   };
 
   const calculateProjectProgress = (): number => {
-    const completedTasks = tasks.filter(
-      (task) => task.status === "done",
-    ).length;
-    return tasks.length > 0
-      ? Math.round((completedTasks / tasks.length) * 100)
-      : 0;
+    return (project?.progress as number) || 0;
   };
 
   const getStatusColor = (status: Task["status"]) => {
@@ -175,7 +173,16 @@ export default function ProjectDetails() {
         return "bg-gray-500";
     }
   };
-
+  const projectData = {
+    onTrack: project?.onTrack || false,
+    totalTasks: project?.totalTasks as number,
+    totalTasksCompleted: project?.totalTasksCompleted as number,
+    totalTasksIncomplete: project?.totalTasksIncomplete as number,
+    totalTasksOverdue: project?.totalTasksOverdue as number,
+    totalTasksOnTrack: project?.totalTasksOnTrack as number,
+    totalTasksHours: project?.totalTasksHours as number,
+    tasksHoursCompleted: project?.tasksHoursCompleted as number,
+  };
   const getTaskStats = () => {
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter((t) => t.status === "done").length;
@@ -223,7 +230,7 @@ export default function ProjectDetails() {
                 <span className="font-medium">Assignee:</span>
               </div>
               <p className="text-sm pl-6">{task.assignee?.name || 'Unknown'}</p>
-              </div>
+            </div>
             <div className="space-y-1">
               <div className="flex items-center text-sm">
                 <User className="mr-2 h-4 w-4 text-primary" />
@@ -300,24 +307,25 @@ export default function ProjectDetails() {
       </div>
     );
   }
-
+  ////////////////////////////////
   return (
+    
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">
         {project.name} - Project Details
       </h1>
       <EditProjectDialog
-  project={project}
-  processes={project.stages}
-  // onSave={fetchProjectData}
-/>
+        project={project}
+        processes={project.stages}
+      // onSave={fetchProjectData}
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-          <CardHeader>
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
+          <CardHeader className="pb-2 px-4 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
             <CardTitle className="text-lg">Project Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center">
+            <div className="flex items-center mb-4">
               <Progress
                 value={calculateProjectProgress()}
                 className="w-[80%]"
@@ -326,98 +334,97 @@ export default function ProjectDetails() {
                 {calculateProjectProgress()}%
               </span>
             </div>
+            <ScrollArea className="h-[180px]">
+              <p className="text-sm text-muted-foreground">
+                Additional project progress details can be added here. This area is scrollable if the content exceeds the available space.
+              </p>
+            </ScrollArea>
           </CardContent>
         </Card>
-        {project.currentStage && (
-          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardHeader>
-              <CardTitle className="text-lg">Current Stage</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <Progress
-                  value={calculateStageProgress()}
-                  className="w-[80%]"
-                />
-                <span className="ml-2 font-bold">
-                  {calculateStageProgress()}%
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Current Stage: {project.currentStage.name} 
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-          <CardHeader>
-            <CardTitle className="text-lg">Project Status</CardTitle>
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
+          <CardHeader className="pb-2 px-4 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
+            <CardTitle className="text-lg">Stages Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div
-              className={`flex items-center text-xl font-bold ${project.onTrack ? "text-green-600" : "text-red-600"}`}
-            >
-              {project.onTrack ? (
-                <>
-                  <CheckCircle2 className="mr-2 h-6 w-6" />
-                  On Track
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="mr-2 h-6 w-6" />
-                  Off Track
-                </>
-              )}
-            </div>
+            <ScrollArea className="h-[220px]">
+              <div className="space-y-3">
+                {project.stages && project.stages.length > 0 ? (
+                  project.stages.map((stage: any) => (
+                    <div key={stage.id}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">{stage.name}</span>
+                        <span className="text-sm font-sans">
+                          {typeof stage.progress === 'number' ? stage.progress : 0}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={typeof stage.progress === 'number' ? stage.progress : 0}
+                        className="h-1"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No stages available for this project.</p>
+                )}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
 
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-          <CardHeader>
+        <ProjectStatusCard project={projectData} ></ProjectStatusCard>
+
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
+          <CardHeader className="pb-2 px-4 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
             <CardTitle className="text-lg">Task Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            {project && tasks.length > 0 ? (
-              <>
-                <div className="text-2xl font-bold mb-2">
-                  {getTaskStats().totalTasks} Tasks
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">
-                    Completed:
-                  </span>
-                  <Badge variant="secondary" className="ml-auto">
-                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                    {getTaskStats().doneTasks}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <AlertOctagon className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-sm text-muted-foreground mr-2">
-                      Critical (In Progress):
-                    </span>
-                    <Badge variant="destructive">
-                      {getTaskStats().criticalInProgress}
-                    </Badge>
+            <ScrollArea className="h-[220px]">
+              {project && tasks.length > 0 ? (
+                <>
+                  <div className="text-2xl font-bold mb-4">
+                    {getTaskStats().totalTasks} Tasks
                   </div>
-                  <div className="flex items-center">
-                    <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" />
-                    <span className="text-sm text-muted-foreground mr-2">
-                      High (Completed):
-                    </span>
-                    <Badge variant="default" className="bg-yellow-500">
-                      {getTaskStats().highDone}
-                    </Badge>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">
+                        Completed:
+                      </span>
+                      <Badge variant="secondary" className="ml-auto">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        {getTaskStats().doneTasks}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AlertOctagon className="mr-2 h-4 w-4 text-red-500" />
+                        <span className="text-sm text-muted-foreground">
+                          Critical (In Progress):
+                        </span>
+                      </div>
+                      <Badge variant="destructive">
+                        {getTaskStats().criticalInProgress}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" />
+                        <span className="text-sm text-muted-foreground">
+                          High (Completed):
+                        </span>
+                      </div>
+                      <Badge variant="default" className="bg-yellow-500">
+                        {getTaskStats().highDone}
+                      </Badge>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No tasks available
                 </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No tasks available
-              </div>
-            )}
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
@@ -442,11 +449,10 @@ export default function ProjectDetails() {
                   tasks)
                 </span>
                 <ChevronDown
-                  className={`h-5 w-5 transition-transform duration-200 ${
-                    expandedStatuses.includes(status)
-                      ? "transform rotate-180"
-                      : ""
-                  }`}
+                  className={`h-5 w-5 transition-transform duration-200 ${expandedStatuses.includes(status)
+                    ? "transform rotate-180"
+                    : ""
+                    }`}
                 />
               </div>
               <Transition
@@ -526,13 +532,12 @@ export default function ProjectDetails() {
                   <TableCell>
                     {employee.availability !== undefined ? (
                       <span
-                        className={`font-bold ${
-                          employee.availability >= 75
-                            ? "text-green-600"
-                            : employee.availability >= 25
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                        }`}
+                        className={`font-bold ${employee.availability >= 75
+                          ? "text-green-600"
+                          : employee.availability >= 25
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                          }`}
                       >
                         {employee.availability}%
                       </span>

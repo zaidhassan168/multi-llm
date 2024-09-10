@@ -4,18 +4,19 @@ import { TaskSummary } from "./summaries";
 type Stage = {  
   id: string;  
   name: string;  
-  completionTime: number;  
+  completionTime: Number;  
   owner: string;  
   processGroup?: string;  // Process Group (e.g., "Planning", "Executing")
   knowledgeArea?: string;  
   taskIds?: string[];  // Array of task IDs within this stage
   employeeIds?: string[];  // Array of employee IDs working on this stage
-  progress?: number;
   tasks?:  TaskSummary[];
   totalTaskHours?: Number;
   taskHoursCompleted?: Number;
   completedTasks?: Number;
   totalTasks?: Number;
+  progress?: Number;
+
 };
 
   export async function fetchStages(): Promise<Stage[]> {

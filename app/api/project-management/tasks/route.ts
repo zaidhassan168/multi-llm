@@ -6,6 +6,13 @@ import { Task } from '@/models/task';
 import { report } from 'process';
 import { randomUUID } from 'crypto';
 import { updateProjectStage } from '@/utils/ayncfunctions/addTaskToStage';
+import { updateProjectAndStageProgress } from '@/utils/ayncfunctions/updateProgress';
+/**
+ * Creates a new task in the Firestore database.
+ *
+ * @param request - The incoming HTTP request object containing the task data.
+ * @returns A JSON response containing the ID of the newly created task.
+ */
 export async function POST(request: Request) {
   try {
      const { task, email }: { task: Omit<Task, 'id'>, email: string } = await request.json();
@@ -33,6 +40,12 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * Retrieves a list of tasks from the Firestore database based on the provided email query parameter.
+ *
+ * @param request - The incoming HTTP request object.
+ * @returns A JSON response containing the list of tasks.
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email');
@@ -45,6 +58,12 @@ export async function GET(request: Request) {
 
   return NextResponse.json(tasks);
 }
+/**
+ * Updates an existing task in the Firestore database.
+ *
+ * @param request - The incoming HTTP request object containing the task updates.
+ * @returns A JSON response indicating the success of the update operation.
+ */
 
 export async function PATCH(request: Request) {
   const { email, id, ...updates }: Partial<Task> & { email: string; id: string } = await request.json();
@@ -53,10 +72,17 @@ export async function PATCH(request: Request) {
 
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
-  updateProjectStage({ ...updates, id });
-
+  updateProjectStage({ ...updates, id } as Task);
+  updateProjectAndStageProgress({ ...updates, id } as Task);
   return NextResponse.json({ success: true });
 }
+/**
+ * Deletes a task from the Firestore database based on the provided email and task ID.
+ *
+ * @param request - The incoming HTTP request object containing the email and task ID.
+ * @returns A JSON response indicating the success of the delete operation.
+ */
+
 
 export async function DELETE(request: Request) {
   const { email, id }: { email: string; id: string } = await request.json();
