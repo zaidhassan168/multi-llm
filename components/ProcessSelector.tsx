@@ -107,7 +107,7 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
                 exit={{ opacity: 0 }}
                 className="text-muted-foreground text-center"
               >
-                No processes selected. Click 'Select Processes' to add.
+                No processes selected. Click Select Processes to add.
               </motion.p>
             ) : (
               <motion.div className="flex flex-wrap gap-2" layout>
@@ -179,7 +179,7 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
                                 <span className="font-semibold truncate max-w-[150px]" title={process.name}>
                                   {process.name}
                                 </span>
-                                <span className="text-xs opacity-70">{process.completionTime} days</span>
+                                <span className="text-xs opacity-70">{Number(process.completionTime)} days</span>
                               </div>
                               {isSelected && <Check size={16} className="flex-shrink-0" />}
                             </Badge>

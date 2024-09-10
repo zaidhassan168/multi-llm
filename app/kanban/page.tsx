@@ -95,6 +95,7 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
     </Draggable>
   )
 })
+TaskItem.displayName = "TaskItem";
 
 const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }: {
   id: string;
@@ -139,7 +140,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
     </Card>
   )
 })
-
+Column.displayName = "Column";
 export default function Kanban() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])

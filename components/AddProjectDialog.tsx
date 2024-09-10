@@ -11,6 +11,7 @@ import { ProcessSelector } from './ProcessSelector'
 import { Stage } from '@/models/project'
 import { motion } from 'framer-motion'
 import { EmployeeSummary } from '@/models/summaries'
+import {Project} from '@/models/project'
 export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: () => void }) {
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectManager, setNewProjectManager] = useState<EmployeeSummary | null>(null)
@@ -68,11 +69,14 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
     }
 
     try {
-      const newProject = {
+      const newProject: Omit<Project, "id"> = {
         name: newProjectName,
         manager: newProjectManager,
         stages: selectedProcesses,
-        currentStage: selectedProcesses[0],
+        currentStage: {
+          ...selectedProcesses[0],
+          progress: selectedProcesses[0].progress as number | undefined
+        },
         onTrack: true,
       }
       await createProject(newProject)
@@ -93,7 +97,6 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
       })
     }
   }
-
   return (
     <Dialog>
       <DialogTrigger asChild>

@@ -41,14 +41,16 @@ export function EditProjectDialog({ project, processes =[] }: EditProjectDialogP
     }
 
     try {
-      const updatedProject = {
+      const updatedProject: Project = {
         ...project,
         name: projectName,
         stages: selectedStages,
-        currentStage: selectedStages[0], // Reset to first stage, you might want to handle this differently
+        currentStage: {
+          ...selectedStages[0],
+          progress: selectedStages[0].progress as number | undefined
+        },
       }
       await updateProject(updatedProject)
-    //   onProjectUpdated()
       setIsOpen(false)
       toast({
         title: "Success",
@@ -63,7 +65,6 @@ export function EditProjectDialog({ project, processes =[] }: EditProjectDialogP
       })
     }
   }
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
