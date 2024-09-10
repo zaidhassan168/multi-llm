@@ -311,14 +311,17 @@ export default function ProjectDetails() {
   return (
     
     <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">
-        {project.name} - Project Details
-      </h1>
-      <EditProjectDialog
-        project={project}
-        processes={project.stages}
-      // onSave={fetchProjectData}
-      />
+  <div className="flex items-center mb-6">
+  <h1 className="text-3xl font-bold mr-2">
+    {project.name} - Project Details
+  </h1>
+  <EditProjectDialog
+    project={project}
+    processes={project.stages}
+    // onSave={fetchProjectData}
+  />
+</div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
           <CardHeader className="pb-2 px-4 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
