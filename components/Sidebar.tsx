@@ -63,17 +63,18 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
 
   const navItems = [
     { icon: <HomeIcon />, label: "Dashboard", id: "dashboard", route: "/dashboard" },
-    { icon: <BriefcaseIcon />, label: "Tasks", id: "tasks", route: "/task-swiper", count: 32 },
+    { icon: <BriefcaseIcon />, label: "Tasks", id: "tasks", route: "/task-swiper"},
     // { icon: <BellIcon />, label: "Notifications", id: "notifications", route: "/notifications", count: 4 },
     // { icon: <MessageCircleIcon />, label: "Messages", id: "messages", route: "/messages" },
     // { icon: <InboxIcon />, label: "Inbox", id: "inbox", route: "/inbox", count: 9 },
     { icon: <img src="/assets/openai.svg" alt="OpenAI" className="w-5 h-5" />, label: "OpenAI", id: "openai", route: "/openai" },
     { icon: <img src="/assets/gemini.svg" alt="Gemini" className="w-5 h-5" />, label: "Gemini", id: "gemini", route: "/gemini" },
-    { icon: <CodeIcon />, label: "Code", id: "code", route: "/code-chat" },
+    // { icon: <CodeIcon />, label: "Code", id: "code", route: "/code-chat" },
     { icon: <BotIcon />, label: "Assistant", id: "assistant", route: "/assistant" },
     { icon: <HistoryIcon />, label: "History", id: "history", route: "/history" },
     { icon: <img src="/assets/kanban.png" className="w-5 h-5" alt="kanban" />, label: "Kanban", id: "kanban", route: "/kanban" },
     { icon: <BookDashedIcon />, label: "Employees", id: "employees", route: "/employees" },
+    { icon: <UsersIcon />, label: "Profile", id: "profiles", route: "/profile" },
   ];
 
   const teamMembers = [
@@ -126,7 +127,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
         )}
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {navItems.map(({ icon, label, id, route, count }) => (
+          {navItems.map(({ icon, label, id, route}) => (
             <Tooltip key={id} delayDuration={0}>
               <TooltipTrigger asChild>
                 <Link href={route} passHref>
@@ -147,11 +148,6 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
                       {!isCollapsed && (
                         <>
                           <span className="flex-grow">{label}</span>
-                          {count !== undefined && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {count}
-                            </Badge>
-                          )}
                         </>
                       )}
                     </span>
