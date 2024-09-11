@@ -25,6 +25,7 @@ import {
   SunIcon,
   MoonIcon,
   SearchIcon,
+  SquareChartGantt
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
@@ -63,7 +64,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
 
   const navItems = [
     { icon: <HomeIcon />, label: "Dashboard", id: "dashboard", route: "/dashboard" },
-    { icon: <BriefcaseIcon />, label: "Tasks", id: "tasks", route: "/task-swiper"},
+    { icon: <BriefcaseIcon />, label: "My Tasks", id: "tasks", route: "/task-swiper"},
     // { icon: <BellIcon />, label: "Notifications", id: "notifications", route: "/notifications", count: 4 },
     // { icon: <MessageCircleIcon />, label: "Messages", id: "messages", route: "/messages" },
     // { icon: <InboxIcon />, label: "Inbox", id: "inbox", route: "/inbox", count: 9 },
@@ -74,7 +75,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
     { icon: <HistoryIcon />, label: "History", id: "history", route: "/history" },
     { icon: <img src="/assets/kanban.png" className="w-5 h-5" alt="kanban" />, label: "Board", id: "board", route: "/board" },
     { icon: <BookDashedIcon />, label: "Employees", id: "employees", route: "/employees" },
-    { icon: <MailIcon />, label: "Stages", id: "stages", route: "/stage-management" },
+    { icon: <SquareChartGantt />      , label: "Stages", id: "stages", route: "/stage-management" },
     { icon: <UsersIcon />, label: "Profile", id: "profiles", route: "/profile" },
   ];
 

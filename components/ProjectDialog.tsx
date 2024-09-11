@@ -7,9 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import { createProject } from '@/models/project'
+import { createProject, updateProject } from '@/models/project'
 import { Employee, fetchEmployees } from '@/models/employee'
-import { PlusCircle, Loader2, Search } from "lucide-react"
+import { PlusCircle, Loader2, Search, Edit } from "lucide-react"
 import { ProcessSelector } from './ProcessSelector'
 import { Stage } from '@/models/project'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -20,20 +20,32 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 
-export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: () => void }) {
+interface ProjectDialogProps {
+  project?: Project
+  onProjectAdded?: () => void
+  onProjectUpdated?: () => void
+}
+
+export default function ProjectDialog({ project, onProjectAdded, onProjectUpdated }: ProjectDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [newProjectName, setNewProjectName] = useState('')
-  const [newProjectManager, setNewProjectManager] = useState<EmployeeSummary | null>(null)
+  const [projectName, setProjectName] = useState(project?.name || '')
+  const [projectManager, setProjectManager] = useState<EmployeeSummary | null>(project?.manager || null)
   const [projectManagers, setProjectManagers] = useState<Employee[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([])
-  const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSummary[]>([])
+  const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSummary[]>(project?.resources || [])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProcesses, setSelectedProcesses] = useAtom(selectedProcessesAtom)
-  const [isAddingProject, setIsAddingProject] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (project && project.stages) {
+      setSelectedProcesses(project.stages)
+    }
+  }, [project, setSelectedProcesses])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,9 +90,9 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
         email: selectedManager.email,
         role: selectedManager.role,
       };
-      setNewProjectManager(manager);
+      setProjectManager(manager);
     } else {
-      setNewProjectManager(null);
+      setProjectManager(null);
     }
   };
 
@@ -100,8 +112,8 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
     })
   }
 
-  const handleAddProject = async () => {
-    if (!newProjectName || !newProjectManager || selectedProcesses.length === 0) {
+  const handleProjectAction = async () => {
+    if (!projectName || !projectManager || selectedProcesses.length === 0) {
       toast({
         title: "Error",
         description: "Please fill in all required fields and select at least one process",
@@ -110,55 +122,61 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
       return
     }
 
-    setIsAddingProject(true)
+    setIsProcessing(true)
     try {
-      console.log("Selected Processes:", selectedEmployees)
-      const newProject: Omit<Project, "id"> = {
-        name: newProjectName,
-        manager: newProjectManager,
+      const projectData: Omit<Project, "id"> = {
+        name: projectName,
+        manager: projectManager,
         stages: selectedProcesses,
         currentStage: {
           ...selectedProcesses[0],
           progress: selectedProcesses[0].progress as number | undefined
         },
-        onTrack: true,
+        onTrack: project ? project.onTrack : true,
         resources: selectedEmployees,
       }
-      await createProject(newProject)
-      onProjectAdded()
-      toast({
-        title: "Success",
-        description: "New project added successfully",
-      })
-      setNewProjectName('')
-      setNewProjectManager(null)
-      setSelectedProcesses([])
-      setSelectedEmployees([])
+
+      if (project) {
+        await updateProject({ ...projectData, id: project.id })
+        onProjectUpdated?.()
+        toast({
+          title: "Success",
+          description: "Project updated successfully",
+        })
+      } else {
+        await createProject(projectData)
+        onProjectAdded?.()
+        toast({
+          title: "Success",
+          description: "New project added successfully",
+        })
+      }
+
       setIsOpen(false)
     } catch (error) {
-      console.error('Error adding new project:', error)
+      console.error('Error processing project:', error)
       toast({
         title: "Error",
-        description: "Failed to add new project",
+        description: `Failed to ${project ? 'update' : 'add'} project`,
         variant: "destructive",
       })
     } finally {
-      setIsAddingProject(false)
+      setIsProcessing(false)
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" aria-label="Add new project">
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add Project
+        <Button variant="outline" size="sm" aria-label={project ? "Edit project" : "Add new project"}>
+          {project ? <Edit className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+          {project ? "Edit Project" : "Add Project"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Add New Project</DialogTitle>
-          <DialogDescription>Enter the details for the new project.</DialogDescription>
+          <DialogTitle>{project ? "Edit Project" : "Add New Project"}</DialogTitle>
+          <DialogDescription>Enter the details for the project.</DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-grow pr-4">
           <motion.div
@@ -171,8 +189,8 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
               <Label htmlFor="name">Project Name</Label>
               <Input
                 id="name"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
                 placeholder="Enter project name"
               />
             </div>
@@ -184,7 +202,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
                   <p className="text-sm text-muted-foreground">Loading project managers...</p>
                 </div>
               ) : (
-                <Select onValueChange={handleManagerChange} value={newProjectManager?.id}>
+                <Select onValueChange={handleManagerChange} value={projectManager?.id}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a project manager" />
                   </SelectTrigger>
@@ -253,17 +271,17 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
         </ScrollArea>
         <DialogFooter>
           <Button
-            onClick={handleAddProject}
-            disabled={!newProjectName || !newProjectManager || selectedProcesses.length === 0 || isAddingProject}
+            onClick={handleProjectAction}
+            disabled={!projectName || !projectManager || selectedProcesses.length === 0 || isProcessing}
             className="w-full mt-4"
           >
-            {isAddingProject ? (
+            {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding Project...
+                {project ? "Updating Project..." : "Adding Project..."}
               </>
             ) : (
-              'Add Project'
+              project ? "Update Project" : "Add Project"
             )}
           </Button>
         </DialogFooter>

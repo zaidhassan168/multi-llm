@@ -164,7 +164,7 @@ export default function TaskSwiper() {
 
   return (
     <div className="container mx-auto p-6 max-w-xl h-screen flex flex-col">
-      <h1 className="text-2xl font-bold mb-4 text-center">Task Swiper</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">My Tasks</h1>
 
       {/* Task Stats */}
       <div className="mb-4 p-4 bg-white rounded-lg shadow-sm">

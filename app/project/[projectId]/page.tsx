@@ -39,7 +39,7 @@ import { Employee, fetchEmployees } from "@/models/employee";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertOctagon, AlertTriangle } from "lucide-react";
 import { Transition } from "@headlessui/react";
-import { EditProjectDialog } from "@/components/EditProjectDialog";
+import ProjectDialog from "@/components/ProjectDialog"
 import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
@@ -291,7 +291,24 @@ export default function ProjectDetails() {
       </PopoverContent>
     </Popover>
   );
+  const handleProjectUpdated = (updatedProject: Project) => {
 
+    try {
+      // Update the project in the local state
+      setProject(updatedProject)
+      toast({
+        title: "Success",
+        description: "Project updated successfully",
+      })
+    } catch (error) {
+      console.error('Error updating project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update project",
+        variant: "destructive",
+      })
+    }
+  }
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -309,18 +326,15 @@ export default function ProjectDetails() {
   }
   ////////////////////////////////
   return (
-    
+
     <div className="container mx-auto p-4 max-w-7xl">
-  <div className="flex items-center mb-6">
-  <h1 className="text-3xl font-bold mr-2">
-    {project.name} - Project Details
-  </h1>
-  <EditProjectDialog
-    project={project}
-    processes={project.stages}
-    // onSave={fetchProjectData}
-  />
-</div>
+      <div className="flex items-center mb-6">
+        <h1 className="text-3xl font-bold mr-2">
+          {project.name} - Project Details
+        </h1>
+        <ProjectDialog project={project} onProjectUpdated={() => handleProjectUpdated(project)} />
+
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
