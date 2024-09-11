@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,16 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Mail, 
-  UserCircle, 
-  Briefcase, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Mail,
+  UserCircle,
+  Briefcase,
+  Clock,
+  CheckCircle,
+  AlertCircle,
   Calendar,
   Edit,
-  Save
+  Save,
 } from "lucide-react";
 import { fetchEmployee } from "@/models/employee";
 import { updateProfile } from "firebase/auth";
@@ -97,8 +96,13 @@ function UserProfile() {
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
         <CardHeader className="flex flex-col items-center space-y-4">
           <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
-            <AvatarImage src={user.photoURL || "/placeholder.svg"} alt={user.displayName || "User"} />
-            <AvatarFallback>{user.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+            <AvatarImage
+              src={user.photoURL || "/placeholder.svg"}
+              alt={user.displayName || "User"}
+            />
+            <AvatarFallback>
+              {user.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
+            </AvatarFallback>
           </Avatar>
           <CardTitle className="text-3xl font-bold">
             {editMode ? (
@@ -116,7 +120,12 @@ function UserProfile() {
             ) : (
               <div className="flex items-center space-x-2">
                 {user.displayName || "User Profile"}
-                <Button variant="ghost" size="icon" onClick={() => setEditMode(true)} className="text-white hover:bg-white/20">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditMode(true)}
+                  className="text-white hover:bg-white/20"
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
               </div>
@@ -131,20 +140,20 @@ function UserProfile() {
         <InfoItem icon={<Briefcase className="text-green-500" />} label="Current Project" value={employee.currentProject || "N/A"} />
         <InfoItem icon={<Clock className="text-yellow-500" />} label="Availability" value={`${employee.availability || 0}%`} />
         <InfoItem icon={<Calendar className="text-purple-500" />} label="Join Date" value={employee.joinDate || "N/A"} />
-        
+
         <div className="col-span-full">
           <h3 className="text-lg font-semibold mb-2">Task Overview</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TaskStatCard 
-              icon={<CheckCircle className="text-green-500" />} 
-              label="Completed Tasks" 
-              value={employee.completedTasks || 0} 
+            <TaskStatCard
+              icon={<CheckCircle className="text-green-500" />}
+              label="Completed Tasks"
+              value={employee.completedTasks || 0}
               total={employee.totalTasks || 0}
             />
-            <TaskStatCard 
-              icon={<AlertCircle className="text-yellow-500" />} 
-              label="Pending Tasks" 
-              value={(employee.totalTasks || 0) - (employee.completedTasks || 0)} 
+            <TaskStatCard
+              icon={<AlertCircle className="text-yellow-500" />}
+              label="Pending Tasks"
+              value={(employee.totalTasks || 0) - (employee.completedTasks || 0)}
               total={employee.totalTasks || 0}
             />
           </div>
@@ -174,7 +183,7 @@ function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string
 
 function TaskStatCard({ icon, label, value, total }: { icon: React.ReactNode; label: string; value: number; total: number }) {
   const percentage = total > 0 ? (value / total) * 100 : 0;
-  
+
   return (
     <Card className="p-4 shadow-md">
       <div className="flex items-center justify-between mb-2">
