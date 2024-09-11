@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { createProject } from '@/models/project'
 import { Employee, fetchEmployees } from '@/models/employee'
-import { PlusCircle, Loader2 } from "lucide-react"
+import { PlusCircle, Loader2, Search } from "lucide-react"
 import { ProcessSelector } from './ProcessSelector'
 import { Stage } from '@/models/project'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -18,30 +18,36 @@ import { Project } from '@/models/project'
 import { selectedProcessesAtom } from '@/lib/states/stageAtom'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: () => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectManager, setNewProjectManager] = useState<EmployeeSummary | null>(null)
   const [projectManagers, setProjectManagers] = useState<Employee[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([])
+  const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProcesses, setSelectedProcesses] = useAtom(selectedProcessesAtom)
   const [isAddingProject, setIsAddingProject] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const { toast } = useToast()
 
   useEffect(() => {
-    const fetchProjectManagers = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true)
-        const employees = await fetchEmployees()
-        const managers = employees.filter(emp => emp.role === 'projectManager')
-        setProjectManagers(managers)
+        const fetchedEmployees = await fetchEmployees()
+        setEmployees(fetchedEmployees)
+        setFilteredEmployees(fetchedEmployees)
+        setProjectManagers(fetchedEmployees.filter(emp => emp.role === 'projectManager'))
       } catch (error: unknown) {
-        console.error('Error fetching project managers:', error instanceof Error ? error.message : String(error))
+        console.error('Error fetching employees:', error instanceof Error ? error.message : String(error))
         toast({
           title: 'Error',
-          description: `Failed to fetch project managers: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          description: `Failed to fetch employees: ${error instanceof Error ? error.message : 'Unknown error'}`,
           variant: 'destructive',
         })
       } finally {
@@ -50,9 +56,18 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
     }
 
     if (isOpen) {
-      fetchProjectManagers()
+      fetchData()
     }
   }, [isOpen, toast])
+
+  useEffect(() => {
+    const filtered = employees.filter(employee =>
+      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.role.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    setFilteredEmployees(filtered)
+  }, [searchTerm, employees])
 
   const handleManagerChange = (value: string) => {
     const selectedManager = projectManagers.find(manager => manager.id === value);
@@ -69,11 +84,27 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
     }
   };
 
+  const handleEmployeeToggle = (employee: Employee) => {
+    setSelectedEmployees(prev => {
+      const isSelected = prev.some(e => e.id === employee.id)
+      if (isSelected) {
+        return prev.filter(e => e.id !== employee.id)
+      } else {
+        return [...prev, {
+          id: employee.id,
+          name: employee.name,
+          email: employee.email,
+          role: employee.role,
+        }]
+      }
+    })
+  }
+
   const handleAddProject = async () => {
     if (!newProjectName || !newProjectManager || selectedProcesses.length === 0) {
       toast({
         title: "Error",
-        description: "Please fill in all fields and select at least one process",
+        description: "Please fill in all required fields and select at least one process",
         variant: "destructive",
       })
       return
@@ -81,6 +112,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
 
     setIsAddingProject(true)
     try {
+      console.log("Selected Processes:", selectedEmployees)
       const newProject: Omit<Project, "id"> = {
         name: newProjectName,
         manager: newProjectManager,
@@ -90,6 +122,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
           progress: selectedProcesses[0].progress as number | undefined
         },
         onTrack: true,
+        resources: selectedEmployees,
       }
       await createProject(newProject)
       onProjectAdded()
@@ -100,6 +133,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
       setNewProjectName('')
       setNewProjectManager(null)
       setSelectedProcesses([])
+      setSelectedEmployees([])
       setIsOpen(false)
     } catch (error) {
       console.error('Error adding new project:', error)
@@ -121,7 +155,7 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
           Add Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Add New Project</DialogTitle>
           <DialogDescription>Enter the details for the new project.</DialogDescription>
@@ -162,6 +196,53 @@ export default function AddProjectDialog({ onProjectAdded }: { onProjectAdded: (
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Project Resources</Label>
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <p className="text-sm text-muted-foreground">Loading employees...</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      type="text"
+                      placeholder="Search employees..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                  <div className="border rounded-md">
+                    <ScrollArea className="h-40 w-full">
+                      <div className="p-1">
+                        {filteredEmployees.map(employee => (
+                          <div
+                            key={employee.id}
+                            className={`flex items-center space-x-2 p-2 rounded-md transition-colors ${
+                              selectedEmployees.some(e => e.id === employee.id)
+                                ? 'bg-primary/20'
+                                : 'bg-gray-50 hover:bg-gray-100'
+                            }`}
+                          >
+                            <Checkbox
+                              id={`employee-${employee.id}`}
+                              checked={selectedEmployees.some(e => e.id === employee.id)}
+                              onCheckedChange={() => handleEmployeeToggle(employee)}
+                            />
+                            <Label htmlFor={`employee-${employee.id}`} className="text-sm cursor-pointer">
+                              {employee.name} ({employee.role})
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
               )}
             </div>
             <div className="space-y-2">

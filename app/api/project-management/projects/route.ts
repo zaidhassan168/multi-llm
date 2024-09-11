@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       ...projectData,
       id: projectId,
       stages: projectData.stages || [], // Initialize with an empty array of stages
-      resources: [], // Initialize with an empty array of resources
+      resources: projectData.resources || [], // Initialize with an empty array of resources
       tasks: [], // Initialize with an empty array of task summaries
     };
 
