@@ -1,31 +1,28 @@
+"use client"
+
 import React, { useEffect, useState } from 'react'
+import { useAtom } from 'jotai'
 import { Stage } from '@/models/project'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Check } from "lucide-react"
 import { fetchStages } from '@/models/stage'
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"  // Assuming you have a Tooltip component
-
-type ProcessSelectorProps = {
-  previousProcesses?: Stage[]
-  onProcessesSelected: (processes: Stage[]) => void
-}
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
+import { selectedProcessesAtom } from '@/lib/states/stageAtom'
 
 const processGroups = [
-  { name: 'Initiating', color: 'text-red-700' },
-  { name: 'Planning', color: 'text-blue-700' },
-  { name: 'Executing', color: 'text-green-700' },
-  { name: 'Monitoring and Controlling', color: 'text-yellow-700' },
-  { name: 'Closing', color: 'text-purple-700' },
+  { name: 'Initiating', color: 'text-red-700', bgColor: 'bg-red-100', mutedColor: 'bg-red-200' },
+  { name: 'Planning', color: 'text-blue-700', bgColor: 'bg-blue-100', mutedColor: 'bg-blue-200' },
+  { name: 'Executing', color: 'text-green-700', bgColor: 'bg-green-100', mutedColor: 'bg-green-200' },
+  { name: 'Monitoring and Controlling', color: 'text-yellow-700', bgColor: 'bg-yellow-100', mutedColor: 'bg-yellow-200' },
+  { name: 'Closing', color: 'text-purple-700', bgColor: 'bg-purple-100', mutedColor: 'bg-purple-200' },
 ]
 
-export function ProcessSelector({ onProcessesSelected, previousProcesses }: ProcessSelectorProps) {
+export function ProcessSelector() {
   const [stages, setStages] = useState<Stage[]>([])
-  // set the previous processes
-  const [selectedProcesses, setSelectedProcesses] = useState<Stage[]>(previousProcesses || [])
+  const [selectedProcesses, setSelectedProcesses] = useAtom(selectedProcessesAtom)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,23 +55,6 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
     setSelectedProcesses(prev => prev.filter(p => p.id !== processId))
   }
 
-  const handleSave = () => {
-    onProcessesSelected(selectedProcesses)
-  }
-
-  const getProcessColor = (index: number) => {
-    const colors = [
-      'bg-red-100 text-red-800 hover:bg-red-200',
-      'bg-blue-100 text-blue-800 hover:bg-blue-200',
-      'bg-green-100 text-green-800 hover:bg-green-200',
-      'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-      'bg-purple-100 text-purple-800 hover:bg-purple-200',
-      'bg-pink-100 text-pink-800 hover:bg-pink-200',
-      'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
-    ]
-    return colors[index % colors.length]
-  }
-
   const groupByProcessGroup = (stages: Stage[]) => {
     return processGroups.reduce((acc: Record<string, Stage[]>, group) => {
       acc[group.name] = stages.filter(stage => stage.processGroup === group.name)
@@ -97,7 +77,6 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Project Processes</h2>
 
-        {/* Display selected processes */}
         <div className="min-h-[100px] p-4 bg-secondary/20 rounded-lg border-2 border-dashed border-secondary">
           <AnimatePresence>
             {selectedProcesses.length === 0 ? (
@@ -111,7 +90,7 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
               </motion.p>
             ) : (
               <motion.div className="flex flex-wrap gap-2" layout>
-                {selectedProcesses.map((process, index) => (
+                {selectedProcesses.map((process) => (
                   <Tooltip key={process.id} delayDuration={0}>
                     <TooltipTrigger asChild>
                       <motion.div
@@ -120,21 +99,20 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.2 }}
+                        className="bg-gray-50 rounded-md p-2 flex items-center justify-between"
                       >
-                        <Badge className={`${getProcessColor(index)} px-3 py-1 text-xs font-semibold rounded-full truncate`}>
-                          <span className="truncate max-w-[150px]">{process.name}</span>
-                          <button
-                            onClick={() => handleRemoveProcess(process.id)}
-                            className="ml-2 hover:bg-white/20 rounded-full p-1"
-                            aria-label={`Remove ${process.name}`}
-                          >
-                            <X size={12} />
-                          </button>
-                        </Badge>
+                        <span className="text-xs">{process.name}</span>
+                        <button
+                          onClick={() => handleRemoveProcess(process.id)}
+                          className="ml-2 hover:bg-gray-200 rounded-full p-1"
+                          aria-label={`Remove ${process.name}`}
+                        >
+                          <X size={12} />
+                        </button>
                       </motion.div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{process.processGroup}</p> {/* Display the process group in the tooltip */}
+                      <p>{process.processGroup}</p>
                     </TooltipContent>
                   </Tooltip>
                 ))}
@@ -143,7 +121,6 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
           </AnimatePresence>
         </div>
 
-        {/* Dialog for selecting processes */}
         <Dialog>
           <DialogTrigger asChild>
             <Button className="w-full">
@@ -155,48 +132,49 @@ export function ProcessSelector({ onProcessesSelected, previousProcesses }: Proc
               <DialogTitle>Select Project Processes by Group</DialogTitle>
             </DialogHeader>
             <ScrollArea className="h-[500px] pr-4">
-              <div className="grid grid-cols-5 gap-4">
-                {processGroups.map((group, groupIndex) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {processGroups.map((group) => (
                   <div key={group.name} className="space-y-2">
-                    <h3 className={`font-bold text-center ${group.color}`}>{group.name}</h3>
-                    {groupedStages[group.name] && groupedStages[group.name].length > 0 ? (
-                      groupedStages[group.name].map((process, index) => {
-                        const isSelected = selectedProcesses.some(p => p.id === process.id)
-                        return (
-                          <motion.div
-                            key={process.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <Badge
-                              className={`w-full py-2 px-3 flex items-center justify-between cursor-pointer transition-colors duration-200 truncate ${
-                                getProcessColor(index)
-                              } ${isSelected ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
-                              onClick={() => handleProcessToggle(process)}
+                    <div className={`${group.bgColor} rounded-t-lg p-2`}>
+                      <h3 className={`font-bold text-center ${group.color} text-sm`}>{group.name}</h3>
+                    </div>
+                    <div className="space-y-2 bg-gray-50 p-2 rounded-b-lg">
+                      {groupedStages[group.name] && groupedStages[group.name].length > 0 ? (
+                        groupedStages[group.name].map((process, index) => {
+                          const isSelected = selectedProcesses.some(p => p.id === process.id)
+                          return (
+                            <motion.div
+                              key={process.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
                             >
-                              <div className="flex flex-col items-start">
-                                <span className="font-semibold truncate max-w-[150px]" title={process.name}>
-                                  {process.name}
-                                </span>
-                                <span className="text-xs opacity-70">{Number(process.completionTime)} days</span>
+                              <div
+                                className={`w-full py-2 px-3 rounded-md cursor-pointer transition-colors duration-200 ${
+                                  isSelected ? group.mutedColor : 'bg-white'
+                                }`}
+                                onClick={() => handleProcessToggle(process)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium break-words" title={process.name}>
+                                    {process.name}
+                                  </span>
+                                  {isSelected && <Check size={14} className="flex-shrink-0 ml-2" />}
+                                </div>
                               </div>
-                              {isSelected && <Check size={16} className="flex-shrink-0" />}
-                            </Badge>
-                          </motion.div>
-                        )
-                      })
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No processes available</p>
-                    )}
+                            </motion.div>
+                          )
+                        })
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No processes available</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </ScrollArea>
           </DialogContent>
         </Dialog>
-
-        <Button onClick={handleSave} className="w-full">Save Selected Processes</Button>
       </div>
     </TooltipProvider>
   )

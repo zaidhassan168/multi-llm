@@ -4,9 +4,8 @@ import { TaskSummary } from "./summaries";
 type Stage = {  
   id: string;  
   name: string;  
-  completionTime: Number;  
-  owner: string;  
-  processGroup?: string;  // Process Group (e.g., "Planning", "Executing")
+  owner?: string;  
+  processGroup: string;  // Process Group (e.g., "Planning", "Executing")
   knowledgeArea?: string;  
   taskIds?: string[];  // Array of task IDs within this stage
   employeeIds?: string[];  // Array of employee IDs working on this stage
@@ -40,7 +39,7 @@ type Stage = {
 
   export async function updateStage(stage: Stage): Promise<Stage> {
     const response = await fetch(`/api/project-management/stages/${stage.id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(stage),
     });
@@ -51,7 +50,7 @@ type Stage = {
   }
 
   export async function deleteStage(id: string): Promise<void> {
-    const response = await fetch(`/api/project-management/projectStages/stages/${id}`, {
+    const response = await fetch(`/api/project-management/stages/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) {

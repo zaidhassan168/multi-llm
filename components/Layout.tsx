@@ -27,8 +27,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [checkAuthState])
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && pathname !== '/login') {
-      router.push('/login')
+    if (!isLoading) {
+      if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
+        router.push('/login');
+      } else if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+        router.push('/dashboard');
+      }
     }
   }, [isAuthenticated, isLoading, pathname, router])
 

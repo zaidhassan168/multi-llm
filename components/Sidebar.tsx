@@ -72,8 +72,9 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
     // { icon: <CodeIcon />, label: "Code", id: "code", route: "/code-chat" },
     { icon: <BotIcon />, label: "Assistant", id: "assistant", route: "/assistant" },
     { icon: <HistoryIcon />, label: "History", id: "history", route: "/history" },
-    { icon: <img src="/assets/kanban.png" className="w-5 h-5" alt="kanban" />, label: "Kanban", id: "kanban", route: "/kanban" },
+    { icon: <img src="/assets/kanban.png" className="w-5 h-5" alt="kanban" />, label: "Board", id: "board", route: "/board" },
     { icon: <BookDashedIcon />, label: "Employees", id: "employees", route: "/employees" },
+    { icon: <MailIcon />, label: "Stages", id: "stages", route: "/stage-management" },
     { icon: <UsersIcon />, label: "Profile", id: "profiles", route: "/profile" },
   ];
 
