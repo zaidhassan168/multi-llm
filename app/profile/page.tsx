@@ -70,7 +70,7 @@ function UserProfile() {
       setLoading(false);
     }
   };
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -140,7 +140,7 @@ function UserProfile() {
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-10 bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-white">
+      <div className="bg-gradient-to-r from-green-300 to-green-200 p-8 text-white">
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
@@ -190,7 +190,7 @@ function UserProfile() {
           </div>
         </div>
       </div>
-      
+
       <input
         type="file"
         ref={fileInputRef}
@@ -252,7 +252,7 @@ function UserProfile() {
 
 function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center space-x-3 p-3 bg-card-background rounded-lg">
       <div className="flex-shrink-0">{icon}</div>
       <div>
         <p className="text-sm text-gray-500">{label}</p>
