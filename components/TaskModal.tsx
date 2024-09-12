@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Task } from '@/models/task'
-import { CalendarIcon, EditIcon, SaveIcon, XIcon,TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon } from 'lucide-react'
+import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
@@ -17,7 +17,7 @@ import { fetchProjects } from '@/models/project'
 import { fetchEmployees } from '@/models/employee'
 import { EmployeeSummary, TaskSummary } from '@/models/summaries'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-
+import { AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon } from 'lucide-react'
 type TaskModalProps = {
   isOpen: boolean
   onClose: () => void
@@ -27,6 +27,7 @@ type TaskModalProps = {
   onEdit: () => void
 }
 
+
 const priorityColors = {
   low: 'bg-green-100 border-green-500 text-green-700',
   medium: 'bg-yellow-100 border-yellow-500 text-yellow-700',
@@ -35,7 +36,14 @@ const priorityColors = {
   critical: 'bg-purple-100 border-purple-500 text-purple-700',
   null: 'bg-gray-100 border-gray-500 text-gray-700',
 }
-
+const priorityIcons = {
+  low: { icon: FlagIcon, color: priorityColors.low },
+  medium: { icon: AlertCircleIcon, color: priorityColors.medium },
+  high: { icon: AlertTriangleIcon, color: priorityColors.high },
+  urgent: { icon: AlertOctagonIcon, color: priorityColors.urgent },
+  critical: { icon: BellIcon, color: priorityColors.critical },
+  null: { icon: HelpCircleIcon, color: priorityColors.null },
+}
 const taskTypeIcons = {
   bug: { icon: BugIcon, color: 'text-red-500' },
   feature: { icon: LightbulbIcon, color: 'text-yellow-500' },
@@ -101,10 +109,10 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       setIsLoading(true)
       try {
         const projectsData = await fetchProjects()
-        setProjects(projectsData.map(p => ({ 
-          id: p.id, 
-          name: p.name, 
-          stages: p.stages?.map(stage => ({ id: stage.id, name: stage.name })) || [] 
+        setProjects(projectsData.map(p => ({
+          id: p.id,
+          name: p.name,
+          stages: p.stages?.map(stage => ({ id: stage.id, name: stage.name })) || []
         })))
 
         const developersData = await fetchEmployees()
@@ -154,28 +162,28 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
   return (
     <Drawer open={isOpen} onClose={onClose}>
       <DrawerContent className="h-[90vh] max-w-4xl mx-auto">
-      <DrawerHeader className="space-y-2">
-  <div className="flex justify-between items-center">
-    <DrawerTitle className="text-3xl font-bold text-gray-800">
-      {task ? (isEditMode ? 'Edit Task' : 'Task Details') : 'Add New Task'}
-    </DrawerTitle>
-    <div className="flex items-center space-x-2">
-      {task && !isEditMode && (
-        <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100 rounded-full">
-          <EditIcon className="h-5 w-5 text-gray-600" />
-          <span className="sr-only">Edit</span>
-        </Button>
-      )}
-      <Button variant="outline" size="icon" onClick={onClose} className="hover:bg-gray-100 rounded-full">
-        <XIcon className="h-5 w-5 text-gray-600" />
-        <span className="sr-only">Close</span>
-      </Button>
-    </div>
-  </div>
-  <DrawerDescription className="text-gray-600">
-    {task ? (isEditMode ? 'Edit the details of your task.' : 'View task details.') : 'Add a new task to your board.'}
-  </DrawerDescription>
-</DrawerHeader>
+        <DrawerHeader className="space-y-2">
+          <div className="flex justify-between items-center">
+            <DrawerTitle className="text-3xl font-bold text-gray-800">
+              {task ? (isEditMode ? 'Edit Task' : 'Task Details') : 'Add New Task'}
+            </DrawerTitle>
+            <div className="flex items-center space-x-2">
+              {task && !isEditMode && (
+                <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100 rounded-full">
+                  <EditIcon className="h-5 w-5 text-gray-600" />
+                  <span className="sr-only">Edit</span>
+                </Button>
+              )}
+              <Button variant="outline" size="icon" onClick={onClose} className="hover:bg-gray-100 rounded-full">
+                <XIcon className="h-5 w-5 text-gray-600" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
+          </div>
+          <DrawerDescription className="text-gray-600">
+            {task ? (isEditMode ? 'Edit the details of your task.' : 'View task details.') : 'Add a new task to your board.'}
+          </DrawerDescription>
+        </DrawerHeader>
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -372,13 +380,27 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as Task['priority'] }))}
                     disabled={!isEditMode}
                   >
-                    <SelectTrigger className={`border-2 ${priorityColors[formData.priority as keyof typeof priorityColors]}`}>
-                      <SelectValue placeholder="Select priority" />
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="Select priority">
+                        {formData.priority && (
+                          <div className="flex items-center">
+                            {React.createElement(priorityIcons[formData.priority as keyof typeof priorityIcons].icon, {
+                              className: `h-4 w-4 mr-2 ${priorityIcons[formData.priority as keyof typeof priorityIcons].color}`
+                            })}
+                            <span>{formData.priority}</span>
+                          </div>
+                        )}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {taskPriorities.map((priority) => (
-                        <SelectItem key={priority} value={priority} className={priorityColors[priority as keyof typeof priorityColors]}>
-                          {priority}
+                        <SelectItem key={priority} value={priority}>
+                          <div className="flex items-center">
+                            {React.createElement(priorityIcons[priority as keyof typeof priorityIcons].icon, {
+                              className: `h-4 w-4 mr-2 ${priorityIcons[priority as keyof typeof priorityIcons].color}`
+                            })}
+                            <span>{priority}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
