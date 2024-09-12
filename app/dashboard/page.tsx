@@ -16,7 +16,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { useToast } from "@/components/ui/use-toast"
 import ProjectDialog from "@/components/ProjectDialog"
 import Link from 'next/link'
-
+import { ChatButton } from '@/components/chat-button'
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function ProjectManagementDashboard() {
@@ -371,6 +371,7 @@ export default function ProjectManagementDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      <ChatButton />
     </div>
   )
 }
