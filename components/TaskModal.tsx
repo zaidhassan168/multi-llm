@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Task } from '@/models/task'
-import { CalendarIcon, EditIcon, SaveIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon } from 'lucide-react'
+import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
@@ -16,7 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { fetchProjects } from '@/models/project'
 import { fetchEmployees } from '@/models/employee'
 import { EmployeeSummary, TaskSummary } from '@/models/summaries'
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon } from 'lucide-react'
 type TaskModalProps = {
   isOpen: boolean
   onClose: () => void
@@ -26,6 +27,7 @@ type TaskModalProps = {
   onEdit: () => void
 }
 
+
 const priorityColors = {
   low: 'bg-green-100 border-green-500 text-green-700',
   medium: 'bg-yellow-100 border-yellow-500 text-yellow-700',
@@ -33,6 +35,22 @@ const priorityColors = {
   urgent: 'bg-red-100 border-red-500 text-red-700',
   critical: 'bg-purple-100 border-purple-500 text-purple-700',
   null: 'bg-gray-100 border-gray-500 text-gray-700',
+}
+const priorityIcons = {
+  low: { icon: FlagIcon, color: priorityColors.low },
+  medium: { icon: AlertCircleIcon, color: priorityColors.medium },
+  high: { icon: AlertTriangleIcon, color: priorityColors.high },
+  urgent: { icon: AlertOctagonIcon, color: priorityColors.urgent },
+  critical: { icon: BellIcon, color: priorityColors.critical },
+  null: { icon: HelpCircleIcon, color: priorityColors.null },
+}
+const taskTypeIcons = {
+  bug: { icon: BugIcon, color: 'text-red-500' },
+  feature: { icon: LightbulbIcon, color: 'text-yellow-500' },
+  documentation: { icon: FileTextIcon, color: 'text-blue-500' },
+  task: { icon: CheckSquareIcon, color: 'text-green-500' },
+  changeRequest: { icon: RefreshCcwIcon, color: 'text-purple-500' },
+  other: { icon: HelpCircleIcon, color: 'text-gray-500' },
 }
 
 export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: TaskModalProps) {
@@ -56,6 +74,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
     dueDate: undefined,
     comments: [],
     stageId: '',
+    type: 'task'
   })
 
   useEffect(() => {
@@ -78,6 +97,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
           dueDate: undefined,
           comments: [],
           stageId: '',
+          type: 'task'
         })
         setIsEditMode(true)
       }
@@ -89,10 +109,10 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
       setIsLoading(true)
       try {
         const projectsData = await fetchProjects()
-        setProjects(projectsData.map(p => ({ 
-          id: p.id, 
-          name: p.name, 
-          stages: p.stages?.map(stage => ({ id: stage.id, name: stage.name })) || [] 
+        setProjects(projectsData.map(p => ({
+          id: p.id,
+          name: p.name,
+          stages: p.stages?.map(stage => ({ id: stage.id, name: stage.name })) || []
         })))
 
         const developersData = await fetchEmployees()
@@ -137,24 +157,34 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
   }
 
   const taskPriorities = ['low', 'medium', 'high', 'urgent', 'critical', 'null']
+  const taskTypes = ['bug', 'feature', 'documentation', 'task', 'changeRequest', 'other']
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] md:w-[700px] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex justify-between items-center text-3xl font-bold text-gray-800">
-            <span>{task ? (isEditMode ? 'Edit Task' : 'Task Details') : 'Add New Task'}</span>
-            {task && !isEditMode && (
-              <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100 rounded-full">
-                <EditIcon className="h-5 w-5 text-gray-600" />
+    <Drawer open={isOpen} onClose={onClose}>
+      <DrawerContent className="h-[90vh] max-w-4xl mx-auto">
+        <DrawerHeader className="space-y-2">
+          <div className="flex justify-between items-center">
+            <DrawerTitle className="text-3xl font-bold text-gray-800">
+              {task ? (isEditMode ? 'Edit Task' : 'Task Details') : 'Add New Task'}
+            </DrawerTitle>
+            <div className="flex items-center space-x-2">
+              {task && !isEditMode && (
+                <Button variant="outline" size="icon" onClick={handleEdit} className="hover:bg-gray-100 rounded-full">
+                  <EditIcon className="h-5 w-5 text-gray-600" />
+                  <span className="sr-only">Edit</span>
+                </Button>
+              )}
+              <Button variant="outline" size="icon" onClick={onClose} className="hover:bg-gray-100 rounded-full">
+                <XIcon className="h-5 w-5 text-gray-600" />
+                <span className="sr-only">Close</span>
               </Button>
-            )}
-          </SheetTitle>
-          <SheetDescription className="text-gray-600">
+            </div>
+          </div>
+          <DrawerDescription className="text-gray-600">
             {task ? (isEditMode ? 'Edit the details of your task.' : 'View task details.') : 'Add a new task to your board.'}
-          </SheetDescription>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+          </DrawerDescription>
+        </DrawerHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-gray-700 font-semibold">
@@ -170,7 +200,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                 className="border-gray-300 focus:border-blue-500"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="projectId" className="text-gray-700 font-semibold">
                   Project
@@ -217,6 +247,42 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                   </Select>
                 </div>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="type" className="text-gray-700 font-semibold">
+                  Type
+                </Label>
+                <Select
+                  name="type"
+                  value={formData.type}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Task['type'] }))}
+                  disabled={!isEditMode}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                    <SelectValue placeholder="Select type">
+                      {formData.type && (
+                        <div className="flex items-center">
+                          {React.createElement(taskTypeIcons[formData.type as keyof typeof taskTypeIcons].icon, {
+                            className: `h-4 w-4 mr-2 ${taskTypeIcons[formData.type as keyof typeof taskTypeIcons].color}`
+                          })}
+                          <span>{formData.type}</span>
+                        </div>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taskTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center">
+                          {React.createElement(taskTypeIcons[type as keyof typeof taskTypeIcons].icon, {
+                            className: `h-4 w-4 mr-2 ${taskTypeIcons[type as keyof typeof taskTypeIcons].color}`
+                          })}
+                          <span>{type}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description" className="text-gray-700 font-semibold">
@@ -233,7 +299,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <ClockIcon className="h-5 w-5 text-gray-500" />
@@ -314,13 +380,27 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                     onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as Task['priority'] }))}
                     disabled={!isEditMode}
                   >
-                    <SelectTrigger className={`border-2 ${priorityColors[formData.priority as keyof typeof priorityColors]}`}>
-                      <SelectValue placeholder="Select priority" />
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="Select priority">
+                        {formData.priority && (
+                          <div className="flex items-center">
+                            {React.createElement(priorityIcons[formData.priority as keyof typeof priorityIcons].icon, {
+                              className: `h-4 w-4 mr-2 ${priorityIcons[formData.priority as keyof typeof priorityIcons].color}`
+                            })}
+                            <span>{formData.priority}</span>
+                          </div>
+                        )}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {taskPriorities.map((priority) => (
-                        <SelectItem key={priority} value={priority} className={priorityColors[priority as keyof typeof priorityColors]}>
-                          {priority}
+                        <SelectItem key={priority} value={priority}>
+                          <div className="flex items-center">
+                            {React.createElement(priorityIcons[priority as keyof typeof priorityIcons].icon, {
+                              className: `h-4 w-4 mr-2 ${priorityIcons[priority as keyof typeof priorityIcons].color}`
+                            })}
+                            <span>{priority}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -328,83 +408,92 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
                 </div>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex items-center space-x-2">
-              <UserIcon className="h-5 w-5 text-gray-500" />
-              <div className="space-y-2 flex-grow">
-                <Label htmlFor="assignee" className="text-gray-700 font-semibold">
-                  Assignee
-                </Label>
-                <Select
-                  name="assignee"
-                  value={formData.assignee.name}
-                  onValueChange={(value) => {
-                    const selectedDev = developers.find(dev => dev.name === value);
-                    if (selectedDev) {
-                      setFormData(prev => ({
-                        ...prev,
-                        assignee: {
-                          id: selectedDev.id,
-                          name: selectedDev.name,
-                          email: selectedDev.email,
-                          role: selectedDev.role
-                        }
-                      }));
-                    }
-                  }}
-                  disabled={!isEditMode}
-                >
-                  <SelectTrigger className="border-gray-300 focus:border-blue-500">
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {developers.map((dev) => (
-                      <SelectItem key={dev.id} value={dev.name}>
-                        {dev.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <UserIcon className="h-5 w-5 text-gray-500" />
+                <div className="space-y-2 flex-grow">
+                  <Label htmlFor="assignee" className="text-gray-700 font-semibold">
+                    Assignee
+                  </Label>
+                  <Select
+                    name="assignee"
+                    value={formData.assignee.name}
+                    onValueChange={(value) => {
+                      const selectedDev = developers.find(dev => dev.name === value);
+                      if (selectedDev) {
+                        setFormData(prev => ({
+                          ...prev,
+                          assignee: {
+                            id: selectedDev.id,
+                            name: selectedDev.name,
+                            email: selectedDev.email,
+                            role: selectedDev.role
+                          }
+                        }));
+                      }
+                    }}
+                    disabled={!isEditMode}
+                  >
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="Select assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {developers.map((dev) => (
+                        <SelectItem key={dev.id} value={dev.name}>
+                          <div className="flex items-center">
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={`/avatars/${dev.id}.jpg`} alt={dev.name} />
+                              <AvatarFallback>{dev.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {dev.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CalendarIcon className="h-5 w-5 text-gray-500" />
+                <div className="space-y-2 flex-grow">
+                  <Label htmlFor="dueDate" className="text-gray-700 font-semibold">
+                    Due Date
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal border-gray-300 focus:border-blue-500",
+                          !formData.dueDate && "text-muted-foreground"
+                        )}
+                        disabled={!isEditMode}
+                      >
+                        {formData.dueDate ? format(formData.dueDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.dueDate}
+                        onSelect={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <CalendarIcon className="h-5 w-5 text-gray-500" />
-              <div className="space-y-2 flex-grow">
-                <Label htmlFor="dueDate" className="text-gray-700 font-semibold">
-                  Due Date
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal border-gray-300 focus:border-blue-500",
-                        !formData.dueDate && "text-muted-foreground"
-                      )}
-                      disabled={!isEditMode}
-                    >
-                      {formData.dueDate ? format(formData.dueDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.dueDate}
-                      onSelect={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
           </div>
+        </form>
+        <DrawerFooter>
           {isEditMode && (
-            <div className="flex justify-between pt-6">
-              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2 rounded-full">
+            <div className="flex justify-between w-full">
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2 rounded-full" onClick={handleSubmit}>
                 <SaveIcon className="h-4 w-4" />
                 {task ? 'Update' : 'Add'} Task
               </Button>
+
               {task && (
                 <Button
                   type="button"
@@ -421,8 +510,8 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, onEdit }: T
               )}
             </div>
           )}
-        </form>
-      </SheetContent>
-    </Sheet>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   )
 }

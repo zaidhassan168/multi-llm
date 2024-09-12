@@ -14,7 +14,7 @@ import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/mode
 import { useAuth } from '@/lib/hooks'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
-import AddProjectDialog from "@/components/AddProjectDialog"
+import ProjectDialog from "@/components/ProjectDialog"
 import Link from 'next/link'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
@@ -118,7 +118,7 @@ export default function ProjectManagementDashboard() {
               <p className="text-xs text-muted-foreground">
                 {projects.filter(p => p.onTrack).length} on track
               </p>
-              <AddProjectDialog onProjectAdded={fetchAllData} />
+              <ProjectDialog onProjectAdded={fetchAllData} />
             </div>
           </CardContent>
         </Card>

@@ -26,6 +26,7 @@ type Comment = {
       dueDate?: Date;
       comments?: Comment[];
       reporter?: EmployeeSummary
+      type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
     };
     
     const API_URL = '/api/project-management/tasks';

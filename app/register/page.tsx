@@ -42,7 +42,9 @@ export default function Register() {
       return null;
     }
   }
-         
+  const handleGoToSignin = () => {
+    router.push('/login');
+  };      
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setIsLoading(true);
@@ -126,13 +128,13 @@ export default function Register() {
             <Button disabled={isLoading}
            
                type="submit" className="w-full">
-               {isLoading ? <Loader2 className="animate-spin" /> : "Sign In"}
+               {isLoading ? <Loader2 className="animate-spin" /> : "Register"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="text-center text-sm">
           Already have an account?{" "}
-          <Link href="#" className="underline" prefetch={false}>
+          <Link href="/login" className="underline" prefetch={false}>
             Sign in
           </Link>
         </CardFooter>

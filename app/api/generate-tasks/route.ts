@@ -75,7 +75,13 @@ export async function POST(req: Request) {
     const file = formData.get('file') as File
     let userMessage = formData.get('message') as string
     const projectId = formData.get('projectId') as string
+    const reporterData = formData.get('reporter')
+    let reporter = null
+    if (reporterData) {
+      reporter = JSON.parse(reporterData as string)
+    }
 
+    console.log('Reporter:', reporter)
     if (!email || !projectId) {
       console.error('Missing email or projectId in POST request')
       return NextResponse.json({ error: 'Missing email or projectId' }, { status: 400 })
@@ -105,7 +111,6 @@ export async function POST(req: Request) {
       stageId?: string;
       priority?: 'low' | 'medium' | 'high' | 'urgent' | 'critical' | 'null';
       dueDate?: string; // ISO date string
-      reporter?: string; // Just the name, we'll match it later
     }`
 
     // Call the OpenAI model
@@ -136,7 +141,7 @@ export async function POST(req: Request) {
     // Process and save each task
     const processedTasks: Task[] = rawTasks.map(rawTask => {
       const assignee = rawTask.assignee ? findEmployeeByName(employees, rawTask.assignee) : null
-      const reporter = rawTask.reporter ? findEmployeeByName(employees, rawTask.reporter) : null
+      // const reporter = rawTask.reporter ? findEmployeeByName(employees, rawTask.reporter) : null
 
       const task: Task = {
         ...rawTask,
@@ -154,7 +159,7 @@ export async function POST(req: Request) {
 
     // Save each task to Firebase
     await Promise.all(processedTasks.map(task => saveTaskToFirebaseAndUpdateProject(email, task, projectId)))
-
+    console.log('tasks length', processedTasks.length)
     // Create task summaries
     // const taskSummaries: TaskSummary[] = processedTasks.map(task => ({
     //   id: task.id,
@@ -164,7 +169,8 @@ export async function POST(req: Request) {
     //   time: task.time ? `${task.time}h` : undefined,
     // }))
     console.log('Task summaries')
-    return NextResponse.json({ success: true }, { status: 200 })
+    
+    return NextResponse.json({ success: true, tasksLength: processedTasks.length }, { status: 200 })
   } catch (error) {
     console.error('Error in POST handler:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
