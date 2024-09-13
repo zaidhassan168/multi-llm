@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import { app, db } from "../../firebase";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { createEmployee, Employee } from "@/models/employee";
 import { doc, getDoc } from "firebase/firestore";
 
 export default function Register() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -57,8 +58,12 @@ export default function Register() {
       const auth = getAuth(app);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   
-      const { user } = userCredential; // Access the user object from userCredential
+      const { user } = userCredential;
       console.log("User created:", user);
+  
+      // Update the user's display name
+      await updateProfile(user, { displayName: name });
+      console.log("User display name updated:", name);
   
       // Create or update employee record in Firestore
       const existingEmployee = await getEmployeeByEmail(user.email ?? "");
@@ -67,13 +72,14 @@ export default function Register() {
       if (existingEmployee) {
         newEmployee = {
           ...existingEmployee,
-          id: user.uid, // Use the user ID from the registered user
+          id: user.uid,
+          name: name, // Update the name
         };
       } else {
         newEmployee = {
-          id: user.uid, // Use the user ID from the registered user
+          id: user.uid,
           email: user.email ?? "",
-          name: "",
+          name: name,
           role: "undefined", // Set default role or role as per your app
         };
       }
@@ -96,18 +102,28 @@ export default function Register() {
     }
   }
   
-
   return (
     <div className="flex items-center justify-center h-screen bg-background">
       <Card className="w-full max-w-md p-6 space-y-4">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Sign Up</CardTitle>
           <CardDescription>
-            Enter your email, password, and confirm password to create an account.
+            Enter your name, email, password, and confirm password to create an account.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                required
+              />
+            </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input

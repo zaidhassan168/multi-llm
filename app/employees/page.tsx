@@ -169,7 +169,7 @@ export default function EmployeeManagement() {
                       <SelectContent>
                         <SelectItem value="developer">Developer</SelectItem>
                         <SelectItem value="management">Management</SelectItem>
-                        <SelectItem value="projectManaager">Project Manager</SelectItem>
+                        <SelectItem value="projectManager">Project Manager</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
