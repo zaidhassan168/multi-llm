@@ -43,7 +43,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { setIsAuthenticated, setEmail } = useAuth();
+  const { setIsAuthenticated, setEmail,user  } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
@@ -100,8 +100,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
                 <AvatarFallback>Z</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-sm font-semibold">{email}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Manager</p>
+                <h2 className="text-sm font-semibold">{user?.displayName}</h2>
               </div>
             </div>
           )}

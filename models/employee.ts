@@ -1,16 +1,21 @@
 //models\employee.ts
-type Employee = {
+ type Employee = {
     id: string;
     name: string;
-    role: 'developer' | 'management' | 'projectManager' | 'undefined';  
-    availability?: number;  // Percentage of availability
-    currentProject?: string;  // Current project ID
+    role: 'developer' | 'management' | 'projectManager' | 'undefined';
+    availability?: number;
+    currentProject?: string;
     email: string;
-    projectIds?: string[];  // List of projects the employee is involved in
-    taskIds?: string[];  // List of tasks assigned to this employee
+    projectIds?: string[];
+    taskIds?: string[];
+    photoURL?: string;
+    streak?: number;
+    points?: number;
+    levelProgress?: number;
+    tasksCompletedThisWeek?: number;
+    rank?: string;
+    currentProjectProgress?: number;
   };
-  
-
   const API_URL = '/api/project-management/employees';
 
 export async function fetchEmployees(): Promise<Employee[]> {
@@ -53,4 +58,12 @@ export async function deleteEmployee(id: string): Promise<void> {
     if (!response.ok) throw new Error('Failed to delete employee');
 }
 
+export async function updateEmployeeStreak(email: string): Promise<number> {
+    const response = await fetch(`${API_URL}/${email}/streak`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to update employee streak');
+    const data = await response.json();
+    return data.streak;
+  }
 export type { Employee };

@@ -1,318 +1,401 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/lib/hooks";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import React, { useState, useEffect, useRef } from "react"
+import { useAuth } from "@/lib/hooks"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import {
-  Mail,
+  Camera,
+  Edit2,
+  Save,
   Briefcase,
   Clock,
+  Calendar,
   CheckCircle,
   AlertCircle,
-  Calendar,
-  Edit,
-  Save,
-  Camera,
-} from "lucide-react";
-import { fetchEmployee } from "@/models/employee";
-import { updateProfile } from "firebase/auth";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-
-type Employee = {
-  id: string;
-  name: string;
-  role: "developer" | "management" | "projectManager" | "undefined";
-  availability?: number;
-  currentProject?: string;
-  email: string;
-  projectIds?: string[];
-  taskIds?: string[];
-  totalTasks?: number;
-  completedTasks?: number;
-  currentProjectProgress?: number;
-  joinDate?: string;
-};
+  Trophy,
+  Star,
+  TrendingUp,
+  Award,
+  Target,
+  Zap,
+  Mail,
+  User
+} from "lucide-react"
+import { fetchEmployee, updateEmployee, Employee } from "@/models/employee"
+import { fetchTasksEmail, updateTask, Task } from "@/models/task"
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 
 function UserProfile() {
-  const { user, loading: authLoading } = useAuth();
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [newDisplayName, setNewDisplayName] = useState("");
-  const [editMode, setEditMode] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
-  const [progress, setProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, loading: authLoading } = useAuth()
+  const [employee, setEmployee] = useState<Employee | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newName, setNewName] = useState("")
+  const [editMode, setEditMode] = useState(false)
+  const [imageUrl, setImageUrl] = useState("")
+  const [progress, setProgress] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (user && user.email) {
-      console.log("User email:", user);
-      fetchEmployeeData(user.email);
-      setNewDisplayName(user.displayName || "");
+      fetchEmployeeData(user.email)
+      fetchTasksData(user.email)
     }
-  }, [user]);
+  }, [user])
 
   const fetchEmployeeData = async (email: string) => {
     try {
-      const emp = await fetchEmployee(email);
-      const mockData = {
-        totalTasks: 45,
-        completedTasks: 32,
-        currentProjectProgress: 75,
-        joinDate: "2022-03-15",
-      };
-      setEmployee({ ...emp, ...mockData });
+      const emp = await fetchEmployee(email)
+      setEmployee(emp)
+      setNewName(emp.name)
     } catch (error) {
-      console.error("Failed to fetch employee:", error);
+      console.error("Failed to fetch employee:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  const fetchTasksData = async (email: string) => {
+    try {
+      const fetchedTasks = await fetchTasksEmail(email, employee?.role || 'developer')
+      setTasks(fetchedTasks)
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error)
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const storage = getStorage();
-      const storageRef = ref(storage, `images/${file.name}`);
+      const file = e.target.files[0]
+      const storage = getStorage()
+      const storageRef = ref(storage, `images/${file.name}`)
 
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const uploadTask = uploadBytesResumable(storageRef, file)
 
       uploadTask.on(
         'state_changed',
         (snapshot) => {
           const progressPercent = Math.round(
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-          );
-          setProgress(progressPercent);
+          )
+          setProgress(progressPercent)
         },
         (error) => {
-          console.error('Error uploading file:', error);
+          console.error('Error uploading file:', error)
         },
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            setImageUrl(downloadURL);
-          });
+            setImageUrl(downloadURL)
+          })
         }
-      );
+      )
     }
   }
 
   const handleImageSave = async () => {
-    if (user) {
+    if (employee && imageUrl) {
       try {
-        await updateProfile(user, { photoURL: imageUrl });
-        setProgress(0);
-        setImageUrl('');
+        const updatedEmployee = await updateEmployee({ ...employee, photoURL: imageUrl })
+        setEmployee(updatedEmployee)
+        setProgress(0)
+        setImageUrl("")
       } catch (error) {
-        console.error("Error updating profile:", error);
+        console.error("Error updating profile:", error)
       }
     }
-  };
+  }
 
-  const handleSaveDisplayName = async () => {
-    if (user) {
+  const handleSaveName = async () => {
+    if (employee && newName) {
       try {
-        await updateProfile(user, { displayName: newDisplayName });
-        setEditMode(false);
+        const updatedEmployee = await updateEmployee({ ...employee, name: newName })
+        setEmployee(updatedEmployee)
+        setEditMode(false)
       } catch (error) {
-        console.error("Error updating display name:", error);
+        console.error("Error updating name:", error)
       }
     }
-  };
+  }
+
+  const handleTaskUpdate = async (taskId: string, status: string) => {
+    if (employee) {
+      try {
+        await updateTask({ id: taskId, status } as Task, employee.email)
+        fetchTasksData(employee.email)
+      } catch (error) {
+        console.error("Error updating task:", error)
+      }
+    }
+  }
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+    fileInputRef.current?.click()
+  }
 
   if (authLoading || loading) {
-    return <LoadingSkeleton />;
+    return <div>Loading...</div>
   }
 
   if (!user || !employee) {
-    return (
-      <div className="w-full max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-sm">
-        <p className="text-center text-gray-600">User not logged in or employee not found</p>
-      </div>
-    );
+    return <div>User not logged in or employee not found</div>
   }
 
+  const completedTasks = tasks.filter(task => task.status === 'done').length
+  const totalTasks = tasks.length
+  const pendingTasks = totalTasks - completedTasks
+
   return (
-    <div className="w-full max-w-4xl mx-auto mt-10 bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-green-300 to-green-200 p-8 text-white">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
-              <AvatarImage
-                src={user.photoURL || "/placeholder.svg"}
-                alt={user.displayName || "User"}
-              />
-              <AvatarFallback>
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              onClick={triggerFileInput}
-              className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-              size="icon"
-            >
-              <Camera className="h-5 w-5 text-blue-600" />
+    <div className="container mx-auto px-4 py-8">
+      <Card className="w-full">
+        <CardHeader className="pb-0">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={employee.photoURL || "/placeholder.svg"} alt={employee.name} />
+                <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <Button
+                onClick={triggerFileInput}
+                className="absolute bottom-0 right-0 rounded-full p-1"
+                size="icon"
+                variant="secondary"
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1">
+              {editMode ? (
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="max-w-[200px]"
+                  />
+                  <Button onClick={handleSaveName} size="icon" variant="ghost">
+                    <Save className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <CardTitle className="text-2xl font-bold">{employee.name}</CardTitle>
+                  <Button
+                    onClick={() => setEditMode(true)}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <p className="text-muted-foreground">{employee.email}</p>
+              <Badge variant="secondary" className="mt-1">
+                {employee.role}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/*"
+          />
+          {progress > 0 && progress < 100 && (
+            <div className="mb-4">
+              <Progress value={progress} className="w-full" />
+              <p className="text-sm text-muted-foreground mt-1">{progress}% Complete</p>
+            </div>
+          )}
+          {imageUrl && (
+            <Button onClick={handleImageSave} className="mb-4">
+              Save New Profile Picture
             </Button>
-          </div>
-          <div className="text-center">
-            {editMode ? (
-              <div className="flex items-center space-x-2">
-                <Input
-                  value={newDisplayName}
-                  onChange={(e) => setNewDisplayName(e.target.value)}
-                  className="w-48 bg-white/20 border-white/40 text-white placeholder-white/60"
-                  placeholder="Enter name"
+          )}
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="achievements">Achievements</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <InfoItem icon={<Mail />} label="Email" value={employee.email} />
+                <InfoItem icon={<User />} label="Role" value={employee.role} />
+                <InfoItem icon={<Briefcase />} label="Current Project" value={employee.currentProject || "N/A"} />
+                <InfoItem icon={<Clock />} label="Availability" value={`${employee.availability || 0}%`} />
+                <InfoItem icon={<Calendar />} label="Join Date" value={ "N/A"} />
+                <InfoItem icon={<Target />} label="Points" value={employee.points?.toString() || "0"} />
+                <InfoItem icon={<Trophy />} label="Streak" value={`${employee.streak || 0} days`} />
+                <InfoItem icon={<Award />} label="Rank" value={employee.rank || "Novice"} />
+              </div>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-2">Current Project Progress</h3>
+                <Progress value={employee.currentProjectProgress || 0} className="h-2" />
+                <p className="text-sm text-muted-foreground mt-1">{employee.currentProjectProgress || 0}% Complete</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="tasks">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <TaskStatCard
+                  icon={<CheckCircle className="text-green-500" />}
+                  label="Completed Tasks"
+                  value={completedTasks}
+                  total={totalTasks}
                 />
-                <Button onClick={handleSaveDisplayName} variant="secondary" size="icon">
-                  <Save className="h-4 w-4" />
-                </Button>
+                <TaskStatCard
+                  icon={<AlertCircle className="text-yellow-500" />}
+                  label="Pending Tasks"
+                  value={pendingTasks}
+                  total={totalTasks}
+                />
               </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <h1 className="text-3xl font-bold">{user.displayName || "User Profile"}</h1>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditMode(true)}
-                  className="text-white hover:bg-white/20"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Recent Tasks</h3>
+                <div className="space-y-4">
+                  {tasks.slice(0, 5).map((task) => (
+                    <div key={task.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <span className="font-medium">{task.title}</span>
+                      <div>
+                        <Button
+                          size="sm"
+                          variant={task.status === 'inProgress' ? 'default' : 'outline'}
+                          className="mr-2"
+                          onClick={() => handleTaskUpdate(task.id, 'inProgress')}
+                        >
+                          In Progress
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={task.status === 'done' ? 'default' : 'outline'}
+                          onClick={() => handleTaskUpdate(task.id, 'done')}
+                        >
+                          Done
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-            <p className="text-sm mt-2 text-white/80">{employee.role}</p>
-          </div>
-        </div>
-      </div>
-
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept="image/*"
-        aria-label="Upload new profile picture"
-      />
-
-      {progress > 0 && progress < 100 && (
-        <div className="p-4 bg-blue-50">
-          <Progress value={progress} className="h-2 mb-2" />
-          <p className="text-sm text-blue-600">{progress}% Complete</p>
-        </div>
-      )}
-
-      {imageUrl && progress === 100 && (
-        <div className="p-4 bg-green-50 flex justify-between items-center">
-          <p className="text-sm text-green-600">Image uploaded successfully!</p>
-          <Button onClick={handleImageSave} size="sm" className="bg-green-500 hover:bg-green-600 text-white">
-            Save Profile Image
-          </Button>
-        </div>
-      )}
-
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <InfoItem icon={<Mail className="text-blue-500" />} label="Email" value={user.email || "N/A"} />
-        <InfoItem icon={<Briefcase className="text-green-500" />} label="Current Project" value={employee.currentProject || "N/A"} />
-        <InfoItem icon={<Clock className="text-yellow-500" />} label="Availability" value={`${employee.availability || 0}%`} />
-        <InfoItem icon={<Calendar className="text-purple-500" />} label="Join Date" value={employee.joinDate || "N/A"} />
-
-        <div className="col-span-full mt-6">
-          <h3 className="text-lg font-semibold mb-4">Task Overview</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TaskStatCard
-              icon={<CheckCircle className="text-green-500" />}
-              label="Completed Tasks"
-              value={employee.completedTasks || 0}
-              total={employee.totalTasks || 0}
-            />
-            <TaskStatCard
-              icon={<AlertCircle className="text-yellow-500" />}
-              label="Pending Tasks"
-              value={(employee.totalTasks || 0) - (employee.completedTasks || 0)}
-              total={employee.totalTasks || 0}
-            />
-          </div>
-        </div>
-
-        <div className="col-span-full mt-6">
-          <h3 className="text-lg font-semibold mb-2">Current Project Progress</h3>
-          <Progress value={employee.currentProjectProgress} className="h-2 mb-2" />
-          <p className="text-sm text-gray-600">{employee.currentProjectProgress}% Complete</p>
-        </div>
-      </div>
+            </TabsContent>
+            <TabsContent value="achievements">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <AchievementCard
+                  icon={<Trophy className="text-yellow-500" />}
+                  label="Current Streak"
+                  value={`${employee.streak || 0} days`}
+                />
+                <AchievementCard
+                  icon={<Star className="text-blue-500" />}
+                  label="Total Points"
+                  value={employee.points?.toString() || "0"}
+                />
+                <AchievementCard
+                  icon={<TrendingUp className="text-green-500" />}
+                  label="Tasks This Week"
+                  value={employee.tasksCompletedThisWeek?.toString() || "0"}
+                />
+                <AchievementCard
+                  icon={<Award className="text-purple-500" />}
+                  label="Current Rank"
+                  value={employee.rank || "Novice"}
+                />
+              </div>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-2">Level Progress</h3>
+                <Progress value={employee.levelProgress || 0} className="h-2" />
+                <p className="text-sm text-muted-foreground mt-1">{employee.levelProgress || 0}% to next level</p>
+              </div>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Incentives</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <IncentiveCard
+                    icon={<Zap className="text-yellow-500" />}
+                    label="Daily Streak Bonus"
+                    description="Maintain your streak for bonus points!"
+                  />
+                  <IncentiveCard
+                    icon={<Target className="text-red-500" />}
+                    label="Weekly Goal"
+                    description="Complete 20 tasks this week for a special badge!"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
 
 function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center space-x-3 p-3 bg-card-background rounded-lg">
-      <div className="flex-shrink-0">{icon}</div>
+    <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+      <div className="flex-shrink-0 text-primary">{icon}</div>
       <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="font-medium text-gray-900">{value}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="font-medium">{value}</p>
       </div>
     </div>
-  );
+  )
 }
 
 function TaskStatCard({ icon, label, value, total }: { icon: React.ReactNode; label: string; value: number; total: number }) {
-  const percentage = total > 0 ? (value / total) * 100 : 0;
+  const percentage = total > 0 ? (value / total) * 100 : 0
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          {icon}
-          <h4 className="font-medium text-gray-700">{label}</h4>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            {icon}
+            <h4 className="font-medium text-muted-foreground">{label}</h4>
+          </div>
+          <span className="text-2xl font-bold">{value}</span>
         </div>
-        <span className="text-2xl font-bold text-gray-900">{value}</span>
-      </div>
-      <Progress value={percentage} className="h-1 mb-1" />
-      <p className="text-xs text-gray-500 text-right">{percentage.toFixed(0)}% of total</p>
-    </div>
-  );
+        <Progress value={percentage} className="h-1 mb-1" />
+        <p className="text-xs text-muted-foreground text-right">{percentage.toFixed(0)}% of total</p>
+      </CardContent>
+    </Card>
+  )
 }
 
-function LoadingSkeleton() {
+function AchievementCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="w-full max-w-4xl mx-auto mt-10 bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-8">
-        <div className="flex flex-col items-center space-y-4">
-          <Skeleton className="w-32 h-32 rounded-full" />
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      </div>
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
-          <div className="col-span-full space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[...Array(2)].map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-lg" />
-              ))}
-            </div>
-          </div>
-          <div className="col-span-full space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-2 w-full" />
-            <Skeleton className="h-4 w-20" />
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0">{icon}</div>
+          <div>
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="text-xl font-bold">{value}</p>
           </div>
         </div>
-      </div>
-    </div>
-  );
+      </CardContent>
+    </Card>
+  )
 }
 
-export default UserProfile;
+function IncentiveCard({ icon, label, description }: { icon: React.ReactNode; label: string; description: string }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="flex-shrink-0">{icon}</div>
+          <h4 className="font-medium">{label}</h4>
+        </div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default UserProfile

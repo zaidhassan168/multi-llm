@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { getAuth, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signOut, updateProfile, OAuthProvider, signInWithPopup } from "firebase/auth";
 import { app, db } from "../../firebase";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { createEmployee, Employee } from "@/models/employee";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -66,27 +66,7 @@ export default function Register() {
       console.log("User display name updated:", name);
   
       // Create or update employee record in Firestore
-      const existingEmployee = await getEmployeeByEmail(user.email ?? "");
-      let newEmployee: Employee;
-  
-      if (existingEmployee) {
-        newEmployee = {
-          ...existingEmployee,
-          id: user.uid,
-          name: name, // Update the name
-        };
-      } else {
-        newEmployee = {
-          id: user.uid,
-          email: user.email ?? "",
-          name: name,
-          role: "undefined", // Set default role or role as per your app
-        };
-      }
-  
-      // Save the employee to Firestore
-      await createEmployee(newEmployee);
-      console.log("Employee data saved to Firestore");
+      await createOrUpdateEmployee(user);
   
       // Sign the user out after saving their details to Firestore
       await signOut(auth);
@@ -100,6 +80,58 @@ export default function Register() {
       setError((e as Error).message);
       setIsLoading(false);
     }
+  }
+
+  async function handleMicrosoftSignIn() {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const auth = getAuth(app);
+      const provider = new OAuthProvider('microsoft.com');
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      console.log("User signed in with Microsoft:", user);
+
+      // Create or update employee record in Firestore
+      await createOrUpdateEmployee(user);
+
+      // Sign the user out after saving their details to Firestore
+      await signOut(auth);
+      console.log("User signed out after registration");
+
+      // Redirect the user to the login page
+      setIsLoading(false);
+      router.push("/login");
+    } catch (e) {
+      setError((e as Error).message);
+      setIsLoading(false);
+    }
+  }
+
+  async function createOrUpdateEmployee(user: any) {
+    const existingEmployee = await getEmployeeByEmail(user.email ?? "");
+    let newEmployee: Employee;
+
+    if (existingEmployee) {
+      newEmployee = {
+        ...existingEmployee,
+        id: user.uid,
+        name: user.displayName || name,
+      };
+    } else {
+      newEmployee = {
+        id: user.uid,
+        email: user.email ?? "",
+        name: user.displayName || name,
+        role: "undefined", // Set default role or role as per your app
+      };
+    }
+
+    // Save the employee to Firestore
+    await createEmployee(newEmployee);
+    console.log("Employee data saved to Firestore");
   }
   
   return (
@@ -167,6 +199,29 @@ export default function Register() {
               {isLoading ? <Loader2 className="animate-spin" /> : "Register"}
             </Button>
           </form>
+          <div className="mt-4">
+            <Button
+              onClick={handleMicrosoftSignIn}
+              disabled={isLoading}
+               variant="outline"
+              className="w-full"
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>
+                  <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23">
+                    <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
+                    <path fill="#f35325" d="M1 1h10v10H1z"/>
+                    <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                    <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                  </svg>
+                  Sign up with Microsoft
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="text-center text-sm">
           Already have an account?{" "}

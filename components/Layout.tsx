@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from './ui/loading-spinner'
 import { usePathname, useRouter } from 'next/navigation'
 import { ScrollArea } from './ui/scroll-area'
-
+import { EmployeeProfileDropdown } from './employee-dropdown'
 interface LayoutProps {
   children: React.ReactNode
 }
@@ -53,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Sidebar with fixed height and non-scrollable */}
       <div className="h-screen sticky top-0">
         <Sidebar
-          email={email}
+          email={email || ''}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={toggleSidebar}
         />
@@ -68,5 +68,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     </div>
   )
 }
-
 export default Layout
