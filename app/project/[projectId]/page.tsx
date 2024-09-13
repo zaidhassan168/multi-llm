@@ -31,7 +31,10 @@ import {
   Flag,
   MessageSquare,
   ChevronDown,
-  CheckSquare, XSquare, TrendingUp
+  PlusCircle,
+  CheckSquare, XSquare, TrendingUp,
+  Edit,
+  MoreVertical
 } from "lucide-react";
 import { Task, fetchTasksAll } from "@/models/task";
 import { Project, fetchProjects } from "@/models/project";
@@ -41,12 +44,25 @@ import { AlertOctagon, AlertTriangle } from "lucide-react";
 import { Transition } from "@headlessui/react";
 import ProjectDialog from "@/components/ProjectDialog"
 import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
+import { EmployeeSummary } from "@/models/summaries";
+import { AddTaskModal } from "@/components/AddTaskModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [expandedStatuses, setExpandedStatuses] = useState<string[]>([]);
   const [currentStageProgress, setCurrentStageProgress] = useState<number>(0);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const params = useParams();
   const projectId = params.projectId as string;
@@ -61,21 +77,16 @@ export default function ProjectDetails() {
   const fetchProjectData = async () => {
     setLoading(true);
     try {
-      const [projectsData, tasksData, employeesData] = await Promise.all([
+      const [projectsData, tasksData] = await Promise.all([
         fetchProjects(),
         fetchTasksAll(),
-        fetchEmployees(),
       ]);
 
       const currentProject = projectsData.find((p) => p.id === projectId);
       if (currentProject) {
         setProject(currentProject);
         setTasks(tasksData.filter((t) => t.projectId === projectId));
-        setEmployees(
-          employeesData.filter(
-            (e) => e.projectIds?.includes(projectId) ?? false,
-          ),
-        );
+        setEmployees(currentProject.resources || []);
       } else {
         toast({
           title: "Error",
@@ -108,21 +119,6 @@ export default function ProjectDetails() {
         ? prev.filter((s) => s !== status)
         : [...prev, status],
     );
-  };
-
-  const calculateStageProgress = (): number => {
-    if (!project?.currentStage?.tasks) return 0;
-
-    const stageTasks = project.currentStage.tasks
-    // .map((taskId) => tasks.find((t) => t.id === taskId))
-    // .filter((task): task is Task => Boolean(task));
-
-    if (stageTasks.length === 0) return 0;
-
-    const completedTasks = stageTasks.filter(
-      (task) => task.status === "done",
-    ).length;
-    return Math.round((completedTasks / stageTasks.length) * 100);
   };
 
   const calculateProjectProgress = (): number => {
@@ -173,6 +169,7 @@ export default function ProjectDetails() {
         return "bg-gray-500";
     }
   };
+
   const projectData = {
     onTrack: project?.onTrack || false,
     totalTasks: project?.totalTasks as number,
@@ -183,6 +180,7 @@ export default function ProjectDetails() {
     totalTasksHours: project?.totalTasksHours as number,
     tasksHoursCompleted: project?.tasksHoursCompleted as number,
   };
+
   const getTaskStats = () => {
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter((t) => t.status === "done").length;
@@ -194,6 +192,44 @@ export default function ProjectDetails() {
     ).length;
 
     return { totalTasks, doneTasks, criticalInProgress, highDone };
+  };
+
+  const handleTaskAdded = () => {
+    fetchProjectData();
+    toast({
+      title: "Success",
+      description: "Task added successfully",
+    });
+  };
+
+  const handleTaskUpdated = () => {
+    fetchProjectData();
+    toast({
+      title: "Success",
+      description: "Task updated successfully",
+    });
+  };
+
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleProjectUpdated = (updatedProject: Project) => {
+    try {
+      setProject(updatedProject);
+      toast({
+        title: "Success",
+        description: "Project updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update project",
+        variant: "destructive",
+      });
+    }
   };
 
   const TaskDetailsPopover = ({ task }: { task: Task }) => (
@@ -291,24 +327,7 @@ export default function ProjectDetails() {
       </PopoverContent>
     </Popover>
   );
-  const handleProjectUpdated = (updatedProject: Project) => {
 
-    try {
-      // Update the project in the local state
-      setProject(updatedProject)
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      })
-    } catch (error) {
-      console.error('Error updating project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive",
-      })
-    }
-  }
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -324,16 +343,26 @@ export default function ProjectDetails() {
       </div>
     );
   }
-  ////////////////////////////////
-  return (
 
+  return (
     <div className="container mx-auto p-4 max-w-7xl">
       <div className="flex items-center mb-6">
         <h1 className="text-3xl font-bold mr-2">
           {project.name} - Project Details
         </h1>
         <ProjectDialog project={project} onProjectUpdated={() => handleProjectUpdated(project)} />
-
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setSelectedTask(null);
+            setIsTaskModalOpen(true);
+          }}
+          className="flex items-center space-x-2 ml-2"
+        >
+          <PlusCircle className="h-4 w-4" />
+          <span>Add Task</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -389,7 +418,7 @@ export default function ProjectDetails() {
           </CardContent>
         </Card>
 
-        <ProjectStatusCard project={projectData} ></ProjectStatusCard>
+        <ProjectStatusCard project={projectData} />
 
         <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 h-[300px]">
           <CardHeader className="pb-2 px-4 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
@@ -489,6 +518,7 @@ export default function ProjectDetails() {
                         <TableHead>Assignee</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Due Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -515,6 +545,23 @@ export default function ProjectDetails() {
                               ) : (
                                 "N/A"
                               )}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleEditTask(task)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ),
@@ -568,6 +615,18 @@ export default function ProjectDetails() {
           </Table>
         </CardContent>
       </Card>
+
+      <AddTaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setSelectedTask(null);
+        }}
+        projectId={projectId}
+        task={selectedTask}
+        onTaskAdded={handleTaskAdded}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </div>
   );
 }

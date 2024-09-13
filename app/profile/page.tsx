@@ -49,6 +49,7 @@ function UserProfile() {
 
   useEffect(() => {
     if (user && user.email) {
+      console.log("User email:", user);
       fetchEmployeeData(user.email);
       setNewDisplayName(user.displayName || "");
     }

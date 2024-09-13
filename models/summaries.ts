@@ -11,7 +11,8 @@ type TaskSummary = {
     name: string;
     email: string;
     role: 'developer' | 'management' | 'projectManager' | 'undefined';
-    tasksCount?: number;  // Optionally store how many tasks this employee is handling
+    tasksCount?: number;
+    availability?: number;
   };
   type StageSummary = {
     id: string;
