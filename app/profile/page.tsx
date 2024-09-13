@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Camera,
   Edit2,
@@ -27,10 +28,10 @@ import {
   Mail,
   User
 } from "lucide-react"
-import { fetchEmployee, updateEmployee, Employee } from "@/models/employee"
+import { fetchEmployee, updateEmployee, Employee, triggerAsyncStatsUpdate } from "@/models/employee"
 import { fetchTasksEmail, updateTask, Task } from "@/models/task"
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-
+import { LoadingSkeleton } from "@/components/loading-skeleton"
 function UserProfile() {
   const { user, loading: authLoading } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
@@ -40,6 +41,8 @@ function UserProfile() {
   const [editMode, setEditMode] = useState(false)
   const [imageUrl, setImageUrl] = useState("")
   const [progress, setProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -51,9 +54,12 @@ function UserProfile() {
 
   const fetchEmployeeData = async (email: string) => {
     try {
-      const emp = await fetchEmployee(email)
+      let emp = await fetchEmployee(email)
       setEmployee(emp)
       setNewName(emp.name)
+      
+      // Trigger async stats update
+      triggerAsyncStatsUpdate(emp.id, email)
     } catch (error) {
       console.error("Failed to fetch employee:", error)
     } finally {
@@ -78,6 +84,7 @@ function UserProfile() {
 
       const uploadTask = uploadBytesResumable(storageRef, file)
 
+      setIsUploading(true)
       uploadTask.on(
         'state_changed',
         (snapshot) => {
@@ -88,10 +95,12 @@ function UserProfile() {
         },
         (error) => {
           console.error('Error uploading file:', error)
+          setIsUploading(false)
         },
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             setImageUrl(downloadURL)
+            setIsUploading(false)
           })
         }
       )
@@ -100,6 +109,7 @@ function UserProfile() {
 
   const handleImageSave = async () => {
     if (employee && imageUrl) {
+      setIsUploading(true)
       try {
         const updatedEmployee = await updateEmployee({ ...employee, photoURL: imageUrl })
         setEmployee(updatedEmployee)
@@ -107,18 +117,23 @@ function UserProfile() {
         setImageUrl("")
       } catch (error) {
         console.error("Error updating profile:", error)
+      } finally {
+        setIsUploading(false)
       }
     }
   }
 
   const handleSaveName = async () => {
     if (employee && newName) {
+      setIsUpdatingName(true)
       try {
         const updatedEmployee = await updateEmployee({ ...employee, name: newName })
         setEmployee(updatedEmployee)
         setEditMode(false)
       } catch (error) {
         console.error("Error updating name:", error)
+      } finally {
+        setIsUpdatingName(false)
       }
     }
   }
@@ -127,7 +142,10 @@ function UserProfile() {
     if (employee) {
       try {
         await updateTask({ id: taskId, status } as Task, employee.email)
-        fetchTasksData(employee.email)
+        await fetchTasksData(employee.email)
+        console.log("Task updated successfully")
+        // Trigger async stats update
+        triggerAsyncStatsUpdate(employee.id, employee.email)
       } catch (error) {
         console.error("Error updating task:", error)
       }
@@ -139,11 +157,11 @@ function UserProfile() {
   }
 
   if (authLoading || loading) {
-    return <div>Loading...</div>
+    return <LoadingSkeleton />
   }
 
   if (!user || !employee) {
-    return <div>User not logged in or employee not found</div>
+    return <div className="text-center p-4">User not logged in or employee not found</div>
   }
 
   const completedTasks = tasks.filter(task => task.status === 'done').length
@@ -154,7 +172,7 @@ function UserProfile() {
     <div className="container mx-auto px-4 py-8">
       <Card className="w-full">
         <CardHeader className="pb-0">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-4">
             <div className="relative">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={employee.photoURL || "/placeholder.svg"} alt={employee.name} />
@@ -164,12 +182,12 @@ function UserProfile() {
                 onClick={triggerFileInput}
                 className="absolute bottom-0 right-0 rounded-full p-1"
                 size="icon"
-                variant="secondary"
+                variant="ghost"
               >
                 <Camera className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 text-center md:text-left">
               {editMode ? (
                 <div className="flex items-center space-x-2">
                   <Input
@@ -177,8 +195,8 @@ function UserProfile() {
                     onChange={(e) => setNewName(e.target.value)}
                     className="max-w-[200px]"
                   />
-                  <Button onClick={handleSaveName} size="icon" variant="ghost">
-                    <Save className="h-4 w-4" />
+                  <Button onClick={handleSaveName} size="icon" variant="ghost" disabled={isUpdatingName}>
+                    {isUpdatingName ? <Skeleton className="h-4 w-4 rounded-full" /> : <Save className="h-4 w-4" />}
                   </Button>
                 </div>
               ) : (
@@ -208,15 +226,15 @@ function UserProfile() {
             className="hidden"
             accept="image/*"
           />
-          {progress > 0 && progress < 100 && (
+          {isUploading && (
             <div className="mb-4">
               <Progress value={progress} className="w-full" />
               <p className="text-sm text-muted-foreground mt-1">{progress}% Complete</p>
             </div>
           )}
           {imageUrl && (
-            <Button onClick={handleImageSave} className="mb-4">
-              Save New Profile Picture
+            <Button onClick={handleImageSave} className="mb-4" variant="outline" disabled={isUploading}>
+              {isUploading ? <Skeleton className="h-4 w-4 rounded-full" /> : "Save New Profile Picture"}
             </Button>
           )}
           <Tabs defaultValue="overview" className="w-full">
@@ -226,7 +244,7 @@ function UserProfile() {
               <TabsTrigger value="achievements">Achievements</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                 <InfoItem icon={<Mail />} label="Email" value={employee.email} />
                 <InfoItem icon={<User />} label="Role" value={employee.role} />
                 <InfoItem icon={<Briefcase />} label="Current Project" value={employee.currentProject || "N/A"} />
@@ -266,7 +284,7 @@ function UserProfile() {
                       <div>
                         <Button
                           size="sm"
-                          variant={task.status === 'inProgress' ? 'default' : 'outline'}
+                          variant={task.status === 'inProgress' ? 'default' : 'ghost'}
                           className="mr-2"
                           onClick={() => handleTaskUpdate(task.id, 'inProgress')}
                         >
@@ -274,7 +292,7 @@ function UserProfile() {
                         </Button>
                         <Button
                           size="sm"
-                          variant={task.status === 'done' ? 'default' : 'outline'}
+                          variant={task.status === 'done' ? 'default' : 'ghost'}
                           onClick={() => handleTaskUpdate(task.id, 'done')}
                         >
                           Done

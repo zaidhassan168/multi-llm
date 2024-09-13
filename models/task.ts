@@ -28,6 +28,7 @@ type Comment = {
       reporter?: EmployeeSummary
       type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
       lastUpdated?: Date;
+      completedAt?: Date;
     };
     
     const API_URL = '/api/project-management/tasks';

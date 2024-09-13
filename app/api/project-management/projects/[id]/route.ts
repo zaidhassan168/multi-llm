@@ -69,8 +69,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
             const newStage: Stage = {
                 id: stageId,
                 name: 'New Stage', // You might want to provide a name for the new stage
-                completionTime: 0,
                 owner: '',
+                processGroup: 'executing',
                 taskIds: [task.id],
                 tasks: [taskSummary],
             };
