@@ -39,6 +39,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "firebase": "^10.9.0",
+    "firebase-admin": "^12.5.0",
     "framer-motion": "^11.3.28",
     "inngest": "^3.22.10",
     "jotai": "^2.9.3",

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Leaderboard from "@/components/leader-board"
+import {FcmHandler} from "@/components/FcmHandler"
 import {
   Camera,
   Edit2,
@@ -395,6 +396,7 @@ function UserProfile() {
           </Tabs>
         </CardContent>
       </Card>
+      <FcmHandler />
     </div>
   )
 }
