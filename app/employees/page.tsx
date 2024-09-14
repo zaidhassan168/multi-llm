@@ -36,7 +36,7 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     if (editingEmployee) {
-      setSelectedProjects(Array.isArray(editingEmployee.projectId) ? editingEmployee.projectId : editingEmployee.projectId ? [editingEmployee.projectId] : [])
+      setSelectedProjects(Array.isArray(editingEmployee.projectIds) ? editingEmployee.projectIds : editingEmployee.projectIds ? [editingEmployee.projectIds] : [])
     } else {
       setSelectedProjects([])
     }
@@ -68,7 +68,7 @@ export default function EmployeeManagement() {
       email: formData.get('email') as string,
       role: formData.get('role') as 'developer' | 'management' | 'projectManager',
       availability: Number(formData.get('availability')),
-      projectId: selectedProjects
+      projectIds: selectedProjects
     }
 
     try {
@@ -169,7 +169,7 @@ export default function EmployeeManagement() {
                       <SelectContent>
                         <SelectItem value="developer">Developer</SelectItem>
                         <SelectItem value="management">Management</SelectItem>
-                        <SelectItem value="projectManaager">Project Manager</SelectItem>
+                        <SelectItem value="projectManager">Project Manager</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -234,7 +234,7 @@ export default function EmployeeManagement() {
                   <TableCell>{employee.availability}%</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {(Array.isArray(employee.projectId) ? employee.projectId : [employee.projectId]).map((projectId) => {
+                      {(Array.isArray(employee.projectIds) ? employee.projectIds : [employee.projectIds]).map((projectId) => {
                         const project = projects.find(p => p.id === projectId)
                         return project ? (
                           <Badge key={projectId} variant="secondary">

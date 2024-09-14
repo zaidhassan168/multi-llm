@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/firebase'
 import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
-
+import { Risk } from '@/models/risk';
 // Fetch all risks
 export async function GET() {
   try {
@@ -18,7 +18,7 @@ export async function GET() {
 // Create a new risk
 export async function POST(req: Request) {
   try {
-    const risk = await req.json()
+    const risk: Omit<Risk, 'id'> = await req.json();
     const riskRef = await addDoc(collection(db, 'risks'), risk)
     return NextResponse.json({ id: riskRef.id, ...risk })
   } catch (error) {
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 // Update an existing risk
 export async function PATCH(req: Request) {
   try {
-    const risk = await req.json()
+    const risk: Risk = await req.json();
     const riskRef = doc(db, 'risks', risk.id)
     await updateDoc(riskRef, risk)
     return NextResponse.json(risk)

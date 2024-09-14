@@ -18,7 +18,8 @@ import {
   ClockIcon,
   UserIcon,
   TagIcon,
-  RefreshCw
+  RefreshCw,
+  Loader2Icon
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -29,6 +30,10 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
+import { TaskSummary } from '@/models/summaries'
+import { Project, updateProject, addTaskToProjectAndStage } from '@/models/project'
+import { collection, onSnapshot, query, where } from "firebase/firestore"
+import { db } from "@/firebase"
 
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
@@ -81,7 +86,7 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
-              {task.assignee}
+              {task.assignee?.name}
             </Badge>
           </div>
           <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1" />
@@ -90,6 +95,7 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
     </Draggable>
   )
 })
+TaskItem.displayName = "TaskItem";
 
 const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }: {
   id: string;
@@ -116,7 +122,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto"
+              className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
             >
               {tasks.map((task, index) => (
                 <TaskItem
@@ -134,33 +140,38 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
     </Card>
   )
 })
-
+Column.displayName = "Column";
 export default function Kanban() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
   const { user } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchTasksData = useCallback(async () => {
     if (user?.email) {
       try {
+        setIsLoading(true)
         const emp = await fetchEmployee(user.email)
         setEmployee(emp)
         const tasksData = await fetchTasksEmail(user.email, emp.role)
         setTasks(tasksData)
       } catch (error) {
-        console.error('Failed to load tasks')
+        console.error('Failed to load tasks', error)
         toast({
           title: "Error",
           description: "Failed to load tasks. Please try again.",
           variant: "destructive",
         })
+      } finally {
+        setIsLoading(false)
       }
     }
   }, [user, toast])
@@ -186,46 +197,90 @@ export default function Kanban() {
     setFilteredTasks(filteredTasksMemo)
   }, [filteredTasksMemo])
 
-  const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
-    if (user?.email) {
-      try {
-        const createdTask = await addTask(newTask, user.email)
-        setTasks((prevTasks) => [...prevTasks, createdTask])
-        setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask]);
+  // const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
+  //   if (user?.email && newTask.projectId) {
+  //     try {
+  //       const createdTask = await addTask(newTask, user.email)
+  //       setTasks((prevTasks) => [...prevTasks, createdTask])
+  //       setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask])
+  //       console.log('Task added successfully:', createdTask)
+  //       const taskSummary: TaskSummary = {
+  //         id: createdTask.id,
+  //         title: newTask.title,
+  //         status: newTask.status,
+  //         assignee: newTask.assignee.name,
+  //         time: newTask.time.toString(),
+  //       }
+  //       if (newTask.projectId && newTask.stageId) {
+  //         addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId)
+  //       }
+  //       toast({
+  //         title: "Success",
+  //         description: "Task added successfully.",
+  //       })
+  //     } catch (error) {
+  //       console.error('Failed to add task', error)
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to add task. Please try again.",
+  //         variant: "destructive",
+  //       })
+  //     }
+  //   } else {
+  //     console.error('User email or project ID is missing')
+  //     toast({
+  //       title: "Error",
+  //       description: "Please select a project before adding tasks.",
+  //       variant: "destructive",
+  //     })
+  //   }
+  // }
 
-        toast({
-          title: "Success",
-          description: "Task added successfully.",
+  useEffect(() => {
+    if (user?.email) {
+      const q = query(collection(db, "tasks"), where("assignee.email", "==", user.email))
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const updatedTask = change.doc.data() as Task
+          if (change.type === "added" || change.type === "modified") {
+            setTasks((prevTasks) => {
+              const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id)
+              if (existingTaskIndex !== -1) {
+                const newTasks = [...prevTasks]
+                newTasks[existingTaskIndex] = updatedTask
+                return newTasks
+              } else {
+                return [...prevTasks, updatedTask]
+              }
+            })
+          } else if (change.type === "removed") {
+            setTasks((prevTasks) => prevTasks.filter(task => task.id !== updatedTask.id))
+          }
         })
-      } catch (error) {
-        console.error('Failed to add task')
-        toast({
-          title: "Error",
-          description: "Failed to add task. Please try again.",
-          variant: "destructive",
-        })
-      }
+      })
+      return () => unsubscribe()
     }
-  }
+  }, [user])
 
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {
         await updateTask(taskToUpdate, user.email)
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === taskToUpdate.id ? taskToUpdate : task))
-        )
         toast({
           title: "Success",
           description: "Task updated successfully.",
         })
       } catch (error) {
-        console.error('Failed to update task')
+        console.error('Failed to update task', error)
         toast({
           title: "Error",
           description: "Failed to update task. Please try again.",
           variant: "destructive",
         })
+        // Revert the task to its previous state in the UI
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskToUpdate.id ? { ...task, status: task.status } : task))
+        )
       }
     } else {
       console.error('User email is not available')
@@ -247,7 +302,7 @@ export default function Kanban() {
           description: "Task deleted successfully.",
         })
       } catch (error) {
-        console.error('Failed to delete task')
+        console.error('Failed to delete task', error)
         toast({
           title: "Error",
           description: "Failed to delete task. Please try again.",
@@ -272,24 +327,35 @@ export default function Kanban() {
         return
       }
 
+      // Optimistically update the UI
       setTasks((prevTasks) => {
-        const taskIndex = prevTasks.findIndex(task => task.id === draggableId)
-        if (taskIndex === -1) return prevTasks
-
-        const movedTask = { ...prevTasks[taskIndex], status: destination.droppableId as Task['status'] }
-        const updatedTasks = Array.from(prevTasks)
-        updatedTasks.splice(taskIndex, 1)
-        updatedTasks.splice(destination.index, 0, movedTask)
-
-        if (source.droppableId !== destination.droppableId) {
-          handleUpdateTask(movedTask)
-        }
-
+        const updatedTasks = prevTasks.map((task) => {
+          if (task.id === draggableId) {
+            return { ...task, status: destination.droppableId as Task['status'] }
+          }
+          return task
+        })
         return updatedTasks
       })
+
+      // Update the backend
+      const taskToUpdate = tasks.find(task => task.id === draggableId)
+      if (taskToUpdate && taskToUpdate.status !== destination.droppableId) {
+        const updatedTask = { ...taskToUpdate, status: destination.droppableId as Task['status'] }
+        handleUpdateTask(updatedTask)
+      }
     },
-    [handleUpdateTask]
+    [tasks, handleUpdateTask]
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2Icon className="animate-spin h-8 w-8 text-blue-500" />
+        <span className="ml-2 text-lg font-semibold">Loading tasks...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -377,27 +443,26 @@ export default function Kanban() {
         </DragDropContext>
       </main>
       <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        task={selectedTask}
-        onEdit={() => {
-          // This will be called when the edit button is clicked
-          // You can add any additional logic here if needed
-        }}
-        onSave={(task) => {
-          if (task.id) {
-            handleUpdateTask(task)
-          } else {
-            handleAddTask(task)
-          }
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        onDelete={handleDeleteTask}
-      />
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+  }}
+  task={selectedTask}
+  onTaskAdded={() => {
+    // Refresh tasks or update state after a task is added
+    // refreshTasks();
+  }}
+  onTaskUpdated={() => {
+    // Refresh tasks or update state after a task is updated
+    // refreshTasks();
+  }}
+  // onTaskDeleted={() => {
+  //   // Refresh tasks or update state after a task is deleted
+  //   // refreshTasks();
+  // }}
+/>
+
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}

@@ -14,19 +14,9 @@ import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/mode
 import { useAuth } from '@/lib/hooks'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
-import AddProjectDialog from "@/components/AddProjectDialog"
+import ProjectDialog from "@/components/ProjectDialog"
 import Link from 'next/link'
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { ChatButton } from '@/components/chat-button'
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function ProjectManagementDashboard() {
@@ -36,8 +26,7 @@ export default function ProjectManagementDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const { user } = useAuth()
   const { toast } = useToast()
-  const [newProjectName, setNewProjectName] = useState('')
-  const [newProjectManager, setNewProjectManager] = useState('')
+
   useEffect(() => {
     if (user?.email) {
       fetchAllData()
@@ -65,11 +54,13 @@ export default function ProjectManagementDashboard() {
       })
     }
   }
+
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
       case 'done': return 'text-green-600'
       case 'inProgress': return 'text-yellow-600'
-      case 'todo': return 'text-red-600'
+      case 'todo': return 'text-blue-600'
+      case 'backlog': return 'text-gray-600'
       default: return 'text-gray-600'
     }
   }
@@ -110,40 +101,7 @@ export default function ProjectManagementDashboard() {
     const completedTasks = projectTasks.filter(task => task.status === 'done').length
     return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
   }
-  const handleAddProject = async () => {
-    if (!newProjectName || !newProjectManager) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      })
-      return
-    }
 
-    try {
-      const newProject: Omit<Project, 'id'> = {
-        name: newProjectName,
-        manager: newProjectManager,
-        // currentStage: { name: 'Planning', completionTime: 0, owner: newProjectManager },
-        onTrack: true,
-      }
-      await createProject(newProject)
-      await fetchAllData()
-      toast({
-        title: "Success",
-        description: "New project added successfully",
-      })
-      setNewProjectName('')
-      setNewProjectManager('')
-    } catch (error) {
-      console.error('Error adding new project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to add new project",
-        variant: "destructive",
-      })
-    }
-  }
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
@@ -160,45 +118,7 @@ export default function ProjectManagementDashboard() {
               <p className="text-xs text-muted-foreground">
                 {projects.filter(p => p.onTrack).length} on track
               </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add Project
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Project</DialogTitle>
-                    <DialogDescription>Enter the details for the new project.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Name
-                      </Label>
-                      <Input
-                        id="name"
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="manager" className="text-right">
-                        Manager
-                      </Label>
-                      <Input
-                        id="manager"
-                        value={newProjectManager}
-                        onChange={(e) => setNewProjectManager(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleAddProject}>Add Project</Button>
-                </DialogContent>
-              </Dialog>
+              <ProjectDialog onProjectAdded={fetchAllData} />
             </div>
           </CardContent>
         </Card>
@@ -215,6 +135,7 @@ export default function ProjectManagementDashboard() {
             </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Risk Overview</CardTitle>
@@ -235,15 +156,29 @@ export default function ProjectManagementDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{employees.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {employees.filter(e => e.availability && e.availability > 50).length} available
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="ceo-overview" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="ceo-overview">CEO Overview</TabsTrigger>
-          <TabsTrigger value="projects">Projects Overview</TabsTrigger>
-          <TabsTrigger value="risks">Risk Register</TabsTrigger>
-          <TabsTrigger value="resources">Resource Management</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="risks">Risks</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
         </TabsList>
+
         <TabsContent value="ceo-overview">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
@@ -306,6 +241,7 @@ export default function ProjectManagementDashboard() {
             </Card>
           </div>
         </TabsContent>
+
         <TabsContent value="projects">
           <Card>
             <CardHeader>
@@ -326,11 +262,11 @@ export default function ProjectManagementDashboard() {
                   {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/project/${project.id}`}>
+                        <Link href={`/project/${project.id}`} className="text-blue-600 hover:underline">
                           {project.name}
                         </Link>
                       </TableCell>
-                      <TableCell>{project.manager}</TableCell>
+                      <TableCell>{project?.manager?.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           <Progress value={calculateProjectProgress(project)} className="w-[60%]" />
@@ -354,10 +290,13 @@ export default function ProjectManagementDashboard() {
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))}                </TableBody>              </Table>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="risks">
           <Card>
             <CardHeader>
@@ -393,6 +332,7 @@ export default function ProjectManagementDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="resources">
           <Card>
             <CardHeader>
@@ -431,6 +371,7 @@ export default function ProjectManagementDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      <ChatButton />
     </div>
   )
 }

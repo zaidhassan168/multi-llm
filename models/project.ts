@@ -1,21 +1,29 @@
 //models\project.ts
 
-type Stage = {  
-    id: string  
-    name: string  
-    completionTime: number  
-    owner: string  
-  }  
-  
-  type Project = {  
-    id: string  
-    name: string  
-    manager: string  
-    stages?: Stage[]  
-    currentStage?: Stage  
-    onTrack?: boolean  
-    tasks?: string[] // Consider changing to Task[] if you have a Task type  
-  } 
+import { Stage } from './stage';
+import { Task } from './task';
+import { Employee } from './employee';
+import { EmployeeSummary, StageSummary, TaskSummary } from './summaries';
+type Project = {  
+  id: string;  
+  name: string;  
+  currentStage?: StageSummary;  // Link to the current stage summary
+  onTrack?: boolean;  // Whether the project is on track
+  stages?: Stage[];  // Summaries of all stages
+  tasks?: TaskSummary[]; 
+  taskids?: string[];
+  manager: EmployeeSummary;
+  resources?: EmployeeSummary[]
+  progress?: number;
+  totalTasks?: number
+  totalTasksCompleted?: number
+  totalTasksIncomplete?: number
+  totalTasksOverdue?: number
+  totalTasksOnTrack?: number
+  totalTasksHours?: number
+  tasksHoursCompleted?: number
+};
+
 
   const API_URL = '/api/project-management/projects';
 
@@ -27,6 +35,14 @@ type Stage = {
     return response.json();  
   }  
 
+  // funtion to fetch the oneproject data using project id 
+  export async function getProjectById(projectId: string): Promise<Project> {
+    const response = await fetch(`${API_URL}/${projectId}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch project with ID ${projectId}: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+}
 export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
     // add the id in the prject 
     const response = await fetch(API_URL, {
@@ -39,7 +55,7 @@ export async function createProject(project: Omit<Project, 'id'>): Promise<Proje
 }
 
 export async function updateProject(project: Project): Promise<Project> {
-    const response = await fetch(`${API_URL}/${project.id}`, {
+    const response = await fetch(API_URL, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),
@@ -55,3 +71,15 @@ export async function deleteProject(id: string): Promise<void> {
     if (!response.ok) throw new Error('Failed to delete project');
 }
   export type { Project, Stage }
+
+
+  export const addTaskToProjectAndStage = async (task: TaskSummary, projectId: string, stageId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/${projectId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, stageId }),  // Only send the task object
+    });
+
+    if (!response.ok) throw new Error('Failed to add task');
+    return response.json();
+};
