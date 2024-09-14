@@ -45,7 +45,7 @@ import { Transition } from "@headlessui/react";
 import ProjectDialog from "@/components/ProjectDialog"
 import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
 import { EmployeeSummary } from "@/models/summaries";
-import { AddTaskModal } from "@/components/AddTaskModal";
+import {TaskModal } from "@/components/TaskModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -616,7 +616,7 @@ export default function ProjectDetails() {
         </CardContent>
       </Card>
 
-      <AddTaskModal
+      <TaskModal
         isOpen={isTaskModalOpen}
         onClose={() => {
           setIsTaskModalOpen(false);

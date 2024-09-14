@@ -13,6 +13,7 @@ type TaskSummary = {
     role: 'developer' | 'management' | 'projectManager' | 'undefined';
     tasksCount?: number;
     availability?: number;
+    phtoURL?: string;
   };
   type StageSummary = {
     id: string;

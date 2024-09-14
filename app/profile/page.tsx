@@ -1,3 +1,5 @@
+// components/UserProfile.tsx
+
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
@@ -10,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import Leaderboard from "@/components/leader-board"
 import {
   Camera,
   Edit2,
@@ -26,12 +29,14 @@ import {
   Target,
   Zap,
   Mail,
-  User
+  User,
+  Award as AwardIcon,
 } from "lucide-react"
 import { fetchEmployee, updateEmployee, Employee, triggerAsyncStatsUpdate } from "@/models/employee"
 import { fetchTasksEmail, updateTask, Task } from "@/models/task"
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { LoadingSkeleton } from "@/components/loading-skeleton"
+import { TaskStatCard, AchievementCard, IncentiveCard } from "@/components/tasks/incentive-cards"
 function UserProfile() {
   const { user, loading: authLoading } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
@@ -48,16 +53,19 @@ function UserProfile() {
   useEffect(() => {
     if (user && user.email) {
       fetchEmployeeData(user.email)
-      fetchTasksData(user.email)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const fetchEmployeeData = async (email: string) => {
     try {
-      let emp = await fetchEmployee(email)
+      const emp = await fetchEmployee(email)
       setEmployee(emp)
       setNewName(emp.name)
-      
+
+      // Fetch tasks after employee data is available
+      fetchTasksData(email, emp.role)
+
       // Trigger async stats update
       triggerAsyncStatsUpdate(emp.id, email)
     } catch (error) {
@@ -67,9 +75,9 @@ function UserProfile() {
     }
   }
 
-  const fetchTasksData = async (email: string) => {
+  const fetchTasksData = async (email: string, role: string) => {
     try {
-      const fetchedTasks = await fetchTasksEmail(email, employee?.role || 'developer')
+      const fetchedTasks = await fetchTasksEmail(email, role)
       setTasks(fetchedTasks)
     } catch (error) {
       console.error("Failed to fetch tasks:", error)
@@ -142,7 +150,7 @@ function UserProfile() {
     if (employee) {
       try {
         await updateTask({ id: taskId, status } as Task, employee.email)
-        await fetchTasksData(employee.email)
+        await fetchTasksData(employee.email, employee.role || 'developer')
         console.log("Task updated successfully")
         // Trigger async stats update
         triggerAsyncStatsUpdate(employee.id, employee.email)
@@ -212,7 +220,7 @@ function UserProfile() {
                 </div>
               )}
               <p className="text-muted-foreground">{employee.email}</p>
-              <Badge variant="secondary" className="mt-1">
+              <Badge variant="secondary" className="mt-1 capitalize">
                 {employee.role}
               </Badge>
             </div>
@@ -242,17 +250,29 @@ function UserProfile() {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="achievements">Achievements</TabsTrigger>
+              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+
             </TabsList>
+            
             <TabsContent value="overview">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                 <InfoItem icon={<Mail />} label="Email" value={employee.email} />
-                <InfoItem icon={<User />} label="Role" value={employee.role} />
+                <InfoItem icon={<User />} label="Role" value={capitalize(employee.role)} />
                 <InfoItem icon={<Briefcase />} label="Current Project" value={employee.currentProject || "N/A"} />
                 <InfoItem icon={<Clock />} label="Availability" value={`${employee.availability || 0}%`} />
-                <InfoItem icon={<Calendar />} label="Join Date" value={ "N/A"} />
+                <InfoItem icon={<Calendar />} label="Join Date" value={employee.lastStatsUpdate ? new Date(employee.lastStatsUpdate).toLocaleDateString() : "N/A"} />
                 <InfoItem icon={<Target />} label="Points" value={employee.points?.toString() || "0"} />
-                <InfoItem icon={<Trophy />} label="Streak" value={`${employee.streak || 0} days`} />
-                <InfoItem icon={<Award />} label="Rank" value={employee.rank || "Novice"} />
+                <InfoItem icon={<Trophy />} label="Task Streak" value={`${employee.streak || 0} days`} />
+                <InfoItem icon={<Zap />} label="Active Project Streak" value={`${employee.activeProjectStreak || 0} days`} />
+                <InfoItem icon={<Star />} label="Rank" value={employee.rank || "Novice"} />
+                <InfoItem icon={<Award />} label="Improvement Bonus" value={`+${employee.improvementBonus || 0}`} />
+                <InfoItem icon={<AwardIcon />} label="Level Bonus" value={`+${employee.bonus || 0}`} />
+                <InfoItem icon={<TrendingUp />} label="Last Stats Update" value={employee.lastStatsUpdate ? new Date(employee.lastStatsUpdate).toLocaleString() : "N/A"} />
+              </div>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-2">Level Progress</h3>
+                <Progress value={employee.levelProgress || 0} className="h-2" />
+                <p className="text-sm text-muted-foreground mt-1">{employee.levelProgress ? employee.levelProgress.toFixed(0) : 0}% to next level</p>
               </div>
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-2">Current Project Progress</h3>
@@ -281,11 +301,10 @@ function UserProfile() {
                   {tasks.slice(0, 5).map((task) => (
                     <div key={task.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="font-medium">{task.title}</span>
-                      <div>
+                      <div className="flex space-x-2">
                         <Button
                           size="sm"
                           variant={task.status === 'inProgress' ? 'default' : 'ghost'}
-                          className="mr-2"
                           onClick={() => handleTaskUpdate(task.id, 'inProgress')}
                         >
                           In Progress
@@ -303,6 +322,7 @@ function UserProfile() {
                 </div>
               </div>
             </TabsContent>
+           
             <TabsContent value="achievements">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                 <AchievementCard
@@ -325,11 +345,26 @@ function UserProfile() {
                   label="Current Rank"
                   value={employee.rank || "Novice"}
                 />
+                <AchievementCard
+                  icon={<Zap className="text-yellow-500" />}
+                  label="Active Project Streak"
+                  value={`${employee.activeProjectStreak || 0} days`}
+                />
+                <AchievementCard
+                  icon={<AwardIcon className="text-red-500" />}
+                  label="Improvement Bonus"
+                  value={`+${employee.improvementBonus || 0}`}
+                />
+                <AchievementCard
+                  icon={<AwardIcon className="text-indigo-500" />}
+                  label="Level Bonus"
+                  value={`+${employee.bonus || 0}`}
+                />
               </div>
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-2">Level Progress</h3>
                 <Progress value={employee.levelProgress || 0} className="h-2" />
-                <p className="text-sm text-muted-foreground mt-1">{employee.levelProgress || 0}% to next level</p>
+                <p className="text-sm text-muted-foreground mt-1">{employee.levelProgress ? employee.levelProgress.toFixed(0) : 0}% to next level</p>
               </div>
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">Incentives</h3>
@@ -344,6 +379,16 @@ function UserProfile() {
                     label="Weekly Goal"
                     description="Complete 20 tasks this week for a special badge!"
                   />
+                  <IncentiveCard
+                    icon={<AwardIcon className="text-indigo-500" />}
+                    label="Level Bonus"
+                    description="Reach new levels to earn additional bonuses!"
+                  />
+                  <IncentiveCard
+                    icon={<Trophy className="text-green-500" />}
+                    label="Top Performer"
+                    description="Be among the top performers to receive exclusive rewards!"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -352,6 +397,12 @@ function UserProfile() {
       </Card>
     </div>
   )
+}
+
+// Helper function to capitalize first letter
+function capitalize(text: string) {
+  if (!text) return ""
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -363,56 +414,6 @@ function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string
         <p className="font-medium">{value}</p>
       </div>
     </div>
-  )
-}
-
-function TaskStatCard({ icon, label, value, total }: { icon: React.ReactNode; label: string; value: number; total: number }) {
-  const percentage = total > 0 ? (value / total) * 100 : 0
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            {icon}
-            <h4 className="font-medium text-muted-foreground">{label}</h4>
-          </div>
-          <span className="text-2xl font-bold">{value}</span>
-        </div>
-        <Progress value={percentage} className="h-1 mb-1" />
-        <p className="text-xs text-muted-foreground text-right">{percentage.toFixed(0)}% of total</p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function AchievementCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">{icon}</div>
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-xl font-bold">{value}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function IncentiveCard({ icon, label, description }: { icon: React.ReactNode; label: string; description: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="flex-shrink-0">{icon}</div>
-          <h4 className="font-medium">{label}</h4>
-        </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
   )
 }
 

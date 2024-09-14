@@ -29,6 +29,9 @@ type Comment = {
       type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
       lastUpdated?: Date;
       completedAt?: Date;
+      complexity?: 'simple' | 'moderate' | 'complex';
+      qualityRating?: number;
+
     };
     
     const API_URL = '/api/project-management/tasks';
