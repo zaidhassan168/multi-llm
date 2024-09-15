@@ -37,7 +37,8 @@ async function saveTaskToFirebaseAndUpdateProject(email: string, task: Task, pro
     // Update project with TaskSummary
     const projectRef = doc(db, 'projects', projectId)
     await updateDoc(projectRef, {
-      tasks: arrayUnion(taskSummary)
+      tasks: arrayUnion(taskSummary),
+      taskIds: arrayUnion(taskId)
     })
 
   } catch (error) {

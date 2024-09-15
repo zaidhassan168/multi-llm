@@ -57,10 +57,10 @@ export async function updateEmployee(employee: Employee): Promise<Employee> {
     return response.json();
 }
 
-export async function deleteEmployee(id: string): Promise<void> {
+export async function deleteEmployee(email: string): Promise<void> {
     const response = await fetch(API_URL, {
         method: 'DELETE',
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ email }),
     });
     if (!response.ok) throw new Error('Failed to delete employee');
 }

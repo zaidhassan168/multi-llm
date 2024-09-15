@@ -3,29 +3,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import {
   HomeIcon,
   BriefcaseIcon,
-  CodeIcon,
-  BotIcon,
-  HistoryIcon,
-  KanbanIcon,
-  BookDashedIcon,
-  MailIcon,
-  BellIcon,
-  MessageCircleIcon,
-  InboxIcon,
-  UsersIcon,
+  BarChart2Icon,
+  MessageSquareIcon,
+  CalendarIcon,
+  SettingsIcon,
+  UserIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   LogOutIcon,
   SunIcon,
   MoonIcon,
-  SearchIcon,
-  SquareChartGantt
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
@@ -43,7 +35,7 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { setIsAuthenticated, setEmail,user  } = useAuth();
+  const { setIsAuthenticated, setEmail, user } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
@@ -61,28 +53,18 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
     }
   };
 
-
   const navItems = [
     { icon: <HomeIcon />, label: "Dashboard", id: "dashboard", route: "/dashboard" },
-    { icon: <BriefcaseIcon />, label: "My Tasks", id: "tasks", route: "/task-swiper"},
-    // { icon: <BellIcon />, label: "Notifications", id: "notifications", route: "/notifications", count: 4 },
-    // { icon: <MessageCircleIcon />, label: "Messages", id: "messages", route: "/messages" },
-    // { icon: <InboxIcon />, label: "Inbox", id: "inbox", route: "/inbox", count: 9 },
-    // { icon: <img src="/assets/openai.svg" alt="OpenAI" className="w-5 h-5" />, label: "OpenAI", id: "openai", route: "/openai" },
-    // { icon: <img src="/assets/gemini.svg" alt="Gemini" className="w-5 h-5" />, label: "Gemini", id: "gemini", route: "/gemini" },
-    // { icon: <CodeIcon />, label: "Code", id: "code", route: "/code-chat" },
-    // { icon: <BotIcon />, label: "Assistant", id: "assistant", route: "/assistant" },
-    { icon: <HistoryIcon />, label: "Chat", id: "history", route: "/history" },
-    { icon: <img src="/assets/kanban.png" className="w-5 h-5" alt="kanban" />, label: "Board", id: "board", route: "/board" },
-    { icon: <BookDashedIcon />, label: "Employees", id: "employees", route: "/employees" },
-    { icon: <SquareChartGantt />      , label: "Stages", id: "stages", route: "/stage-management" },
-    { icon: <UsersIcon />, label: "Profile", id: "profiles", route: "/profile" },
+    { icon: <BriefcaseIcon />, label: "My Tasks", id: "tasks", route: "/task-swiper" },
+    { icon: <BarChart2Icon />, label: "Tasks Board", id: "taskaBoard", route: "/board" },
+    { icon: <MessageSquareIcon />, label: "Ai", id: "ai", route: "/history" },
+    { icon: <UserIcon />, label: "Profile", id: "profile", route: "/profile" },
   ];
 
-  const teamMembers = [
-    { name: "Peter Taylor", avatar: "/placeholder-user.jpg", status: "online" },
-    { name: "Luvleen Lawrence", avatar: "/placeholder-user.jpg", status: "offline" },
-    { name: "Su Hua", avatar: "/placeholder-user.jpg", status: "away" },
+  const recentProjects = [
+    { name: "Project Alpha", icon: <BriefcaseIcon className="w-4 h-4 text-blue-500" />, route: "/projects/alpha" },
+    { name: "Project Beta", icon: <BriefcaseIcon className="w-4 h-4 text-green-500" />, route: "/projects/beta" },
+    { name: "Project Gamma", icon: <BriefcaseIcon className="w-4 h-4 text-yellow-500" />, route: "/projects/gamma" },
   ];
 
   return (
@@ -90,17 +72,19 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
       <div
         className={`bg-white dark:bg-gray-900 flex flex-col h-screen transition-all duration-300 ease-in-out ${
           isCollapsed ? "w-20" : "w-64"
-        } border-r border-gray-200 dark:border-gray-700`}
+        } border-r border-gray-200 dark:border-gray-700 shadow-lg`}
       >
+        {/* Header */}
         <div className="p-4 flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <Avatar className="w-10 h-10">
-                <AvatarImage src="/placeholder-user.jpg" alt="User avatar" />
-                <AvatarFallback>Z</AvatarFallback>
+                <AvatarImage src={user?.photoURL || "/placeholder-user.jpg"} alt="User avatar" />
+                <AvatarFallback>{user?.displayName?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-sm font-semibold">{user?.displayName}</h2>
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{user?.displayName}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{email}</p>
               </div>
             </div>
           )}
@@ -114,43 +98,27 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
           </Button>
         </div>
 
-        {!isCollapsed && (
-          <div className="px-4 mb-4">
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search"
-                className="pl-10 pr-4 py-2 w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full"
-              />
-            </div>
-          </div>
-        )}
-
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {navItems.map(({ icon, label, id, route}) => (
+        {/* Navigation */}
+        <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
+          {navItems.map(({ icon, label, id, route }) => (
             <Tooltip key={id} delayDuration={0}>
               <TooltipTrigger asChild>
                 <Link href={route} passHref>
                   <Button
                     variant={pathname === route ? "default" : "ghost"}
-                    className={`w-full justify-start text-left ${
-                      isCollapsed ? "px-2" : "px-4"
+                    className={`w-full justify-start text-left text-sm ${
+                      isCollapsed ? "px-3 py-2" : "px-4 py-3"
                     } ${
                       pathname === route
                         ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200"
                         : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
+                    } rounded-md`}
                   >
                     <span className="flex items-center">
                       {React.cloneElement(icon as React.ReactElement, {
                         className: `w-5 h-5 ${isCollapsed ? "mr-0" : "mr-3"}`,
                       })}
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-grow">{label}</span>
-                        </>
-                      )}
+                      {!isCollapsed && <span>{label}</span>}
                     </span>
                   </Button>
                 </Link>
@@ -164,35 +132,31 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
           ))}
         </nav>
 
+        {/* Recent Projects */}
         {!isCollapsed && (
-          <div className="px-4 py-2">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 flex justify-between items-center">
-              Teams
-              <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-600">
-                View all
-              </Button>
-            </h3>
-            <div className="mt-2 space-y-2">
-              {teamMembers.map((member, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={member.avatar} alt={`${member.name}'s avatar`} />
-                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-grow">
-                    <p className="text-sm font-medium">{member.name}</p>
-                  </div>
-                  <div className={`w-2 h-2 rounded-full ${
-                    member.status === 'online' ? 'bg-green-500' :
-                    member.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-                  }`} />
-                </div>
+          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Recent Projects</h3>
+            <div className="space-y-2">
+              {recentProjects.map((project, index) => (
+                <Link key={index} href={project.route} passHref>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left text-sm px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <span className="flex items-center">
+                      {project.icon}
+                      <span className="ml-3">{project.name}</span>
+                    </span>
+                  </Button>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
-        <div className={`mt-auto p-4 border-t border-gray-200 dark:border-gray-700 ${isCollapsed ? 'flex flex-col items-center space-y-4' : 'flex items-center justify-between'}`}>
+        {/* Footer */}
+        <div className={`mt-auto p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between ${isCollapsed ? 'flex-col space-y-4' : 'flex-row space-x-4'}`}>
+          {/* Theme Toggle */}
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
@@ -201,13 +165,15 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="rounded-full bg-gray-100 dark:bg-gray-800"
               >
-                {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+                {theme === 'dark' ? <SunIcon className="w-5 h-5 text-yellow-500" /> : <MoonIcon className="w-5 h-5 text-gray-700" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Toggle theme</p>
+            <TooltipContent side="top">
+              <p>Toggle Theme</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Logout */}
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
@@ -220,16 +186,16 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <LogOutIcon className="w-5 h-5" />
+                  <LogOutIcon className="w-5 h-5 text-red-500" />
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">
+            <TooltipContent side="top">
               <p>Logout</p>
             </TooltipContent>
           </Tooltip>

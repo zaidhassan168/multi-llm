@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     // Save the document in Firestore
     await setDoc(taskRef, newTask);
-
+    updateProjectStage(newTask);
     return NextResponse.json({ id: newTask.id });
   } catch (error) {
     console.error('Error creating task:', error);
@@ -72,7 +72,6 @@ export async function PATCH(request: Request) {
 
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
-  updateProjectStage({ ...updates, id } as Task);
   updateProjectAndStageProgress({ ...updates, id } as Task);
   return NextResponse.json({ success: true });
 }

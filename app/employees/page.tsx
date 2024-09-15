@@ -92,10 +92,10 @@ export default function EmployeeManagement() {
     }
   }
 
-  const handleDeleteEmployee = async (id: string) => {
+  const handleDeleteEmployee = async (email: string) => {
     if (confirm('Are you sure you want to delete this employee?')) {
       try {
-        await deleteEmployee(id)
+        await deleteEmployee(email)
         toast({ title: 'Success', description: 'Employee deleted successfully' })
         fetchData()
       } catch (error) {
@@ -259,7 +259,7 @@ export default function EmployeeManagement() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDeleteEmployee(employee.id)}
+                      onClick={() => handleDeleteEmployee(employee.email)}
                     >
                       Delete
                     </Button>

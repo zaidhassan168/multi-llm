@@ -73,7 +73,7 @@ export const fetchTasksAll = async (): Promise<Task[]> => {
     throw error;
   }
 };
-export const addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Task> => {
+export const  addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Task> => {
   console.log('Adding task:', task);
   try {
     const response = await fetch(API_URL, {
@@ -117,26 +117,26 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
     if (!response.ok) {
       throw new Error('Failed to update task');
     }
-    fetch('/api/notify', {
-      method: 'POST',
-      body: JSON.stringify({
-        userId: task.assignee.id, // ID of the user to notify
-        taskId: task.id, // ID of the task being updated
-        taskTitle: task.title, // Title of the task being updated
-        newStatus: task.status, // New status of the task
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Notification sent:', data);
-      })
-      .catch((error) => {
-        console.error('Error sending notification:', error);
-      });
-    toast({
-      title: 'Success',
-      description: 'Task updated successfully',
-    });
+    // fetch('/api/notify', {
+    //   method: 'POST',
+    //   body: JSON.stringify({
+    //     userId: task.assignee.id, // ID of the user to notify
+    //     taskId: task.id, // ID of the task being updated
+    //     taskTitle: task.title, // Title of the task being updated
+    //     newStatus: task.status, // New status of the task
+    //   }),
+    // })
+    //   .then((response) => response.json())
+    //   .then((data) => {
+    //     console.log('Notification sent:', data);
+    //   })
+    //   .catch((error) => {
+    //     console.error('Error sending notification:', error);
+    //   });
+    // toast({
+    //   title: 'Success',
+    //   description: 'Task updated successfully',
+    // });
   } catch (error) {
     console.error('Error updating task:', error);
     toast({

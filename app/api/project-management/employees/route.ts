@@ -45,11 +45,12 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { email } = await req.json()
+    console.log('Deleting employee with email:', email)
     const employeeRef = doc(db, 'employees', email)
     await deleteDoc(employeeRef)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting employee:', error)
+    console.error('Error deleting employee edited api:', error)
     return NextResponse.json({ error: 'Failed to delete employee' }, { status: 500 })
   }
 }

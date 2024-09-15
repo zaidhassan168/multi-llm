@@ -11,7 +11,7 @@ type Project = {
   onTrack?: boolean;  // Whether the project is on track
   stages?: Stage[];  // Summaries of all stages
   tasks?: TaskSummary[]; 
-  taskids?: string[];
+  taskIds?: string[];
   manager: EmployeeSummary;
   resources?: EmployeeSummary[]
   progress?: number;
