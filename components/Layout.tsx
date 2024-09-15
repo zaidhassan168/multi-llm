@@ -7,6 +7,7 @@ import LoadingSpinner from './ui/loading-spinner'
 import { usePathname, useRouter } from 'next/navigation'
 import { ScrollArea } from './ui/scroll-area'
 import { EmployeeProfileDropdown } from './employee-dropdown'
+
 interface LayoutProps {
   children: React.ReactNode
 }
@@ -18,6 +19,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const pathname = usePathname()
   const router = useRouter()
 
+  // Define routes where Sidebar should be excluded
+  const excludedRoutes = ['/login', '/register']
+
   useEffect(() => {
     const initAuth = async () => {
       await checkAuthState()
@@ -28,10 +32,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
-        router.push('/login');
-      } else if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
-        router.push('/dashboard');
+      if (!isAuthenticated && !excludedRoutes.includes(pathname)) {
+        router.push('/login')
+      } else if (isAuthenticated && excludedRoutes.includes(pathname)) {
+        router.push('/dashboard')
       }
     }
   }, [isAuthenticated, isLoading, pathname, router])
@@ -44,20 +48,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return <LoadingSpinner />
   }
 
-  if (!isAuthenticated) {
-    return <main className="flex-1 flex flex-col min-h-screen overflow-hidden">{children}</main>
-  }
+  // Determine if Sidebar should be shown
+  const shouldShowSidebar = isAuthenticated && !excludedRoutes.includes(pathname)
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar with fixed height and non-scrollable */}
-      <div className="h-screen sticky top-0">
-        <Sidebar
-          email={email || ''}
-          isCollapsed={isSidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-        />
-      </div>
+      {/* Conditionally render Sidebar */}
+      {shouldShowSidebar && (
+        <div className="h-screen sticky top-0">
+          <Sidebar
+            email={email || ''}
+            isCollapsed={isSidebarCollapsed}
+            toggleSidebar={toggleSidebar}
+          />
+        </div>
+      )}
       
       {/* Main content area with scroll */}
       <ScrollArea className="flex-1 h-screen overflow-auto">
@@ -68,4 +73,5 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     </div>
   )
 }
+
 export default Layout

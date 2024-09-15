@@ -251,7 +251,7 @@ function UserProfile() {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="achievements">Achievements</TabsTrigger>
-              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+              {/* <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger> */}
 
             </TabsList>
             
