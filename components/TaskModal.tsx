@@ -629,7 +629,7 @@ export function TaskModal({
                 </Label>
                 <Select
                   name="assignee"
-                  value={formData.assignee.id || ""}
+                  value={formData?.assignee?.id || ""}
                   onValueChange={(value) => {
                     const selectedDev = developers.find((dev) => dev.id === value);
                     if (selectedDev) {
