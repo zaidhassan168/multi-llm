@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -12,58 +12,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  ChevronRight,
-  Calendar,
-  User,
-  Flag,
-  MessageSquare,
-  ChevronDown,
-  PlusCircle,
-  CheckSquare, XSquare, TrendingUp,
-  Edit,
-  MoreVertical
-} from "lucide-react";
+import { CheckCircle2, AlertOctagon, AlertTriangle, ChevronRight, ChevronDown, PlusCircle, Edit, MoreVertical, CalendarIcon, ClockIcon, UserIcon, MessageSquareIcon, FlagIcon } from "lucide-react";
 import { Task, fetchTasksAll } from "@/models/task";
 import { Project, fetchProjects } from "@/models/project";
 import { Employee, fetchEmployees } from "@/models/employee";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertOctagon, AlertTriangle } from "lucide-react";
 import { Transition } from "@headlessui/react";
-import ProjectDialog from "@/components/ProjectDialog"
+import ProjectDialog from "@/components/ProjectDialog";
 import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
 import { EmployeeSummary } from "@/models/summaries";
-import {TaskModal } from "@/components/TaskModal";
+import { TaskModal } from "@/components/TaskModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
+} from "@/components/ui/dropdown-menu";
+import TaskRow from "@/components/tasks/TaskRow";
+import TaskDetailsPopover from "@/components/tasks/TaskDetailsPopover";
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [expandedStatuses, setExpandedStatuses] = useState<string[]>([]);
-  const [currentStageProgress, setCurrentStageProgress] = useState<number>(0);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const params = useParams();
   const projectId = params.projectId as string;
   const { toast } = useToast();
@@ -76,56 +57,43 @@ export default function ProjectDetails() {
 
   const fetchProjectData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [projectsData, tasksData] = await Promise.all([
-        fetchProjects(),
-        fetchTasksAll(),
-      ]);
-
+      const [projectsData, tasksData] = await Promise.all([fetchProjects(), fetchTasksAll()]);
       const currentProject = projectsData.find((p) => p.id === projectId);
       if (currentProject) {
         setProject(currentProject);
         setTasks(tasksData.filter((t) => t.projectId === projectId));
         setEmployees(currentProject.resources || []);
       } else {
-        toast({
-          title: "Error",
-          description: "Project not found",
-          variant: "destructive",
-        });
+        setError("Project not found");
       }
     } catch (error) {
       console.error("Error fetching project data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch project data",
-        variant: "destructive",
-      });
+      setError("Failed to fetch project data");
     } finally {
       setLoading(false);
     }
   };
 
-  const statusGroups = {
+  const statusGroups = useMemo(() => ({
     done: tasks.filter((task) => task.status === "done"),
     inProgress: tasks.filter((task) => task.status === "inProgress"),
     todo: tasks.filter((task) => task.status === "todo"),
     backlog: tasks.filter((task) => task.status === "backlog"),
-  };
+  }), [tasks]);
 
-  const toggleCollapse = (status: string) => {
+  const toggleCollapse = useCallback((status: string) => {
     setExpandedStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status],
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     );
-  };
+  }, []);
 
-  const calculateProjectProgress = (): number => {
+  const calculateProjectProgress = useCallback((): number => {
     return (project?.progress as number) || 0;
-  };
+  }, [project]);
 
-  const getStatusColor = (status: Task["status"]) => {
+  const getStatusColor = useCallback((status: Task["status"]) => {
     switch (status) {
       case "done":
         return "bg-green-500";
@@ -138,9 +106,9 @@ export default function ProjectDetails() {
       default:
         return "bg-gray-500";
     }
-  };
+  }, []);
 
-  const getStatusColorMuted = (status: string) => {
+  const getStatusColorMuted = useCallback((status: string) => {
     switch (status) {
       case "done":
         return "bg-green-100 text-green-800 hover:bg-green-200";
@@ -153,24 +121,9 @@ export default function ProjectDetails() {
       default:
         return "";
     }
-  };
+  }, []);
 
-  const getPriorityColor = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "critical":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const projectData = {
+  const projectData = useMemo(() => ({
     onTrack: project?.onTrack || false,
     totalTasks: project?.totalTasks as number,
     totalTasksCompleted: project?.totalTasksCompleted as number,
@@ -179,43 +132,39 @@ export default function ProjectDetails() {
     totalTasksOnTrack: project?.totalTasksOnTrack as number,
     totalTasksHours: project?.totalTasksHours as number,
     tasksHoursCompleted: project?.tasksHoursCompleted as number,
-  };
+  }), [project]);
 
-  const getTaskStats = () => {
+  const getTaskStats = useCallback(() => {
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter((t) => t.status === "done").length;
-    const criticalInProgress = tasks.filter(
-      (t) => t.status === "inProgress" && t.priority === "critical",
-    ).length;
-    const highDone = tasks.filter(
-      (t) => t.status === "done" && t.priority === "high",
-    ).length;
+    const criticalInProgress = tasks.filter((t) => t.status === "inProgress" && t.priority === "critical").length;
+    const highDone = tasks.filter((t) => t.status === "done" && t.priority === "high").length;
 
     return { totalTasks, doneTasks, criticalInProgress, highDone };
-  };
+  }, [tasks]);
 
-  const handleTaskAdded = () => {
+  const handleTaskAdded = useCallback(() => {
     fetchProjectData();
     toast({
       title: "Success",
       description: "Task added successfully",
     });
-  };
+  }, [toast]);
 
-  const handleTaskUpdated = () => {
+  const handleTaskUpdated = useCallback(() => {
     fetchProjectData();
     toast({
       title: "Success",
       description: "Task updated successfully",
     });
-  };
+  }, [toast]);
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setSelectedTask(task);
     setIsTaskModalOpen(true);
-  };
+  }, []);
 
-  const handleProjectUpdated = (updatedProject: Project) => {
+  const handleProjectUpdated = useCallback((updatedProject: Project) => {
     try {
       setProject(updatedProject);
       toast({
@@ -230,108 +179,22 @@ export default function ProjectDetails() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const TaskDetailsPopover = ({ task }: { task: Task }) => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="link" className="p-0 h-auto font-medium">
-          {task.title}
-          <ChevronRight className="inline-block ml-1 h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-96 p-0 shadow-lg rounded-lg overflow-hidden">
-        <div className="p-4 bg-gradient-to-r from-primary to-primary-foreground text-primary-foreground">
-          <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
-          <div className="flex items-center space-x-2">
-            <Badge className={`${getStatusColor(task.status)} text-white`}>
-              {task.status}
-            </Badge>
-            {task.priority && (
-              <Badge
-                className={`${getPriorityColor(task.priority)} text-white`}
-              >
-                {task.priority}
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="p-4 space-y-4 bg-white dark:bg-gray-800">
-          <p className="text-sm text-muted-foreground">{task.description}</p>
-          <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center text-sm">
-                <User className="mr-2 h-4 w-4 text-primary" />
-                <span className="font-medium">Assignee:</span>
-              </div>
-              <p className="text-sm pl-6">{task.assignee?.name || 'Unknown'}</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center text-sm">
-                <User className="mr-2 h-4 w-4 text-primary" />
-                <span className="font-medium">Reporter:</span>
-              </div>
-              <p className="text-sm pl-6">{task.reporter?.email || "N/A"}</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center text-sm">
-                <Clock className="mr-2 h-4 w-4 text-primary" />
-                <span className="font-medium">Estimated time:</span>
-              </div>
-              <p className="text-sm pl-6">{task.time} hours</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center text-sm">
-                <Calendar className="mr-2 h-4 w-4 text-primary" />
-                <span className="font-medium">Due date:</span>
-              </div>
-              <p className="text-sm pl-6">
-                {task.dueDate
-                  ? new Date(task.dueDate).toLocaleDateString()
-                  : "N/A"}
-              </p>
-            </div>
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <div className="flex items-center text-sm">
-              <Flag className="mr-2 h-4 w-4 text-primary" />
-              <span className="font-medium">Efforts:</span>
-            </div>
-            <p className="text-sm pl-6">{task.efforts}</p>
-          </div>
-          {task.comments && task.comments.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  <MessageSquare className="mr-2 h-4 w-4 text-primary" />
-                  <span className="font-medium">Comments:</span>
-                </div>
-                <div className="pl-6 space-y-2">
-                  {task.comments.map((comment, index) => (
-                    <div
-                      key={index}
-                      className="text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded"
-                    >
-                      <p className="font-medium">{comment.author}:</p>
-                      <p className="text-muted-foreground">{comment.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg font-semibold">{error}</p>
       </div>
     );
   }
@@ -372,13 +235,8 @@ export default function ProjectDetails() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center mb-4">
-              <Progress
-                value={calculateProjectProgress()}
-                className="w-[80%]"
-              />
-              <span className="ml-2 font-bold">
-                {calculateProjectProgress()}%
-              </span>
+              <Progress value={calculateProjectProgress()} className="w-[80%]" />
+              <span className="ml-2 font-bold">{calculateProjectProgress()}%</span>
             </div>
             <ScrollArea className="h-[180px]">
               <p className="text-sm text-muted-foreground">
@@ -404,10 +262,7 @@ export default function ProjectDetails() {
                           {typeof stage.progress === 'number' ? stage.progress : 0}%
                         </span>
                       </div>
-                      <Progress
-                        value={typeof stage.progress === 'number' ? stage.progress : 0}
-                        className="h-1"
-                      />
+                      <Progress value={typeof stage.progress === 'number' ? stage.progress : 0} className="h-1" />
                     </div>
                   ))
                 ) : (
@@ -524,46 +379,7 @@ export default function ProjectDetails() {
                     <TableBody>
                       {statusGroups[status as keyof typeof statusGroups].map(
                         (task) => (
-                          <TableRow key={task.id}>
-                            <TableCell>
-                              <TaskDetailsPopover task={task} />
-                            </TableCell>
-                            <TableCell>{task.assignee?.name}</TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`${getStatusColor(task.status)} text-white`}
-                              >
-                                {task.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {task.dueDate ? (
-                                <div className="flex items-center">
-                                  <Clock className="mr-2 h-4 w-4" />
-                                  {new Date(task.dueDate).toLocaleDateString()}
-                                </div>
-                              ) : (
-                                "N/A"
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
+                          <TaskRow key={task.id} task={task} handleEditTask={handleEditTask} />
                         ),
                       )}
                     </TableBody>
