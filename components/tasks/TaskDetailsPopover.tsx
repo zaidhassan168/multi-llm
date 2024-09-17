@@ -5,37 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ChevronRight, User, Clock, Calendar, Flag, MessageSquare } from "lucide-react";
 import { Task } from "@/models/task";
-
+import { getStatusColor, getPriorityColor } from "@/lib/colors/colors";
 const TaskDetailsPopover = ({ task }: { task: Task }) => {
-  const getStatusColor = (status: Task["status"]) => {
-    switch (status) {
-      case "done":
-        return "bg-green-500";
-      case "inProgress":
-        return "bg-yellow-500";
-      case "todo":
-        return "bg-blue-500";
-      case "backlog":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getPriorityColor = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "critical":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
 
   return (
     <Popover>

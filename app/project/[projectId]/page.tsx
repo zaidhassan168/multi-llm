@@ -16,7 +16,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, AlertOctagon, AlertTriangle, ChevronRight, ChevronDown, PlusCircle, Edit, MoreVertical, CalendarIcon, ClockIcon, UserIcon, MessageSquareIcon, FlagIcon } from "lucide-react";
 import { Task, fetchTasksAll } from "@/models/task";
 import { Project, fetchProjects } from "@/models/project";
@@ -27,15 +26,9 @@ import ProjectDialog from "@/components/ProjectDialog";
 import ProjectStatusCard from "@/components/cards/ProjectStatusCard";
 import { EmployeeSummary } from "@/models/summaries";
 import { TaskModal } from "@/components/TaskModal";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import TaskRow from "@/components/tasks/TaskRow";
-import TaskDetailsPopover from "@/components/tasks/TaskDetailsPopover";
+import {getStatusColorMuted } from "@/lib/colors/colors";
+
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -93,35 +86,6 @@ export default function ProjectDetails() {
     return (project?.progress as number) || 0;
   }, [project]);
 
-  const getStatusColor = useCallback((status: Task["status"]) => {
-    switch (status) {
-      case "done":
-        return "bg-green-500";
-      case "inProgress":
-        return "bg-yellow-500";
-      case "todo":
-        return "bg-blue-500";
-      case "backlog":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  }, []);
-
-  const getStatusColorMuted = useCallback((status: string) => {
-    switch (status) {
-      case "done":
-        return "bg-green-100 text-green-800 hover:bg-green-200";
-      case "inProgress":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-      case "todo":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-200";
-      case "backlog":
-        return "bg-gray-100 text-gray-800 hover:bg-gray-200";
-      default:
-        return "";
-    }
-  }, []);
 
   const projectData = useMemo(() => ({
     onTrack: project?.onTrack || false,

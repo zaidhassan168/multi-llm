@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { MoreVertical, Edit, Clock } from "lucide-react";
 import TaskDetailsPopover from "@/components/tasks/TaskDetailsPopover";
 import { Task } from "@/models/task";
-
+import { getStatusColor } from "@/lib/colors/colors";
 const TaskRow = ({ task, handleEditTask }: { task: Task, handleEditTask: (task: Task) => void }) => {
   const getStatusColor = (status: Task["status"]) => {
     switch (status) {
