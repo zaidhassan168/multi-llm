@@ -7,11 +7,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, MessageSquare, Send, Loader2, Plus } from "lucide-react"
+import { Trash2, MessageSquare, Send, Loader2, Plus, Search, Copy, Check } from "lucide-react"
 import { useAuth } from '@/lib/hooks'
 import { useChat } from 'ai/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import ReactMarkdown from 'react-markdown'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import remarkGfm from 'remark-gfm'
+
 type Conversation = {
   id: string
   name: string
@@ -36,6 +42,7 @@ export default function ImprovedMultiModelChat() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState<string>('gemini')
   const [isSending, setIsSending] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -128,10 +135,8 @@ export default function ImprovedMultiModelChat() {
 
   const updateConversationName = useCallback(async (id: string | null, content: string) => {
     if (!id) return;
-    // TODO this is a temporary solution, it is calling api on every message sent we need to change it in furute
-
     try {
-      const messages = [{ content }]; // Assuming you only have one message for naming
+      const messages = [{ content }];
       const response = await fetch('/api/get-conv-name', {
         method: 'POST',
         headers: {
@@ -141,9 +146,8 @@ export default function ImprovedMultiModelChat() {
       });
 
       const data = await response.json();
-      const generatedName = data.conversationName || content.slice(0, 30); // Fallback to content slice if API fails
+      const generatedName = data.conversationName || content.slice(0, 30);
 
-      // Update conversation name
       setConversations(prev =>
         prev.map(conv =>
           conv.id === id ? { ...conv, name: generatedName, timestamp: Date.now() } : conv
@@ -151,7 +155,6 @@ export default function ImprovedMultiModelChat() {
       );
     } catch (error) {
       console.error('Failed to generate conversation name:', error);
-      // Optionally handle error, e.g., by showing a notification or using a fallback name
     }
   }, []);
 
@@ -189,36 +192,78 @@ export default function ImprovedMultiModelChat() {
     setMessages([])
     setConversations(prev => [{ id: newId, name: 'New Conversation' }, ...prev])
   }
+
   const modelImageMap: Record<string, string> = {
     'gemini-1.5-flash': "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg",
     'gpt-4o': "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
-    // Add more models and their corresponding image URLs here
+  };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const CodeBlock = ({ language, value }: { language: string, value: string }) => {
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="relative">
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute top-2 right-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={copyToClipboard}
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        </Button>
+        <SyntaxHighlighter language={language} style={atomDark}>
+          {value}
+        </SyntaxHighlighter>
+      </div>
+    );
   };
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-1/4 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Chat History</h2>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={startNewConversation}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Start New Conversation</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Conversations</h2>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={startNewConversation}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Start New Conversation</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
         </div>
         <ScrollArea className="flex-grow">
           <AnimatePresence>
             {isLoading ? (
               [...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)
             ) : (
-              conversations.map((conv) => (
+              filteredConversations.map((conv) => (
                 <motion.div
                   key={conv.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -226,7 +271,7 @@ export default function ImprovedMultiModelChat() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="m-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                  <Card className="m-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
                     <CardHeader className="p-3">
                       <CardTitle className="flex items-center justify-between">
                         <Button
@@ -265,12 +310,12 @@ export default function ImprovedMultiModelChat() {
         </ScrollArea>
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
             {selectedConversation ? 'Conversation' : 'Select a Conversation'}
           </h2>
           <Select value={selectedModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="w-[150px] text-sm">
+            <SelectTrigger className="w-[180px] text-sm">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
@@ -295,7 +340,7 @@ export default function ImprovedMultiModelChat() {
             </SelectContent>
           </Select>
         </div>
-        <ScrollArea className="flex-grow p-3">
+        <ScrollArea className="flex-grow p-4">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -304,11 +349,11 @@ export default function ImprovedMultiModelChat() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
-                className={`mb-3 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
+                className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
               >
-                <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg max-w-[70%]`}>
+                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-md max-w-[80%]`}>
                   {message.role === 'assistant' && (
-                    <div className="flex items-center mb-1">
+                    <div className="flex items-center mb-2">
                       <Avatar className="w-6 h-6 mr-2">
                         <AvatarImage
                           src={message.data && typeof message.data === 'object' && 'model' in message.data
@@ -327,24 +372,55 @@ export default function ImprovedMultiModelChat() {
                       </span>
                     </div>
                   )}
-                  <p className="text-sm">{message.content}</p>
+                  <ReactMarkdown
+                    className="text-sm leading-relaxed prose dark:prose-invert max-w-none"
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code(props) {
+                        const { children, className, node } = props
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <SyntaxHighlighter
+                            PreTag="div"
+                            language={match[1]}
+                            className="rounded-md text-sm"
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      h1: ({ children }) => <h1 className="text-2xl font-bold mt-4 mb-2">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xl font-bold mt-3 mb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-lg font-bold mt-2 mb-1">{children}</h3>,
+                      ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      p: ({ children }) => <p className="mb-2">{children}</p>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </ScrollArea>
-        <div className="p-3 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
           <form onSubmit={onSubmit} className="flex space-x-2">
-            <input
-              className="flex-1 p-2 border rounded-md dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+            <Input
+              className="flex-1"
               value={input}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
               disabled={!selectedConversation || isSending}
             />
-            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200 text-sm">
+            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200">
               {isSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               {isSending ? 'Sending...' : 'Send'}
             </Button>

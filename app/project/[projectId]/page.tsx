@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import TasksByStages from "@/components/tasks/TasksByStages";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from "@/components/ui/button";
@@ -354,7 +355,7 @@ export default function ProjectDetails() {
           ))}
         </CardContent>
       </Card>
-
+      <TasksByStages project={project} tasks={tasks} />
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl">Assigned Resources</CardTitle>
