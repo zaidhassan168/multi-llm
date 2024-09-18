@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, MessageSquare, Send, Loader2, Plus, Search, Copy, Check } from "lucide-react"
+import { Trash2, MessageSquare, Send, Loader2, Plus, Search, Copy, Check, AtSign, Code, Paperclip, ChevronLeft, ChevronRight } from "lucide-react"
 import { useAuth } from '@/lib/hooks'
 import { useChat } from 'ai/react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -43,6 +43,7 @@ export default function ImprovedMultiModelChat() {
   const [selectedModel, setSelectedModel] = useState<string>('gemini')
   const [isSending, setIsSending] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [isConversationListCollapsed, setIsConversationListCollapsed] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -62,13 +63,6 @@ export default function ImprovedMultiModelChat() {
     onFinish: (message) => {
       updateConversationName(selectedConversation, message.content);
       setIsSending(false);
-
-      if (message.data && typeof message.data === 'object' && 'model' in message.data) {
-        console.log('Model found in message:', message.data.model);
-      } else {
-        console.warn('Model not found in message:', message);
-      }
-
       setMessages(prevMessages => [...prevMessages]);
     },
   })
@@ -227,27 +221,37 @@ export default function ImprovedMultiModelChat() {
       </div>
     );
   };
+  const toggleConversationList = () => {
+    setIsConversationListCollapsed(!isConversationListCollapsed)
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-1/4 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Conversations</h2>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={startNewConversation}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Start New Conversation</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="relative">
+      <div className={`border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${isConversationListCollapsed ? 'w-16' : 'w-1/4'}`}>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between">
+          {!isConversationListCollapsed && (
+            <>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Conversations</h2>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={startNewConversation}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Start New Conversation</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
+          )}
+          <Button variant="ghost" size="icon" onClick={toggleConversationList}>
+            {isConversationListCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </div>
+        {!isConversationListCollapsed && (
+          <div className="p-4">
             <Input
               type="text"
               placeholder="Search conversations..."
@@ -255,12 +259,12 @@ export default function ImprovedMultiModelChat() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-7 top-20 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
-        </div>
+        )}
         <ScrollArea className="flex-grow">
           <AnimatePresence>
-            {isLoading ? (
+            {!isConversationListCollapsed && (isLoading ? (
               [...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)
             ) : (
               filteredConversations.map((conv) => (
@@ -305,7 +309,7 @@ export default function ImprovedMultiModelChat() {
                   </Card>
                 </motion.div>
               ))
-            )}
+            ))}
           </AnimatePresence>
         </ScrollArea>
       </div>
@@ -351,7 +355,7 @@ export default function ImprovedMultiModelChat() {
                 transition={{ duration: 0.2 }}
                 className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
               >
-                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-md max-w-[80%]`}>
+                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} max-w-[80%]`}>
                   {message.role === 'assistant' && (
                     <div className="flex items-center mb-2">
                       <Avatar className="w-6 h-6 mr-2">
@@ -408,18 +412,22 @@ export default function ImprovedMultiModelChat() {
           <div ref={messagesEndRef} />
         </ScrollArea>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
-          <form onSubmit={onSubmit} className="flex space-x-2">
-            <Input
-              className="flex-1"
-              value={input}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={!selectedConversation || isSending}
-            />
-            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200">
-              {isSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              {isSending ? 'Sending...' : 'Send'}
+          <form onSubmit={onSubmit} className="flex items-center space-x-2">
+            <div className="flex-1 flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+              <AtSign className="w-5 h-5 text-gray-400" />
+              <Code className="w-5 h-5 text-gray-400" />
+              <Paperclip className="w-5 h-5 text-gray-400" />
+              <Input
+                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 dark:text-white placeholder-gray-400"
+                value={input}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Message Blackbox..."
+                disabled={!selectedConversation || isSending}
+              />
+            </div>
+            <Button type="submit" disabled={!selectedConversation || isSending} className="rounded-full bg-green-500 hover:bg-green-600 text-white">
+              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
             </Button>
           </form>
         </div>
