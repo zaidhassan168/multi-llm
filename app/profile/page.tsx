@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Leaderboard from "@/components/leader-board"
 import {FcmHandler} from "@/components/FcmHandler"
+import { updateProfile } from "firebase/auth"
 import {
   Camera,
   Edit2,
@@ -123,6 +124,13 @@ function UserProfile() {
         const updatedEmployee = await updateEmployee({ ...employee, photoURL: imageUrl })
         setEmployee(updatedEmployee)
         setProgress(0)
+        
+        if (user) {
+          await updateProfile(user, {
+            photoURL: imageUrl
+          })
+          console.log('Firebase Auth profile updated with new image URL')
+        }
         setImageUrl("")
       } catch (error) {
         console.error("Error updating profile:", error)
@@ -139,6 +147,12 @@ function UserProfile() {
         const updatedEmployee = await updateEmployee({ ...employee, name: newName })
         setEmployee(updatedEmployee)
         setEditMode(false)
+        if (user) {
+          await updateProfile(user, {
+            displayName: newName
+          })
+          console.log('Firebase Auth profile updated with new name')
+        }
       } catch (error) {
         console.error("Error updating name:", error)
       } finally {
@@ -230,6 +244,7 @@ function UserProfile() {
         <CardContent className="pt-6">
           <input
             type="file"
+            aria-label="Profile Picture"
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
