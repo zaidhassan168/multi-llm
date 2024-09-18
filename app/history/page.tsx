@@ -376,17 +376,14 @@ export default function ImprovedMultiModelChat() {
                     className="text-sm leading-relaxed prose dark:prose-invert max-w-none"
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      code(props) {
-                        const { children, className, node } = props
+                      code({ node, className, children, ...props }) {
                         const match = /language-(\w+)/.exec(className || '')
                         return match ? (
-                          <SyntaxHighlighter
-                            PreTag="div"
+                          <CodeBlock
                             language={match[1]}
-                            className="rounded-md text-sm"
-                          >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
+                            value={String(children).replace(/\n$/, '')}
+                            {...props}
+                          />
                         ) : (
                           <code className={className} {...props}>
                             {children}
