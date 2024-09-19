@@ -1,23 +1,28 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, DollarSign, TrendingUp, TrendingDown, PlusCircle } from "lucide-react"
-import { Task, updateTask, deleteTask, fetchTasksAll } from '@/models/task'
-import { Project, Stage, fetchProjects, updateProject, deleteProject, createProject } from '@/models/project'
-import { Risk, fetchRisks, updateRisk, deleteRisk } from '@/models/risk'
-import { Employee, fetchEmployees, updateEmployee, deleteEmployee } from '@/models/employee'
+import { AlertTriangle, BarChart2, CheckCircle2, Clock, Users, AlertCircle, PlusCircle, ArrowUpIcon, ArrowDownIcon } from "lucide-react"
+import { Task, fetchTasksAll } from '@/models/task'
+import { Project, fetchProjects } from '@/models/project'
+import { Risk, fetchRisks } from '@/models/risk'
+import { Employee, fetchEmployees } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,  BarChart, Bar, XAxis, YAxis, CartesianGrid, } from 'recharts'
 import { useToast } from "@/components/ui/use-toast"
 import ProjectDialog from "@/components/ProjectDialog"
 import Link from 'next/link'
-
+import { ChatButton } from '@/components/chat-button'
+import {getSeverityColor, getAvailabilityColor, getTrackStatusColor} from '@/lib/colors/colors'
+import { motion } from 'framer-motion'
+import { generateProjectReport,ProjectStats, processProjects, getTopUtilizedResources } from '@/utils/project/stats-calculations';
+import { LineChart, Line } from 'recharts'
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+
 
 export default function ProjectManagementDashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -26,7 +31,10 @@ export default function ProjectManagementDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const { user } = useAuth()
   const { toast } = useToast()
-
+  const [stats, setStats] = useState<ProjectStats | null>(null)
+  const [topResources, setTopResources] = useState<{ id: string; percentage: number }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null)
   useEffect(() => {
     if (user?.email) {
       fetchAllData()
@@ -54,7 +62,22 @@ export default function ProjectManagementDashboard() {
       })
     }
   }
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const { stats, utilizationPercentage } = await processProjects()
+        setStats(stats)
+        setTopResources(getTopUtilizedResources(utilizationPercentage, 5))
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching project data:', error)
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
+  
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
       case 'done': return 'text-green-600'
@@ -84,23 +107,60 @@ export default function ProjectManagementDashboard() {
     return onTrack ? 'text-green-600' : 'text-red-600'
   }
 
-  const projectStatusData = [
+
+  const projectData = [
+    { month: 'Jan', completed: 4, ongoing: 6, newProjects: 2 },
+    { month: 'Feb', completed: 6, ongoing: 8, newProjects: 3 },
+    { month: 'Mar', completed: 5, ongoing: 7, newProjects: 4 },
+    { month: 'Apr', completed: 7, ongoing: 9, newProjects: 2 },
+    { month: 'May', completed: 8, ongoing: 10, newProjects: 5 },
+    { month: 'Jun', completed: 10, ongoing: 12, newProjects: 3 },
+  ]
+  
+  const revenueData = [
+    { month: 'Jan', revenue: 50000 },
+    { month: 'Feb', revenue: 60000 },
+    { month: 'Mar', revenue: 55000 },
+    { month: 'Apr', revenue: 70000 },
+    { month: 'May', revenue: 80000 },
+    { month: 'Jun', revenue: 100000 },
+  ]
+  
+  const KPICard = ({ title, value, change, isPositive }: { title: string; value: string | number; change: string | number; isPositive: boolean }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {isPositive ? (
+          <ArrowUpIcon className="h-4 w-4 text-green-500" />
+        ) : (
+          <ArrowDownIcon className="h-4 w-4 text-red-500" />
+        )}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className={`text-xs ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? '+' : '-'}{change}% from last month
+        </p>
+      </CardContent>
+    </Card>
+  )
+  const projectStatusData = useMemo(() => [
     { name: 'On Track', value: projects.filter(p => p.onTrack).length },
     { name: 'Off Track', value: projects.filter(p => !p.onTrack).length },
-  ]
+  ], [projects])
 
-  const taskStatusData = [
+  const taskStatusData = useMemo(() => [
     { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
     { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
     { name: 'In Progress', value: tasks.filter(t => t.status === 'inProgress').length },
     { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
-  ]
+  ], [tasks])
 
-  const calculateProjectProgress = (project: Project): number => {
+  const calculateProjectProgress = useCallback((project: Project): number => {
     const projectTasks = tasks.filter(task => task.projectId === project.id)
     const completedTasks = projectTasks.filter(task => task.status === 'done').length
     return projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
-  }
+  }, [tasks])
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -179,9 +239,58 @@ export default function ProjectManagementDashboard() {
           <TabsTrigger value="resources">Resources</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ceo-overview">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+        <TabsContent value="ceo-overview" className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KPICard title="Total Revenue" value="$415,000" change="12" isPositive={true} />
+        <KPICard title="Project Completion Rate" value="92%" change="3" isPositive={true} />
+        <KPICard title="Customer Satisfaction" value="4.8/5" change="0.2" isPositive={true} />
+        <KPICard title="Team Productivity" value="87%" change="1" isPositive={false} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projectData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar
+                    dataKey="completed"
+                    stackId="a"
+                    fill="#8884d8"
+                    onMouseEnter={() => setHoveredBar('completed')}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    opacity={hoveredBar === null || hoveredBar === 'completed' ? 1 : 0.5}
+                  />
+                  <Bar
+                    dataKey="ongoing"
+                    stackId="a"
+                    fill="#82ca9d"
+                    onMouseEnter={() => setHoveredBar('ongoing')}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    opacity={hoveredBar === null || hoveredBar === 'ongoing' ? 1 : 0.5}
+                  />
+                  <Bar
+                    dataKey="newProjects"
+                    fill="#ffc658"
+                    onMouseEnter={() => setHoveredBar('newProjects')}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    opacity={hoveredBar === null || hoveredBar === 'newProjects' ? 1 : 0.5}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
               <CardHeader>
                 <CardTitle>Project Status Overview</CardTitle>
               </CardHeader>
@@ -239,9 +348,27 @@ export default function ProjectManagementDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </TabsContent>
         <TabsContent value="projects">
           <Card>
             <CardHeader>
@@ -262,7 +389,7 @@ export default function ProjectManagementDashboard() {
                   {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/project/${project.id}`} className="text-blue-600 hover:underline">
+                        <Link href={`/projects/${project.id}`} className="text-blue-600 hover:underline">
                           {project.name}
                         </Link>
                       </TableCell>
@@ -371,6 +498,7 @@ export default function ProjectManagementDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      <ChatButton />
     </div>
   )
 }

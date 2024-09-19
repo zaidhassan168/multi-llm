@@ -197,44 +197,44 @@ export default function Kanban() {
     setFilteredTasks(filteredTasksMemo)
   }, [filteredTasksMemo])
 
-  const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
-    if (user?.email && newTask.projectId) {
-      try {
-        const createdTask = await addTask(newTask, user.email)
-        setTasks((prevTasks) => [...prevTasks, createdTask])
-        setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask])
-        console.log('Task added successfully:', createdTask)
-        const taskSummary: TaskSummary = {
-          id: createdTask.id,
-          title: newTask.title,
-          status: newTask.status,
-          assignee: newTask.assignee.name,
-          time: newTask.time.toString(),
-        }
-        if (newTask.projectId && newTask.stageId) {
-          addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId)
-        }
-        toast({
-          title: "Success",
-          description: "Task added successfully.",
-        })
-      } catch (error) {
-        console.error('Failed to add task', error)
-        toast({
-          title: "Error",
-          description: "Failed to add task. Please try again.",
-          variant: "destructive",
-        })
-      }
-    } else {
-      console.error('User email or project ID is missing')
-      toast({
-        title: "Error",
-        description: "Please select a project before adding tasks.",
-        variant: "destructive",
-      })
-    }
-  }
+  // const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
+  //   if (user?.email && newTask.projectId) {
+  //     try {
+  //       const createdTask = await addTask(newTask, user.email)
+  //       setTasks((prevTasks) => [...prevTasks, createdTask])
+  //       setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask])
+  //       console.log('Task added successfully:', createdTask)
+  //       const taskSummary: TaskSummary = {
+  //         id: createdTask.id,
+  //         title: newTask.title,
+  //         status: newTask.status,
+  //         assignee: newTask.assignee.name,
+  //         time: newTask.time.toString(),
+  //       }
+  //       if (newTask.projectId && newTask.stageId) {
+  //         addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId)
+  //       }
+  //       toast({
+  //         title: "Success",
+  //         description: "Task added successfully.",
+  //       })
+  //     } catch (error) {
+  //       console.error('Failed to add task', error)
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to add task. Please try again.",
+  //         variant: "destructive",
+  //       })
+  //     }
+  //   } else {
+  //     console.error('User email or project ID is missing')
+  //     toast({
+  //       title: "Error",
+  //       description: "Please select a project before adding tasks.",
+  //       variant: "destructive",
+  //     })
+  //   }
+  // }
 
   useEffect(() => {
     if (user?.email) {
@@ -443,27 +443,26 @@ export default function Kanban() {
         </DragDropContext>
       </main>
       <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        task={selectedTask}
-        onEdit={() => {
-          // This will be called when the edit button is clicked
-          // You can add any additional logic here if needed
-        }}
-        onSave={(task) => {
-          if (task.id) {
-            handleUpdateTask(task)
-          } else {
-            handleAddTask(task)
-          }
-          setIsModalOpen(false)
-          setSelectedTask(null)
-        }}
-        onDelete={handleDeleteTask}
-      />
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+  }}
+  task={selectedTask}
+  onTaskAdded={() => {
+    // Refresh tasks or update state after a task is added
+    // refreshTasks();
+  }}
+  onTaskUpdated={() => {
+    // Refresh tasks or update state after a task is updated
+    // refreshTasks();
+  }}
+  // onTaskDeleted={() => {
+  //   // Refresh tasks or update state after a task is deleted
+  //   // refreshTasks();
+  // }}
+/>
+
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}

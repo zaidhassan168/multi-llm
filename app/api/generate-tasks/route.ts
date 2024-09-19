@@ -20,7 +20,10 @@ async function saveTaskToFirebaseAndUpdateProject(email: string, task: Task, pro
 
     const cleanTask = {
       ...task,
-      id: taskId,  // Assign the generated ID to the task
+      id: taskId,
+      //set tdate date of current day
+      createdAt: new Date(),
+        // Assign the generated ID to the task
     }
 
     await setDoc(taskRef, cleanTask)
@@ -37,7 +40,8 @@ async function saveTaskToFirebaseAndUpdateProject(email: string, task: Task, pro
     // Update project with TaskSummary
     const projectRef = doc(db, 'projects', projectId)
     await updateDoc(projectRef, {
-      tasks: arrayUnion(taskSummary)
+      tasks: arrayUnion(taskSummary),
+      taskIds: arrayUnion(taskId)
     })
 
   } catch (error) {

@@ -92,8 +92,6 @@ export function EditProjectDialog({ project, processes =[] }: EditProjectDialogP
             />
           </div>
           <ProcessSelector 
-          previousProcesses={processes}
-            onProcessesSelected={setSelectedStages} 
           />
           <Button 
             onClick={handleUpdateProject} 

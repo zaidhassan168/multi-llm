@@ -3,7 +3,7 @@ import { db } from '@/firebase'; // Import your Firestore instance
 import { Task } from '@/models/task';
 import { Stage } from '@/models/stage';
 
-export async function updateProjectAndStageProgress(task: Task) {
+export async function  updateProjectAndStageProgress(task: Task) {
   try {
     const { projectId, stageId } = task;
 

@@ -1,5 +1,7 @@
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase'; // Import your Firestore instance
+import { db } from '@/firebase';
+import { TaskSummary } from '@/models/summaries';
+ // Import your Firestore instance
 
 // Background task that updates the project's stage with the new task ID
 export async function updateProjectStage(task: any) {
@@ -22,8 +24,13 @@ export async function updateProjectStage(task: any) {
     }
     
     const projectData = projectSnap.data();
-    let stages = projectData?.stages || [];
-
+    let stages = projectData?.stages || []; 
+    //also add the task id to array of task ids in the project document
+     //merege in taskids array of prject
+     let taskIds = projectData?.taskIds || [];
+     if (!taskIds.includes(taskId)) {
+      taskIds.push(taskId);
+    }
     // Find the stage in the stages array by the stageId
     const stageIndex = stages.findIndex((stage: any) => stage.id === stageId);
     if (stageIndex === -1) {
@@ -45,7 +52,9 @@ export async function updateProjectStage(task: any) {
 
     // Update the Firestore project document with the updated stages array
     await updateDoc(projectRef, {
-      stages: stages, // Update the entire stages array with the modified stage
+      stages: stages,
+      taskIds: taskIds
+      // Update the entire stages array with the modified stage
     });
 
     console.log('Successfully updated project and stage with new task ID');

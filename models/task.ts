@@ -27,6 +27,11 @@ type Comment = {
       comments?: Comment[];
       reporter?: EmployeeSummary
       type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
+      lastUpdated?: Date;
+      completedAt?: Date;
+      complexity?: 'simple' | 'moderate' | 'complex';
+      qualityRating?: number;
+
     };
     
     const API_URL = '/api/project-management/tasks';
@@ -68,7 +73,7 @@ export const fetchTasksAll = async (): Promise<Task[]> => {
     throw error;
   }
 };
-export const addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Task> => {
+export const  addTask = async (task: Omit<Task, 'id'>, email: string): Promise<Task> => {
   console.log('Adding task:', task);
   try {
     const response = await fetch(API_URL, {
@@ -112,11 +117,26 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
     if (!response.ok) {
       throw new Error('Failed to update task');
     }
-
-    toast({
-      title: 'Success',
-      description: 'Task updated successfully',
-    });
+    // fetch('/api/notify', {
+    //   method: 'POST',
+    //   body: JSON.stringify({
+    //     userId: task.assignee.id, // ID of the user to notify
+    //     taskId: task.id, // ID of the task being updated
+    //     taskTitle: task.title, // Title of the task being updated
+    //     newStatus: task.status, // New status of the task
+    //   }),
+    // })
+    //   .then((response) => response.json())
+    //   .then((data) => {
+    //     console.log('Notification sent:', data);
+    //   })
+    //   .catch((error) => {
+    //     console.error('Error sending notification:', error);
+    //   });
+    // toast({
+    //   title: 'Success',
+    //   description: 'Task updated successfully',
+    // });
   } catch (error) {
     console.error('Error updating task:', error);
     toast({
@@ -155,4 +175,28 @@ export const deleteTask = async (id: string, email: string): Promise<void> => {
   }
 };
     
+export const fetchTasksByProject = async (projectId: string): Promise<Task[]> => {
+  try {
+    const response = await fetch(
+      `${API_URL}/byProject?projectId=${projectId}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {  
+        const errorMessage = response.status === 404  
+          ? 'No tasks found'  
+          : 'Failed to fetch tasks';  
+        throw new Error(errorMessage);  
+      }  
+      return await response.json();
+    }catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch tasks',
+        variant: 'destructive',})
+        throw error;
+      }
+    }
+
+
     export type { Task };

@@ -55,6 +55,7 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
         setEmployees(fetchedEmployees)
         setFilteredEmployees(fetchedEmployees)
         setProjectManagers(fetchedEmployees.filter(emp => emp.role === 'projectManager'))
+        console.log('Project Managers:', projectManagers)
       } catch (error: unknown) {
         console.error('Error fetching employees:', error instanceof Error ? error.message : String(error))
         toast({

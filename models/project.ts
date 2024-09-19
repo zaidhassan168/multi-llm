@@ -11,7 +11,7 @@ type Project = {
   onTrack?: boolean;  // Whether the project is on track
   stages?: Stage[];  // Summaries of all stages
   tasks?: TaskSummary[]; 
-  taskids?: string[];
+  taskIds?: string[];
   manager: EmployeeSummary;
   resources?: EmployeeSummary[]
   progress?: number;
@@ -37,7 +37,7 @@ type Project = {
 
   // funtion to fetch the oneproject data using project id 
   export async function getProjectById(projectId: string): Promise<Project> {
-    const response = await fetch(`${API_URL}/${projectId}`);
+    const response = await fetch(`${API_URL}/getById/${projectId}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch project with ID ${projectId}: ${response.status} ${response.statusText}`);
     }
