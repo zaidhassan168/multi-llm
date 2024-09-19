@@ -399,7 +399,7 @@ export default function ImprovedMultiModelChat() {
                       h3: ({ children }) => <h3 className="text-lg font-bold mt-2 mb-1">{children}</h3>,
                       ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
                       ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
-                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      // li: ({ children }) => <li className="mb-1">{children}</li>,
                       p: ({ children }) => <p className="mb-2">{children}</p>,
                     }}
                   >

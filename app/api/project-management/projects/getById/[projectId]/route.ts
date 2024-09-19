@@ -4,12 +4,12 @@ import { doc, getDoc } from 'firebase/firestore'
 import { Project } from '@/models/project'
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { projectId: string } }
 ) {
   try {
     const { projectId } = params
-    console.log('Fetching project with ID:', projectId)
+    // console.log('Received request to fetch project with ID:', request)
 
     const projectRef = doc(db, 'projects', projectId)
     const projectSnapshot = await getDoc(projectRef)
@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const project = projectSnapshot.data() 
-
+    // console.log("here is the project ", project)
 
     console.log('Project fetched successfully:', project.id)
     return NextResponse.json(project)

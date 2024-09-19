@@ -389,7 +389,7 @@ export default function ProjectManagementDashboard() {
                   {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/project/${project.id}`} className="text-blue-600 hover:underline">
+                        <Link href={`/projects/${project.id}`} className="text-blue-600 hover:underline">
                           {project.name}
                         </Link>
                       </TableCell>

@@ -18,6 +18,7 @@ import {
   LogOutIcon,
   SunIcon,
   MoonIcon,
+  BotMessageSquare, ArrowsUpFromLine
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "../firebase";
@@ -57,7 +58,10 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
     { icon: <HomeIcon />, label: "Dashboard", id: "dashboard", route: "/dashboard" },
     { icon: <BriefcaseIcon />, label: "My Tasks", id: "tasks", route: "/task-swiper" },
     { icon: <BarChart2Icon />, label: "Tasks Board", id: "taskaBoard", route: "/board" },
-    { icon: <MessageSquareIcon />, label: "Ai", id: "ai", route: "/history" },
+    { icon: <CalendarIcon />, label: "Projects", id: "projects", route: "/projects" },
+    { icon: <ArrowsUpFromLine />, label: "Stages", id: "processes", route: "/stage-management" },
+    { icon: <BotMessageSquare />, label: "Ai", id: "ai", route: "/history" },
+
     { icon: <UserIcon />, label: "Profile", id: "profile", route: "/profile" },
   ];
 
