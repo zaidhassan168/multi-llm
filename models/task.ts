@@ -175,4 +175,28 @@ export const deleteTask = async (id: string, email: string): Promise<void> => {
   }
 };
     
+export const fetchTasksByProject = async (projectId: string): Promise<Task[]> => {
+  try {
+    const response = await fetch(
+      `${API_URL}/byProject?projectId=${projectId}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {  
+        const errorMessage = response.status === 404  
+          ? 'No tasks found'  
+          : 'Failed to fetch tasks';  
+        throw new Error(errorMessage);  
+      }  
+      return await response.json();
+    }catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch tasks',
+        variant: 'destructive',})
+        throw error;
+      }
+    }
+
+
     export type { Task };

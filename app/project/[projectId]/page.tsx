@@ -18,8 +18,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertOctagon, AlertTriangle, ChevronRight, ChevronDown, PlusCircle, Edit, MoreVertical, CalendarIcon, ClockIcon, UserIcon, MessageSquareIcon, FlagIcon } from "lucide-react";
-import { Task, fetchTasksAll } from "@/models/task";
-import { Project, fetchProjects } from "@/models/project";
+import { Task, fetchTasksByProject } from "@/models/task";
+import { Project, getProjectById } from "@/models/project";
 import { Employee, fetchEmployees } from "@/models/employee";
 import { useToast } from "@/components/ui/use-toast";
 import { Transition } from "@headlessui/react";
@@ -53,12 +53,12 @@ export default function ProjectDetails() {
     setLoading(true);
     setError(null);
     try {
-      const [projectsData, tasksData] = await Promise.all([fetchProjects(), fetchTasksAll()]);
-      const currentProject = projectsData.find((p) => p.id === projectId);
-      if (currentProject) {
-        setProject(currentProject);
-        setTasks(tasksData.filter((t) => t.projectId === projectId));
-        setEmployees(currentProject.resources || []);
+      const [project, tasksData] = await Promise.all([getProjectById(projectId), fetchTasksByProject(projectId)]);
+      
+      if (project) {
+        setProject(project);
+        setTasks(tasksData);
+        setEmployees(project.resources || []);
       } else {
         setError("Project not found");
       }
