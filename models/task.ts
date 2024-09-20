@@ -17,7 +17,7 @@ type Comment = {
       description: string;
       time: number; // in hours
       efforts: 'backend' | 'frontend' | 'backend + frontend';
-      assignee: EmployeeSummary
+      assignee: EmployeeSummary | null,
       status: 'backlog' | 'todo' | 'inProgress' | 'done';
       createdAt?: Date;
       projectId?: string;
