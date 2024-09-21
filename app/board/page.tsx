@@ -189,7 +189,7 @@ export default function Kanban() {
   const filteredTasksMemo = useMemo(() => {
     return tasks.filter(task =>
       task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterEffort === 'all' || task.efforts === filterEffort)
+      (filterEffort === 'all' || task.efforts ===  filterEffort)
     )
   }, [tasks, searchTerm, filterEffort])
 
