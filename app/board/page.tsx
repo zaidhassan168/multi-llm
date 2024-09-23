@@ -361,28 +361,29 @@ export default function Kanban() {
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="h-16 flex items-center justify-between px-6 bg-white shadow-sm">
         <h1 className="text-xl font-semibold text-gray-800 flex items-center">
-          <KanbanIcon className="mr-2 h-6 w-6 text-blue-500" />
+          <KanbanIcon className="mr-2 h-6 w-6 text-primary" />
           Kanban Board
         </h1>
         <div className="flex space-x-4">
-          <Button
-            onClick={() => setIsUploadModalOpen(true)}
-            variant="outline"
-            className="bg-purple-50 text-purple-700 hover:bg-purple-100"
-          >
-            <UploadIcon className="mr-2 h-4 w-4" />
-            Upload Tasks
-          </Button>
-          <Button
-            onClick={() => {
-              setSelectedTask(null)
-              setIsModalOpen(true)
-            }}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Add Task
-          </Button>
+<Button
+  onClick={() => setIsUploadModalOpen(true)}
+  variant="outline"
+  className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+>
+  <UploadIcon className="mr-2 h-4 w-4" />
+  Upload Tasks
+</Button>
+<Button
+  onClick={() => {
+    setSelectedTask(null)
+    setIsModalOpen(true)
+  }}
+  variant="outline"
+  className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+>
+  <PlusIcon className="mr-2 h-4 w-4" />
+  Add Task
+</Button>
         </div>
       </header>
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b">
