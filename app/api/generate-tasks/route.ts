@@ -17,11 +17,10 @@ const TaskSchema = z.object({
   efforts: z.enum(['backend', 'frontend', 'backend + frontend']),
   assignee: z.string(), // Just the name
   status: z.enum(['backlog', 'todo', 'inProgress', 'done']),
-  createdAt: z.string().optional(), // ISO date string
+  createdAt: z.date(), // ISO date string
   projectId: z.string().optional(),
   stageId: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent', 'critical', 'null']).optional(),
-  dueDate: z.string().optional(), // ISO date string
 })
 
 // Since the AI will return a list of tasks, define an array schema
@@ -51,18 +50,18 @@ async function saveTaskToFirebaseAndUpdateProject(email: string, task: Task, pro
     await setDoc(taskRef, cleanTask)
 
     // Create TaskSummary
-    const taskSummary: TaskSummary = {
-      id: task.id,
-      title: task.title,
-      status: task.status,
-      assignee: task.assignee?.name || '',
-      time: task.time ? `${task.time}h` : undefined,
-    }
+    // const taskSummary: TaskSummary = {
+    //   id: task.id,
+    //   title: task.title,
+    //   status: task.status,
+    //   assignee: task.assignee?.name || '',
+    //   time: task.time ? `${task.time}h` : undefined,
+    // }
 
     // Update project with TaskSummary
     const projectRef = doc(db, 'projects', projectId)
     await updateDoc(projectRef, {
-      tasks: arrayUnion(taskSummary),
+      // tasks: arrayUnion(taskSummary),
       taskIds: arrayUnion(taskId)
     })
 
@@ -181,8 +180,7 @@ export async function POST(req: Request) {
         projectId: projectId,
         type: 'task',
         stageId: rawTask.stageId || undefined,
-        createdAt: rawTask.createdAt ? new Date(rawTask.createdAt) : new Date(),
-        dueDate: rawTask.dueDate ? new Date(rawTask.dueDate) : undefined,
+        createdAt: new Date(),
       }
 
       return task

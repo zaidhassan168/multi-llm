@@ -3,8 +3,7 @@ import { db } from '@/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, setDoc } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
 import { Task } from '@/models/task';
-import { report } from 'process';
-import { randomUUID } from 'crypto';
+
 import { updateProjectStage } from '@/utils/ayncfunctions/addTaskToStage';
 import { updateProjectAndStageProgress } from '@/utils/ayncfunctions/updateProgress';
 /**
