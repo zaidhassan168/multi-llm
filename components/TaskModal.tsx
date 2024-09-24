@@ -23,7 +23,7 @@ import { useAuth } from "@/lib/hooks"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
+import LottieLoading from "./LottieLoading"
 type TaskModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -142,9 +142,19 @@ export function TaskModal({
         setDevelopers(devs);
         setProjectManagers(pms);
 
-        if (projectId) {
-          const selectedProject = projectsData.find((p) => p.id === projectId);
-          setStages(selectedProject?.stages || []);
+        const currentProjectId = task?.projectId || projectId;
+        if (currentProjectId) {
+          const selectedProject = projectsData.find((p) => p.id === currentProjectId);
+          if (selectedProject) {
+            setStages(selectedProject.stages || []);
+            // If editing a task, ensure the current stage is set
+            if (task && task.stageId) {
+              setFormData(prev => ({
+                ...prev,
+                stageId: task.stageId
+              }));
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -262,7 +272,7 @@ export function TaskModal({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[600px] h-[80vh] p-0">
           <div className="flex items-center justify-center h-full">
-            <div className="loader">Loading...</div>
+           <LottieLoading size="small" />
           </div>
         </DialogContent>
       </Dialog>

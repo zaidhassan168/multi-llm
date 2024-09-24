@@ -29,7 +29,7 @@ import { EmployeeSummary } from "@/models/summaries";
 import { TaskModal } from "@/components/TaskModal";
 import TaskRow from "@/components/tasks/TaskRow";
 import {getStatusColorMuted } from "@/lib/colors/colors";
-
+import LottieLoading from "@/components/LottieLoading";
 export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -151,7 +151,7 @@ export default function ProjectDetails() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+       <LottieLoading size="large"/>
       </div>
     );
   }

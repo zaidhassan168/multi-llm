@@ -34,7 +34,7 @@ import { TaskSummary } from '@/models/summaries'
 import { Project, updateProject, addTaskToProjectAndStage } from '@/models/project'
 import { collection, onSnapshot, query, where } from "firebase/firestore"
 import { db } from "@/firebase"
-
+import LottieLoading from '@/components/LottieLoading'
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -189,7 +189,7 @@ export default function Kanban() {
   const filteredTasksMemo = useMemo(() => {
     return tasks.filter(task =>
       task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterEffort === 'all' || task.efforts ===  filterEffort)
+      (filterEffort === 'all' || task.efforts === filterEffort)
     )
   }, [tasks, searchTerm, filterEffort])
 
@@ -351,8 +351,7 @@ export default function Kanban() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2Icon className="animate-spin h-8 w-8 text-blue-500" />
-        <span className="ml-2 text-lg font-semibold">Loading tasks...</span>
+        <LottieLoading size="large" />
       </div>
     )
   }
@@ -365,25 +364,25 @@ export default function Kanban() {
           Kanban Board
         </h1>
         <div className="flex space-x-4">
-<Button
-  onClick={() => setIsUploadModalOpen(true)}
-  variant="outline"
-  className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
->
-  <UploadIcon className="mr-2 h-4 w-4" />
-  Upload Tasks
-</Button>
-<Button
-  onClick={() => {
-    setSelectedTask(null)
-    setIsModalOpen(true)
-  }}
-  variant="outline"
-  className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
->
-  <PlusIcon className="mr-2 h-4 w-4" />
-  Add Task
-</Button>
+          <Button
+            onClick={() => setIsUploadModalOpen(true)}
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+          >
+            <UploadIcon className="mr-2 h-4 w-4" />
+            Upload Tasks
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectedTask(null)
+              setIsModalOpen(true)
+            }}
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Add Task
+          </Button>
         </div>
       </header>
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b">
@@ -444,25 +443,25 @@ export default function Kanban() {
         </DragDropContext>
       </main>
       <TaskModal
-  isOpen={isModalOpen}
-  onClose={() => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-  }}
-  task={selectedTask}
-  onTaskAdded={() => {
-    // Refresh tasks or update state after a task is added
-    // refreshTasks();
-  }}
-  onTaskUpdated={() => {
-    // Refresh tasks or update state after a task is updated
-    // refreshTasks();
-  }}
-  // onTaskDeleted={() => {
-  //   // Refresh tasks or update state after a task is deleted
-  //   // refreshTasks();
-  // }}
-/>
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
+        onTaskAdded={() => {
+          // Refresh tasks or update state after a task is added
+          // refreshTasks();
+        }}
+        onTaskUpdated={() => {
+          // Refresh tasks or update state after a task is updated
+          // refreshTasks();
+        }}
+      // onTaskDeleted={() => {
+      //   // Refresh tasks or update state after a task is deleted
+      //   // refreshTasks();
+      // }}
+      />
 
       <FileUploadModal
         isOpen={isUploadModalOpen}

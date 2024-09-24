@@ -7,7 +7,7 @@ import LoadingSpinner from './ui/loading-spinner'
 import { usePathname, useRouter } from 'next/navigation'
 import { ScrollArea } from './ui/scroll-area'
 import { EmployeeProfileDropdown } from './employee-dropdown'
-
+import LottieLoading from './LottieLoading'
 interface LayoutProps {
   children: React.ReactNode
 }
@@ -45,7 +45,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   if (isLoading) {
-    return <LoadingSpinner />
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LottieLoading size="large" />
+      </div>
+    )
   }
 
   // Determine if Sidebar should be shown
