@@ -67,6 +67,13 @@ const getSeverityColor = (severity: Risk['severity']) => {
   }
   
 
+  const getEffortColor = (effort: string) => {
+    switch (effort) {
+      case 'backend': return 'bg-purple-200 text-purple-800'
+      case 'frontend': return 'bg-pink-200 text-pink-800'
+      case 'backend + frontend': return 'bg-indigo-200 text-indigo-800'
+      default: return 'bg-gray-200 text-gray-800'
+    }
+  }
 
-
-export { getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor };
+export { getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor, getEffortColor };
