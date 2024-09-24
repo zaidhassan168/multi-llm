@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Task, fetchTasksEmail, updateTask } from '@/models/task'
-import { RefreshCw, ChevronLeftIcon, ChevronRightIcon, Inbox, ListTodo, Activity, CheckCircle } from 'lucide-react'
+import { RefreshCw, ChevronLeftIcon, ChevronRightIcon, Inbox, ListTodo, Activity, CheckCircle, Menu } from 'lucide-react'
 import { Employee, fetchEmployee } from '@/models/employee'
 import { Progress } from '@/components/ui/progress'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import LottieLoading from '@/components/LottieLoading'
 
 const statusOrder = ['backlog', 'todo', 'inProgress', 'done']
 
@@ -44,7 +45,7 @@ const statusIcons = {
   done: CheckCircle,
 }
 
-export default function TaskSwiper() {
+export default function TaskManager() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
   const [showTaskList, setShowTaskList] = useState(false)
@@ -152,7 +153,7 @@ export default function TaskSwiper() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-blue-500"></div>
+        <LottieLoading size="small" />
         <p className="mt-4 text-lg font-semibold text-gray-600">Loading tasks...</p>
       </div>
     )
@@ -163,176 +164,187 @@ export default function TaskSwiper() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-xl h-screen flex flex-col">
-      <h1 className="text-2xl font-bold mb-4 text-center">My Tasks</h1>
-
-      {/* Task Stats */}
-      <div className="mb-4 p-4 bg-white rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Task Overview</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p className="text-sm text-gray-600">Total: {taskStats.total}</p>
-            <p className="text-sm text-gray-600">To Do: {taskStats.todo}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">In Progress: {taskStats.inProgress}</p>
-            <p className="text-sm text-gray-600">Done: {taskStats.done}</p>
+    <div className="container mx-auto px-4 py-6 h-screen flex bg-gray-100">
+      <div className="flex-grow max-w-3xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">My Tasks</h1>
+          <div className="flex space-x-2">
+            <Button
+              onClick={fetchTasks}
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button
+              onClick={() => setShowTaskList(!showTaskList)}
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+            >
+              <Menu className="mr-2 h-4 w-4" />
+              {showTaskList ? 'Hide List' : 'Show List'}
+            </Button>
           </div>
         </div>
-        <Progress 
-          value={(taskStats.done / taskStats.total) * 100} 
-          className="mt-2 h-2"
-        />
-      </div>
 
-      {/* Navigation Buttons and Task Card */}
-      <div className="flex items-center justify-between mb-4">
-        <Button 
-          onClick={moveToPreviousTask} 
-          disabled={currentTaskIndex === 0}
-          variant="outline"
-          size="icon"
-          className="rounded-full w-10 h-10"
-        >
-          <ChevronLeftIcon className="h-6 w-6" />
-        </Button>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTaskIndex}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="flex-grow mx-4"
-          >
-            <Card 
-              key={currentTask.id} 
-              className="border-0 shadow-md bg-white dark:bg-gray-800"
-            >
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-xl font-bold">{currentTask.title}</CardTitle>
-                <Badge className={`${priorityColors[currentTask.priority as keyof typeof priorityColors]} text-sm`}>
-                  {currentTask.priority}
-                </Badge>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <div className="h-28 overflow-y-auto text-sm">
-                  <p className="mb-3 text-gray-600 dark:text-gray-300">{currentTask.description}</p>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="outline" className="text-sm">{currentTask.efforts}</Badge>
-                  <Badge variant="outline" className="text-sm">{currentTask.time}h</Badge>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Assignee: {currentTask.assignee.name}</p>
-                <p className="text-sm font-semibold mt-2">Status: {currentTask.status}</p>
-              </CardContent>
-              <CardFooter className="flex justify-between px-4 py-3">
-                <div className="flex space-x-2">
-                  {Object.keys(priorityColors).map((priority) => (
-                    <Button
-                      key={priority}
-                      onClick={() => handlePriorityChange(priority as Task['priority'])}
-                      size="sm"
-                      variant="outline"
-                      className={`${priorityColors[priority as keyof typeof priorityColors]} border-none text-xs px-2 py-1`}
-                    >
-                      {priority.charAt(0).toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
-              </CardFooter>
-            </Card>
-          </motion.div>
-        </AnimatePresence>
-
-        <Button 
-          onClick={moveToNextTask} 
-          disabled={currentTaskIndex === tasks.length - 1}
-          variant="outline"
-          size="icon"
-          className="rounded-full w-10 h-10"
-        >
-          <ChevronRightIcon className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Status Buttons */}
-      <div className="flex justify-center space-x-3 mb-4">
-        {statusOrder.map((status) => {
-          const IconComponent = statusIcons[status as keyof typeof statusIcons]
-          return (
-            <div key={status} className="flex flex-col items-center">
-              <Button
-                onClick={() => handleStatusChange(status as Task['status'])}
-                size="icon"
-                className={`rounded-full p-2 mb-1 ${statusColors[status as keyof typeof statusColors]}`}
-              >
-                <IconComponent className="h-5 w-5 text-white" />
-                <span className="sr-only">{status}</span>
-              </Button>
-              <span className={`text-xs font-medium capitalize ${statusTextColors[status as keyof typeof statusTextColors]}`}>
-                {status.replace(/([A-Z])/g, ' $1').trim()}
-              </span>
+        <Card className="mb-6 bg-white shadow-lg">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl">Task Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total: {taskStats.total}</p>
+                <p className="text-sm font-medium text-gray-600">To Do: {taskStats.todo}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">In Progress: {taskStats.inProgress}</p>
+                <p className="text-sm font-medium text-gray-600">Done: {taskStats.done}</p>
+              </div>
             </div>
-          )
-        })}
-      </div>
+            <Progress
+              value={(taskStats.done / taskStats.total) * 100}
+              className="h-2"
+            />
+          </CardContent>
+        </Card>
 
-      {/* Bottom Actions */}
-      <div className="flex justify-between mt-auto">
-        <Button
-          onClick={fetchTasks}
-          variant="outline"
-          size="sm"
-          className="flex-1 mr-2"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
-        <Button
-          onClick={() => setShowTaskList(!showTaskList)}
-          className="flex-1 ml-2"
-          variant="outline"
-        >
-          {showTaskList ? 'Hide List' : 'Show List'}
-        </Button>
-      </div>
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            onClick={moveToPreviousTask}
+            disabled={currentTaskIndex === 0}
+            variant="outline"
+            size="icon"
+            className="rounded-full w-10 h-10"
+          >
+            <ChevronLeftIcon className="h-6 w-6" />
+          </Button>
 
-      {/* Scrollable Task List */}
-      {showTaskList && (
-        <ScrollArea className="mt-4 h-48 rounded-md border">
-          <div className="p-4 space-y-2">
-            {tasks.map((task, index) => (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <Card
-                  className={`cursor-pointer transition-all duration-300 ${
-                    task.id === currentTask.id
-                      ? 'border-blue-500 border-2 shadow-md' 
-                      : 'hover:shadow-sm'
-                  }`}
-                  onClick={() => setCurrentTaskIndex(index)}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTaskIndex}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="flex-grow mx-4"
+            >
+              <Card className="border-0 shadow-lg bg-white">
+                <CardHeader className="pb-2 pt-4 px-6">
+                  <CardTitle className="text-2xl font-bold">{currentTask.title}</CardTitle>
+                  <Badge className={`${priorityColors[currentTask.priority as keyof typeof priorityColors]} text-sm mt-2`}>
+                    {currentTask.priority}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="px-6 pb-4">
+                  <ScrollArea className="h-40 mb-4">
+                    <p className="text-gray-600">{currentTask.description}</p>
+                  </ScrollArea>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Badge variant="outline" className="text-sm">{currentTask.efforts}</Badge>
+                    <Badge variant="outline" className="text-sm">{currentTask.time}h</Badge>
+                  </div>
+                  <p className="text-sm text-gray-500">Assignee: {currentTask.assignee?.name}</p>
+                  {/* <span className="text-sm font-semibold">Status:</span> */}
+                  <Badge
+                    variant="secondary"
+                    className={`${statusColors[currentTask.status as keyof typeof statusColors]} text-white capitalize`}
+                  >
+                    {currentTask.status}
+                  </Badge>
+                </CardContent>
+                <CardFooter className="flex justify-between px-6 py-4 bg-gray-50">
+                  <div className="flex space-x-2">
+                    {Object.keys(priorityColors).map((priority) => (
+                      <Button
+                        key={priority}
+                        onClick={() => handlePriorityChange(priority as Task['priority'])}
+                        size="sm"
+                        variant="outline"
+                        className={`${priorityColors[priority as keyof typeof priorityColors]} border-none text-xs px-2 py-1`}
+                      >
+                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
+
+          <Button
+            onClick={moveToNextTask}
+            disabled={currentTaskIndex === tasks.length - 1}
+            variant="outline"
+            size="icon"
+            className="rounded-full w-10 h-10"
+          >
+            <ChevronRightIcon className="h-6 w-6" />
+          </Button>
+        </div>
+
+        <div className="flex justify-center space-x-4 mb-6">
+          {statusOrder.map((status) => {
+            const IconComponent = statusIcons[status as keyof typeof statusIcons]
+            return (
+              <div key={status} className="flex flex-col items-center">
+                <Button
+                  onClick={() => handleStatusChange(status as Task['status'])}
+                  size="icon"
+                  className={`rounded-full p-2 mb-1 ${statusColors[status as keyof typeof statusColors]}`}
                 >
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-sm">{task.title}</CardTitle>
-                    <div className="flex justify-between items-center mt-1">
-                      <Badge className={`${priorityColors[task.priority as keyof typeof priorityColors]} text-xs px-1 py-0`}>
-                        {task.priority}
-                      </Badge>
-                      <span className="text-xs text-gray-500 capitalize">{task.status}</span>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
+                  <IconComponent className="h-5 w-5 text-white" />
+                  <span className="sr-only">{status}</span>
+                </Button>
+                <span className={`text-xs font-medium capitalize ${statusTextColors[status as keyof typeof statusTextColors]}`}>
+                  {status.replace(/([A-Z])/g, ' $1').trim()}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showTaskList && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            transition={{ duration: 0.3 }}
+            className="w-80 bg-white p-4 rounded-lg shadow-lg ml-4"
+          >
+            <h2 className="text-xl font-bold mb-4">Task List</h2>
+            <ScrollArea className="h-[calc(100vh-10rem)]">
+              <div className="space-y-2">
+                {tasks.map((task, index) => (
+                  <Card
+                    key={task.id}
+                    className={`cursor-pointer transition-all duration-300 ${task.id === currentTask.id
+                        ? 'border-blue-500 border-2 shadow-md'
+                        : 'hover:shadow-sm'
+                      }`}
+                    onClick={() => setCurrentTaskIndex(index)}
+                  >
+                    <CardHeader className="p-3">
+                      <CardTitle className="text-sm">{task.title}</CardTitle>
+                      <div className="flex justify-between items-center mt-1">
+                        <Badge className={`${priorityColors[task.priority as keyof typeof priorityColors]} text-xs px-1 py-0`}>
+                          {task.priority}
+                        </Badge>
+                        <span className="text-xs text-gray-500 capitalize">{task.status}</span>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
