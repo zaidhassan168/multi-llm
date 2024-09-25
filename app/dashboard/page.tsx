@@ -164,7 +164,7 @@ export default function ProjectManagementDashboard() {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
+      {/* <h1 className="text-3xl font-bold mb-6">Dashboard</h1> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -241,7 +241,7 @@ export default function ProjectManagementDashboard() {
 
         <TabsContent value="ceo-overview" className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPICard title="Total Revenue" value="$415,000" change="12" isPositive={true} />
+        {/* <KPICard title="Total Revenue" value="$415,000" change="12" isPositive={true} /> */}
         <KPICard title="Project Completion Rate" value="92%" change="3" isPositive={true} />
         <KPICard title="Customer Satisfaction" value="4.8/5" change="0.2" isPositive={true} />
         <KPICard title="Team Productivity" value="87%" change="1" isPositive={false} />
@@ -348,7 +348,7 @@ export default function ProjectManagementDashboard() {
                 </div>
               </CardContent>
             </Card>
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Revenue Trend</CardTitle>
           </CardHeader>
@@ -366,7 +366,7 @@ export default function ProjectManagementDashboard() {
               </ResponsiveContainer>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </TabsContent>
         <TabsContent value="projects">

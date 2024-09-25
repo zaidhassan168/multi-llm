@@ -268,7 +268,7 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
                               onCheckedChange={() => handleEmployeeToggle(employee)}
                             />
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${employee.name}`} alt={employee.name} />
+                              <AvatarImage src={employee.photoURL} alt={employee.name} />
                               <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <Label htmlFor={`employee-${employee.id}`} className="text-sm cursor-pointer">
