@@ -154,103 +154,107 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClos
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Upload Tasks</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">Upload Tasks</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="project-select">Select Project</Label>
-            <Select
-              onValueChange={handleProjectChange}
-              value={selectedProjectId}
-              disabled={loading}
-            >
-              <SelectTrigger id="project-select">
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map(project => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-6 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="project-select" className="text-lg font-semibold mb-2 block">Select Project</Label>
+              <Select
+                onValueChange={handleProjectChange}
+                value={selectedProjectId}
+                disabled={loading}
+              >
+                <SelectTrigger id="project-select" className="w-full">
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="file-input" className="text-lg font-semibold mb-2 block">Upload a File</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  id="file-input"
+                  type="file"
+                  aria-label='Upload a file'
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={loading}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  className="flex items-center w-full justify-center py-6"
+                  disabled={loading}
+                >
+                  {file ? (
+                    <>
+                      <FileTextIcon className="mr-2 h-5 w-5" />
+                      {file.name}
+                    </>
+                  ) : (
+                    <>
+                      <UploadIcon className="mr-2 h-5 w-5" />
+                      Choose File
+                    </>
+                  )}
+                </Button>
+                {file && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFile(null)}
+                    disabled={loading}
+                  >
+                    <XIcon className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
           <div>
-            <Label htmlFor="text-input">Paste Text</Label>
+            <Label htmlFor="text-input" className="text-lg font-semibold mb-2 block">Paste Text</Label>
             <Textarea
               id="text-input"
               placeholder="Paste your tasks here, one per line..."
               value={text}
               onChange={e => setText(e.target.value)}
               disabled={loading}
-              className="h-32 resize-none"
+              className="h-64 resize-none"
             />
           </div>
-          <div>
-            <Label htmlFor="file-input">Or Upload a File</Label>
-            <div className="flex items-center space-x-2">
-              <input
-                id="file-input"
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-                disabled={loading}
-              />
-              <Button
-                variant="outline"
-                onClick={() => document.getElementById('file-input')?.click()}
-                className="flex items-center"
-                disabled={loading}
-              >
-                {file ? (
-                  <>
-                    <FileTextIcon className="mr-2 h-4 w-4" />
-                    {file.name}
-                  </>
-                ) : (
-                  <>
-                    <UploadIcon className="mr-2 h-4 w-4" />
-                    Choose File
-                  </>
-                )}
-              </Button>
-              {file && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setFile(null)}
-                  disabled={loading}
-                >
-                  <XIcon className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto mt-2 sm:mt-0"
           >
             {loading ? (
               <>
-                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2Icon className="mr-2 h-5 w-5 animate-spin" />
                 Uploading...
               </>
             ) : (
               <>
-                <UploadIcon className="mr-2 h-4 w-4" />
+                <UploadIcon className="mr-2 h-5 w-5" />
                 Upload and Generate Tasks
               </>
             )}
