@@ -1,37 +1,58 @@
 import { Project, fetchProjects } from '@/models/project';
-import { EmployeeSummary } from '@/models/summaries';
+import { Task, fetchTasksAll } from '@/models/task';
+import { Employee, fetchEmployees } from '@/models/employee';
+
 export interface ProjectStats {
   totalProjects: number;
   projectsOnTrack: number;
   projectsOffTrack: number;
   totalTasks: number;
   tasksCompleted: number;
-  tasksIncomplete: number;
-  tasksOverdue: number;
-  tasksOnTrack: number;
-  totalTaskHours: number;
-  taskHoursCompleted: number;
+  tasksInProgress: number;
+  tasksTodo: number;
+  tasksBacklog: number;
   averageProjectProgress: number;
   resourceUtilization: { [key: string]: number };
+  projectCompletionRate: number;
+  averageTasksPerProject: number;
 }
 
-export function calculateProjectStats(projects: Project[]): ProjectStats {
+export async function processProjects(): Promise<{ stats: ProjectStats, utilizationPercentage: { [key: string]: number } }> {
+  try {
+    const [projects, tasks, employees] = await Promise.all([
+      fetchProjects(),
+      fetchTasksAll(),
+      fetchEmployees()
+    ]);
+
+    const stats = calculateProjectStats(projects, tasks, employees);
+    const utilizationPercentage = getResourceUtilizationPercentage(stats);
+
+    return { stats, utilizationPercentage };
+  } catch (error) {
+    console.error('Error processing projects:', error);
+    throw error;
+  }
+}
+
+export function calculateProjectStats(projects: Project[], tasks: Task[], employees: Employee[]): ProjectStats {
   const stats: ProjectStats = {
     totalProjects: projects.length,
     projectsOnTrack: 0,
     projectsOffTrack: 0,
-    totalTasks: 0,
+    totalTasks: tasks.length,
     tasksCompleted: 0,
-    tasksIncomplete: 0,
-    tasksOverdue: 0,
-    tasksOnTrack: 0,
-    totalTaskHours: 0,
-    taskHoursCompleted: 0,
+    tasksInProgress: 0,
+    tasksTodo: 0,
+    tasksBacklog: 0,
     averageProjectProgress: 0,
     resourceUtilization: {},
+    projectCompletionRate: 0,
+    averageTasksPerProject: 0,
   };
 
   let totalProgress = 0;
+  let completedProjects = 0;
 
   projects.forEach(project => {
     // Project tracking
@@ -42,37 +63,47 @@ export function calculateProjectStats(projects: Project[]): ProjectStats {
     }
 
     // Task statistics
-    stats.totalTasks += project.totalTasks ?? 0;
-    stats.tasksCompleted += project.totalTasksCompleted ?? 0;
-    stats.tasksIncomplete += project.totalTasksIncomplete ?? 0;
-    stats.tasksOverdue += project.totalTasksOverdue ?? 0;
-    stats.tasksOnTrack += project.totalTasksOnTrack ?? 0;
-    stats.totalTaskHours += project.totalTasksHours ?? 0;
-    stats.taskHoursCompleted += project.tasksHoursCompleted ?? 0;
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+    const inProgressTasks = projectTasks.filter(task => task.status === 'inProgress').length;
+    const todoTasks = projectTasks.filter(task => task.status === 'todo').length;
+    const backlogTasks = projectTasks.filter(task => task.status === 'backlog').length;
+
+    stats.tasksCompleted += completedTasks;
+    stats.tasksInProgress += inProgressTasks;
+    stats.tasksTodo += todoTasks;
+    stats.tasksBacklog += backlogTasks;
 
     // Project progress
-    totalProgress += project.progress ?? 0;
+    const projectProgress = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
+    totalProgress += projectProgress;
+
+    if (projectProgress === 100) {
+      completedProjects++;
+    }
 
     // Resource utilization
+    if (project.manager) {
+      stats.resourceUtilization[project.manager.id] = (stats.resourceUtilization[project.manager.id] || 0) + 1;
+    }
     if (project.resources) {
       project.resources.forEach(resource => {
         stats.resourceUtilization[resource.id] = (stats.resourceUtilization[resource.id] || 0) + 1;
       });
     }
-
-    // Include project manager in resource utilization
-    stats.resourceUtilization[project.manager.id] = (stats.resourceUtilization[project.manager.id] || 0) + 1;
   });
 
-  // Calculate average project progress
+  // Calculate averages and rates
   stats.averageProjectProgress = projects.length > 0 ? totalProgress / projects.length : 0;
+  stats.projectCompletionRate = projects.length > 0 ? (completedProjects / projects.length) * 100 : 0;
+  stats.averageTasksPerProject = projects.length > 0 ? stats.totalTasks / projects.length : 0;
 
   return stats;
 }
 
 export function getResourceUtilizationPercentage(stats: ProjectStats): { [key: string]: number } {
   const utilizationPercentage: { [key: string]: number } = {};
-  
+
   for (const [resourceId, projectCount] of Object.entries(stats.resourceUtilization)) {
     utilizationPercentage[resourceId] = (projectCount / stats.totalProjects) * 100;
   }
@@ -80,39 +111,51 @@ export function getResourceUtilizationPercentage(stats: ProjectStats): { [key: s
   return utilizationPercentage;
 }
 
-export async function processProjects(): Promise<{stats: ProjectStats, utilizationPercentage: { [key: string]: number }}> {
-  try {
-    const projects = await fetchProjects();
-    const stats = calculateProjectStats(projects);
-    const utilizationPercentage = getResourceUtilizationPercentage(stats);
-
-    return { stats, utilizationPercentage };
-  } catch (error) {
-    console.error('Error processing projects:', error);
-    throw error;
-  }
-}
-
-// Helper function to get top N utilized resources
-export function getTopUtilizedResources(utilizationPercentage: { [key: string]: number }, n: number): { id: string; percentage: number }[] {
+export function getTopUtilizedResources(utilizationPercentage: { [key: string]: number }, count: number): { id: string; percentage: number }[] {
   return Object.entries(utilizationPercentage)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, n)
+    .slice(0, count)
     .map(([id, percentage]) => ({ id, percentage }));
 }
 
-// Example usage
-export async function generateProjectReport(): Promise<void> {
+export async function generateProjectReport(projectId: string): Promise<string> {
   try {
-    const { stats, utilizationPercentage } = await processProjects();
-    const topUtilizedResources = getTopUtilizedResources(utilizationPercentage, 5);
+    const [project, tasks] = await Promise.all([
+      fetchProjects().then(projects => projects.find(p => p.id === projectId)),
+      fetchTasksAll().then(tasks => tasks.filter(t => t.projectId === projectId))
+    ]);
 
-    console.log('Project Statistics:', stats);
-    console.log('Resource Utilization Percentage:', utilizationPercentage);
-    console.log('Top 5 Utilized Resources:', topUtilizedResources);
+    if (!project) {
+      throw new Error('Project not found');
+    }
 
-    // You can now use these statistics to update your UI or perform further analysis
+    const completedTasks = tasks.filter(t => t.status === 'done').length;
+    const totalTasks = tasks.length;
+    const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+    return `
+Project Report: ${project.name}
+
+Status: ${project.onTrack ? 'On Track' : 'Off Track'}
+Manager: ${project.manager?.name || 'Not Assigned'}
+Current Stage: ${project.currentStage?.name || 'Not Set'}
+Progress: ${progress.toFixed(2)}%
+
+Tasks:
+- Total: ${totalTasks}
+- Completed: ${completedTasks}
+- In Progress: ${tasks.filter(t => t.status === 'inProgress').length}
+- To Do: ${tasks.filter(t => t.status === 'todo').length}
+- Backlog: ${tasks.filter(t => t.status === 'backlog').length}
+
+Resources:
+${project.resources ? project.resources.map(r => `- ${r.name}`).join('\n') : 'No resources assigned'}
+
+Description:
+${'No description provided'}
+    `;
   } catch (error) {
     console.error('Error generating project report:', error);
+    throw error;
   }
 }
