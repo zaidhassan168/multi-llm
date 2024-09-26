@@ -28,7 +28,7 @@ type Comment = {
       reporter?: EmployeeSummary
       type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
       lastUpdated?: Date;
-      completedAt?: Date;
+      completedAt?: Date | null;
       complexity?: 'simple' | 'moderate' | 'complex';
       qualityRating?: number;
 

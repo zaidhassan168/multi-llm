@@ -17,7 +17,7 @@ const TaskSchema = z.object({
   efforts: z.enum(['backend', 'frontend', 'backend + frontend']),
   assignee: z.string(), // Just the name
   status: z.enum(['backlog', 'todo', 'inProgress', 'done']),
-  createdAt: z.date(), // ISO date string
+  // createdAt: z.date(), // ISO date string
   projectId: z.string().optional(),
   stageId: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent', 'critical', 'null']).optional(),
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     }
   ]
 }`
-
+    console.log('Employees: here iam' , TasksResponseSchema)
     // Call the OpenAI model with Structured Outputs
     const completion = await openai.beta.chat.completions.parse({
       model: 'gpt-4o-2024-08-06', // Ensure you're using a supported model

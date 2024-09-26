@@ -520,7 +520,7 @@ export default function ProjectManagementDashboard() {
                     <TableRow key={employee.id}>
                       <TableCell className="font-medium">{employee.name}</TableCell>
                       <TableCell>{employee.role}</TableCell>
-                      <TableCell>{employee.currentProject || 'Not Assigned'}</TableCell>
+                      <TableCell>{employee.currentProjects && employee.currentProjects.length > 0 ? employee.currentProjects.join(', ') : 'Not Assigned'}</TableCell>
                       <TableCell>
                         {employee.availability !== undefined ? (
                           <span className={`font-bold ${getAvailabilityColor(employee.availability)}`}>

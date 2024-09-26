@@ -100,6 +100,10 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // if (project.resources && project.resources.length > 0) {
+
+    //   // const resourcesCollectionRef = collection(projectRef, 'resources'); // Reference to the resources sub-collection
+    // }
     return NextResponse.json(project)
   } catch (error) {
     console.error('Error updating project:', error)

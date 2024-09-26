@@ -66,9 +66,15 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const { email, id, ...updates }: Partial<Task> & { email: string; id: string } = await request.json();
-  console.log('in api,',email, id, updates);
-  if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  // console.log('in api updatin dtasdsdfghjk,', updates);
 
+  if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  if(updates.status === 'done' ) {
+    updates.completedAt = new Date();
+  }
+  else {
+    updates.completedAt = null;
+  }
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
   updateProjectAndStageProgress({ ...updates, id } as Task);
