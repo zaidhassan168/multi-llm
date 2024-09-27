@@ -1,30 +1,32 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
-import { fetchTasksEmail, updateTask, Task } from '@/models/task'
-import { useAuth } from '@/lib/hooks'
-import { useToast } from '@/components/ui/use-toast'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Timestamp } from 'firebase/firestore';
+import { convertToDate, convertToDateTime } from '@/utils/convertTimeStamp'
 import {
-  SearchIcon,
   ClockIcon,
-  UserIcon,
-  TagIcon,
-  SendIcon,
-  Loader2Icon,
   CalendarIcon,
   MessageSquareIcon,
-  MoreVerticalIcon
+  MoreVerticalIcon,
+  CheckCircleIcon,
+  RefreshCwIcon
 } from 'lucide-react'
-import { getPriorityColor, getStatusColor, getEffortColor } from '@/lib/colors/colors'
+import { getPriorityColor, getStatusColor } from '@/lib/colors/colors'
+import { Task } from '@/models/task'
+
 const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; isSelected: boolean; onClick: () => void }) => {
+  const completedAtDate = task.completedAt ? convertToDate(task.completedAt) : null;
+  const lastUpdatedAtDate = task.lastUpdated ? convertToDateTime(task.lastUpdated) : null;
+  const isCompleted = task.status === 'done'
+      
+  console.log('task.completedAt:', task.completedAt, 'Type:', typeof task.completedAt);
+  console.log('task.lastUpdatedAt:', task.lastUpdated, 'Type:', typeof task.lastUpdated);
+
   return (
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${isSelected ? 'ring-2 ring-primary' : ''}`}
@@ -88,6 +90,21 @@ const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; is
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {lastUpdatedAtDate && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center">
+                    <RefreshCwIcon className="mr-1 h-3 w-3" />
+                    <span>{lastUpdatedAtDate}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Last updated</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
@@ -99,19 +116,36 @@ const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; is
             {task.status.replace(/([A-Z])/g, ' $1').trim()}
           </Badge>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={task.assignee?.phtoURL} alt={task.assignee?.name} />
-                <AvatarFallback>{task.assignee?.name?.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Assigned to {task.assignee?.name}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center space-x-2">
+          {isCompleted && completedAtDate && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <CheckCircleIcon className="mr-1 h-3 w-3" />
+                    <span>{completedAtDate.toLocaleDateString()}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Completed on</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={task.assignee?.phtoURL} alt={task.assignee?.name} />
+                  <AvatarFallback>{task.assignee?.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Assigned to {task.assignee?.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </CardFooter>
     </Card>
   )

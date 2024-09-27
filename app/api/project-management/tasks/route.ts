@@ -75,6 +75,7 @@ export async function PATCH(request: Request) {
   else {
     updates.completedAt = null;
   }
+  updates.lastUpdated = new Date();
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
   updateProjectAndStageProgress({ ...updates, id } as Task);
