@@ -76,4 +76,15 @@ const getSeverityColor = (severity: Risk['severity']) => {
     }
   }
 
-export { getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor, getEffortColor };
+  
+  const getPriorityBorderColor = (priority: string) => {
+    switch (priority) {
+      case 'low': return 'border-l-green-500'
+      case 'medium': return 'border-l-yellow-500'
+      case 'high': return 'border-l-red-500'
+      case 'urgent': return 'border-l-red-500'
+      case 'critical': return 'border-l-red-500'
+      default: return 'border-l-gray-400'
+    }
+  }
+export { getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor, getEffortColor, getPriorityBorderColor };

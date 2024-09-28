@@ -30,67 +30,49 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
-import { TaskSummary } from '@/models/summaries'
-import { Project, updateProject, addTaskToProjectAndStage } from '@/models/project'
-import { collection, onSnapshot, query, where } from "firebase/firestore"
+import { collection, onSnapshot, query } from "firebase/firestore"
+import { getEffortColor, getPriorityColor } from '@/lib/colors/colors'
 import { db } from "@/firebase"
 import LottieLoading from '@/components/LottieLoading'
 
-
-// import { useTasks } from '@/lib/states/taskAtom'
 const columns = [
-  { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
-  { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
-  { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
-  { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
+  { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-background' },
+  { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-background' },
+  { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-background' },
+  { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-background' },
 ]
 
 const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
-  const getEffortColor = (effort: string) => {
-    switch (effort) {
-      case 'backend': return 'bg-purple-200 text-purple-800'
-      case 'frontend': return 'bg-pink-200 text-pink-800'
-      case 'backend + frontend': return 'bg-indigo-200 text-indigo-800'
-      default: return 'bg-gray-200 text-gray-800'
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low': return 'border-l-green-500'
-      case 'medium': return 'border-l-yellow-500'
-      case 'high': return 'border-l-red-500'
-      case 'urgent': return 'border-l-red-500'
-      case 'critical': return 'border-l-red-500'
-      default: return 'border-l-gray-400'
-    }
-  }
-
   const renderContent = (provided: any) => (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200 border-l-4 ${getPriorityColor(task.priority || 'null')} ${(task.priority === 'urgent' || task.priority === 'critical') ? 'border-r-4 border-r-red-500' : ''}`}
+      className={`bg-card rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200`}
       onClick={onClick}
     >
-      <h3 className="font-semibold text-sm mb-1">{task.title}</h3>
-      <p className="text-xs text-gray-500 mb-2 line-clamp-2">{task.description}</p>
+      <h3 className="font-medium text-sm mb-1 text-card-foreground">{task.title}</h3>
+      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{task.description}</p>
       <div className="flex flex-wrap gap-2 mb-2">
-        <Badge variant="secondary" className="flex items-center gap-1">
+        <Badge variant="outline" className="flex items-center gap-1 text-xs">
           <ClockIcon className="w-3 h-3" />
           {task.time}h
         </Badge>
-        <Badge variant="secondary" className={`flex items-center gap-1 ${getEffortColor(task.efforts)}`}>
+        <Badge variant="outline" className={`flex items-center gap-1 text-xs ${getEffortColor(task.efforts)}`}>
           <TagIcon className="w-3 h-3" />
           {task.efforts}
         </Badge>
-        <Badge variant="secondary" className="flex items-center gap-1">
+        <Badge variant="outline" className="flex items-center gap-1 text-xs">
           <UserIcon className="w-3 h-3" />
           {task.assignee?.name}
         </Badge>
       </div>
-      <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1" />
+      <div className="flex items-center justify-between">
+        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1 w-2/3" />
+        <Badge variant="secondary" className={`text-xs ${getPriorityColor(task.priority || 'null')}`}>
+          {task.priority}
+        </Badge>
+      </div>
     </div>
   )
 
@@ -113,9 +95,9 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
   isDraggable: boolean;
 }) => {
   return (
-    <Card className={`w-80 ${color}`}>
+    <Card className={`w-full md:w-72 lg:w-80 ${color}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-gray-700 flex items-center">
+        <CardTitle className="text-sm font-medium text-card-foreground flex items-center">
           <Icon className="mr-2 h-4 w-4" />
           {title}
           <Badge variant="secondary" className="ml-auto">
@@ -130,7 +112,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
+                className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-accent' : ''}`}
               >
                 {tasks.map((task, index) => (
                   <TaskItem
@@ -166,12 +148,10 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
 Column.displayName = "Column";
 
 export default function Kanban() {
-  // const { tasks, isLoading: isTasksLoading } = useTasks()
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
@@ -247,6 +227,7 @@ export default function Kanban() {
     })
     return () => unsubscribe()
   }, [])
+
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {
@@ -262,7 +243,6 @@ export default function Kanban() {
           description: "Failed to update task. Please try again.",
           variant: "destructive",
         })
-        // Revert the task to its previous state in the UI
         setTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === taskToUpdate.id ? { ...task, status: task.status } : task))
         )
@@ -321,7 +301,6 @@ export default function Kanban() {
         return
       }
 
-      // Optimistically update the UI
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) => {
           if (task.id === draggableId) {
@@ -332,7 +311,6 @@ export default function Kanban() {
         return updatedTasks
       })
 
-      // Update the backend
       const taskToUpdate = tasks.find(task => task.id === draggableId)
       if (taskToUpdate && taskToUpdate.status !== destination.droppableId) {
         const updatedTask = { ...taskToUpdate, status: destination.droppableId as Task['status'] }
@@ -358,61 +336,63 @@ export default function Kanban() {
   const isDraggable = employee?.role !== 'management'
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="h-16 flex items-center justify-between px-6 bg-white shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-800 flex items-center">
-          <KanbanIcon className="mr-2 h-6 w-6 text-primary" />
+    <div className="flex flex-col h-screen bg-background">
+      <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-card shadow-sm">
+        <h1 className="text-lg md:text-xl font-medium text-card-foreground flex items-center">
+          <KanbanIcon className="mr-2 h-5 w-5 text-primary" />
           Kanban Board
         </h1>
-        <div className="flex space-x-4">
+        <div className="flex space-x-2 md:space-x-4">
           <Button
             onClick={() => setIsUploadModalOpen(true)}
             variant="outline"
-            className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+            size="sm"
+            className="text-xs md:text-sm"
           >
-            <UploadIcon className="mr-2 h-4 w-4" />
-            Upload Tasks
+            <UploadIcon className="mr-1 h-3 w-3 md:h-4 md:w-4" />
+            Upload
           </Button>
           <Button
             onClick={() => {
               setSelectedTask(null)
               setIsModalOpen(true)
             }}
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary-muted hover:text-primary-foreground"
+            variant="default"
+            size="sm"
+            className="text-xs md:text-sm"
           >
-            <PlusIcon className="mr-2 h-4 w-4" />
+            <PlusIcon className="mr-1 h-3 w-3 md:h-4 md:w-4" />
             Add Task
           </Button>
         </div>
       </header>
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b">
-        <div className="flex items-center space-x-4 flex-1">
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      <div className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 bg-gray-100 border-b space-y-2 md:space-y-0">
+        <div className="flex flex-wrap items-center space-x-2 md:space-x-4 w-full bg-card-background md:w-auto">
+          <div className="relative flex-1 md:flex-none md:w-48">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="text"
               placeholder="Search tasks..."
-              className="pl-10 pr-4 py-2 w-full"
+              className="pl-9 pr-4 py-1 text-sm w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={filterEffort} onValueChange={setFilterEffort}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by effort" />
+            <SelectTrigger className="w-32 md:w-40 text-sm">
+              <SelectValue placeholder="Effort" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All efforts</SelectItem>
               <SelectItem value="backend">Backend</SelectItem>
               <SelectItem value="frontend">Frontend</SelectItem>
-              <SelectItem value="backend + frontend">Backend + Frontend</SelectItem>
+              <SelectItem value="backend + frontend">Full Stack</SelectItem>
             </SelectContent>
           </Select>
           {(employee?.role === 'management' || employee?.role === 'projectManager') && (
             <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by assignee" />
+              <SelectTrigger className="w-32 md:w-40 text-sm">
+                <SelectValue placeholder="Assignee" />
               </SelectTrigger>
               <SelectContent>
                 {uniqueAssignees.map((assignee) => (
@@ -423,23 +403,25 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           )}
-          <Button variant="outline" onClick={fetchTasksData} className="flex items-center">
-            <RefreshCw className="mr-2 h-4 w-4" />
+        </div>
+        <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-between md:justify-start">
+          <Button variant="ghost" onClick={fetchTasksData} size="sm" className="text-xs md:text-sm">
+            <RefreshCw className="mr-1 h-3 w-3 md:h-4 md:w-4" />
             Refresh
           </Button>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Badge variant="secondary" className="text-sm">
-            Total Tasks: {tasks.length}
-          </Badge>
-          <Badge variant="secondary" className="text-sm">
-            Filtered Tasks: {filteredTasks.length}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="text-xs">
+              Total: {tasks.length}
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              Filtered: {filteredTasks.length}
+            </Badge>
+          </div>
         </div>
       </div>
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex space-x-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {columns.map(({ id, title, icon, color }) => (
               <Column
                 key={id}
@@ -467,7 +449,6 @@ export default function Kanban() {
         task={selectedTask}
         onTaskAdded={fetchTasksData}
         onTaskUpdated={fetchTasksData}
-        // onTaskDeleted={handleDeleteTask}
       />
       <FileUploadModal
         isOpen={isUploadModalOpen}
