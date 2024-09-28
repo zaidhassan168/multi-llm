@@ -19,7 +19,7 @@ import {
   UserIcon,
   TagIcon,
   RefreshCw,
-  Loader2Icon
+  FilterIcon
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -35,6 +35,9 @@ import { Project, updateProject, addTaskToProjectAndStage } from '@/models/proje
 import { collection, onSnapshot, query, where } from "firebase/firestore"
 import { db } from "@/firebase"
 import LottieLoading from '@/components/LottieLoading'
+
+
+// import { useTasks } from '@/lib/states/taskAtom'
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
@@ -42,7 +45,7 @@ const columns = [
   { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
 
-const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: number; onClick: () => void }) => {
+const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
   const getEffortColor = (effort: string) => {
     switch (effort) {
       case 'backend': return 'bg-purple-200 text-purple-800'
@@ -63,47 +66,51 @@ const TaskItem = React.memo(({ task, index, onClick }: { task: Task; index: numb
     }
   }
 
-  return (
-    <Draggable draggableId={task.id} index={index}>
-      {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200 border-l-4 ${getPriorityColor(task.priority || 'null')} ${(task.priority === 'urgent' || task.priority === 'critical') ? 'border-r-4 border-r-red-500' : ''}`}
-          onClick={onClick}
-        >
-          <h3 className="font-semibold text-sm mb-1">{task.title}</h3>
-          <p className="text-xs text-gray-500 mb-2 line-clamp-2">{task.description}</p>
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <ClockIcon className="w-3 h-3" />
-              {task.time}h
-            </Badge>
-            <Badge variant="secondary" className={`flex items-center gap-1 ${getEffortColor(task.efforts)}`}>
-              <TagIcon className="w-3 h-3" />
-              {task.efforts}
-            </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <UserIcon className="w-3 h-3" />
-              {task.assignee?.name}
-            </Badge>
-          </div>
-          <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1" />
-        </div>
-      )}
-    </Draggable>
+  const renderContent = (provided: any) => (
+    <div
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200 border-l-4 ${getPriorityColor(task.priority || 'null')} ${(task.priority === 'urgent' || task.priority === 'critical') ? 'border-r-4 border-r-red-500' : ''}`}
+      onClick={onClick}
+    >
+      <h3 className="font-semibold text-sm mb-1">{task.title}</h3>
+      <p className="text-xs text-gray-500 mb-2 line-clamp-2">{task.description}</p>
+      <div className="flex flex-wrap gap-2 mb-2">
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <ClockIcon className="w-3 h-3" />
+          {task.time}h
+        </Badge>
+        <Badge variant="secondary" className={`flex items-center gap-1 ${getEffortColor(task.efforts)}`}>
+          <TagIcon className="w-3 h-3" />
+          {task.efforts}
+        </Badge>
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <UserIcon className="w-3 h-3" />
+          {task.assignee?.name}
+        </Badge>
+      </div>
+      <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1" />
+    </div>
   )
+
+  return isDraggable ? (
+    <Draggable draggableId={task.id} index={index}>
+      {(provided) => renderContent(provided)}
+    </Draggable>
+  ) : renderContent({})
 })
+
 TaskItem.displayName = "TaskItem";
 
-const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }: {
+const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, isDraggable }: {
   id: string;
   title: string;
   icon: React.ElementType;
   color: string;
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  isDraggable: boolean;
 }) => {
   return (
     <Card className={`w-80 ${color}`}>
@@ -117,31 +124,49 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick }:
         </CardTitle>
       </CardHeader>
       <CardContent className="p-2">
-        <Droppable droppableId={id}>
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
-            >
-              {tasks.map((task, index) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  onClick={() => onTaskClick(task)}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
+        {isDraggable ? (
+          <Droppable droppableId={id}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
+              >
+                {tasks.map((task, index) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    onClick={() => onTaskClick(task)}
+                    isDraggable={isDraggable}
+                  />
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        ) : (
+          <div className="space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto">
+            {tasks.map((task, index) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                index={index}
+                onClick={() => onTaskClick(task)}
+                isDraggable={isDraggable}
+              />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
 })
+
 Column.displayName = "Column";
+
 export default function Kanban() {
+  // const { tasks, isLoading: isTasksLoading } = useTasks()
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -150,6 +175,7 @@ export default function Kanban() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEffort, setFilterEffort] = useState('all')
+  const [filterAssignee, setFilterAssignee] = useState('all')
   const { user } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const { toast } = useToast()
@@ -189,79 +215,38 @@ export default function Kanban() {
   const filteredTasksMemo = useMemo(() => {
     return tasks.filter(task =>
       task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterEffort === 'all' || task.efforts === filterEffort)
+      (filterEffort === 'all' || task.efforts === filterEffort) &&
+      (filterAssignee === 'all' || task.assignee?.name === filterAssignee)
     )
-  }, [tasks, searchTerm, filterEffort])
+  }, [tasks, searchTerm, filterEffort, filterAssignee])
 
   useEffect(() => {
     setFilteredTasks(filteredTasksMemo)
   }, [filteredTasksMemo])
 
-  // const handleAddTask = async (newTask: Omit<Task, 'id'>) => {
-  //   if (user?.email && newTask.projectId) {
-  //     try {
-  //       const createdTask = await addTask(newTask, user.email)
-  //       setTasks((prevTasks) => [...prevTasks, createdTask])
-  //       setFilteredTasks((prevFilteredTasks) => [...prevFilteredTasks, createdTask])
-  //       console.log('Task added successfully:', createdTask)
-  //       const taskSummary: TaskSummary = {
-  //         id: createdTask.id,
-  //         title: newTask.title,
-  //         status: newTask.status,
-  //         assignee: newTask.assignee.name,
-  //         time: newTask.time.toString(),
-  //       }
-  //       if (newTask.projectId && newTask.stageId) {
-  //         addTaskToProjectAndStage(taskSummary, newTask.projectId, newTask.stageId)
-  //       }
-  //       toast({
-  //         title: "Success",
-  //         description: "Task added successfully.",
-  //       })
-  //     } catch (error) {
-  //       console.error('Failed to add task', error)
-  //       toast({
-  //         title: "Error",
-  //         description: "Failed to add task. Please try again.",
-  //         variant: "destructive",
-  //       })
-  //     }
-  //   } else {
-  //     console.error('User email or project ID is missing')
-  //     toast({
-  //       title: "Error",
-  //       description: "Please select a project before adding tasks.",
-  //       variant: "destructive",
-  //     })
-  //   }
-  // }
-
   useEffect(() => {
-    if (user?.email) {
-      const q = query(collection(db, "tasks"), where("assignee.email", "==", user.email))
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          const updatedTask = change.doc.data() as Task
-          if (change.type === "added" || change.type === "modified") {
-            setTasks((prevTasks) => {
-              const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id)
-              if (existingTaskIndex !== -1) {
-                const newTasks = [...prevTasks]
-                newTasks[existingTaskIndex] = updatedTask
-                return newTasks
-              } else {
-                return [...prevTasks, updatedTask]
-              }
-            })
-          } else if (change.type === "removed") {
-            setTasks((prevTasks) => prevTasks.filter(task => task.id !== updatedTask.id))
-          }
-        })
+    const q = query(collection(db, "tasks"))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const updatedTask = { ...change.doc.data(), id: change.doc.id } as Task
+        if (change.type === "added" || change.type === "modified") {
+          setTasks((prevTasks) => {
+            const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id)
+            if (existingTaskIndex !== -1) {
+              const newTasks = [...prevTasks]
+              newTasks[existingTaskIndex] = updatedTask
+              return newTasks
+            } else {
+              return [...prevTasks, updatedTask]
+            }
+          })
+        } else if (change.type === "removed") {
+          setTasks((prevTasks) => prevTasks.filter(task => task.id !== updatedTask.id))
+        }
       })
-      return () => unsubscribe()
-    }
-  }, [user])
-
+    })
+    return () => unsubscribe()
+  }, [])
   const handleUpdateTask = useCallback(async (taskToUpdate: Task) => {
     if (user?.email) {
       try {
@@ -314,6 +299,15 @@ export default function Kanban() {
 
   const onDragEnd = useCallback(
     (result: DropResult) => {
+      if (employee?.role === 'management') {
+        toast({
+          title: "Access Denied",
+          description: "Management role cannot drag and drop tasks.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const { destination, source, draggableId } = result
 
       if (!destination) {
@@ -345,8 +339,13 @@ export default function Kanban() {
         handleUpdateTask(updatedTask)
       }
     },
-    [tasks, handleUpdateTask]
+    [tasks, handleUpdateTask, employee, toast]
   )
+
+  const uniqueAssignees = useMemo(() => {
+    const assignees = tasks.map(task => task.assignee?.name).filter((name): name is string => Boolean(name))
+    return ['all', ...Array.from(new Set(assignees))]
+  }, [tasks])
 
   if (isLoading) {
     return (
@@ -355,6 +354,8 @@ export default function Kanban() {
       </div>
     )
   }
+
+  const isDraggable = employee?.role !== 'management'
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -408,6 +409,20 @@ export default function Kanban() {
               <SelectItem value="backend + frontend">Backend + Frontend</SelectItem>
             </SelectContent>
           </Select>
+          {(employee?.role === 'management' || employee?.role === 'projectManager') && (
+            <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by assignee" />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueAssignees.map((assignee) => (
+                  <SelectItem key={assignee} value={assignee}>
+                    {assignee === 'all' ? 'All assignees' : assignee}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" onClick={fetchTasksData} className="flex items-center">
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -437,6 +452,7 @@ export default function Kanban() {
                   setSelectedTask(task)
                   setIsModalOpen(true)
                 }}
+                isDraggable={isDraggable}
               />
             ))}
           </div>
@@ -449,20 +465,10 @@ export default function Kanban() {
           setSelectedTask(null);
         }}
         task={selectedTask}
-        onTaskAdded={() => {
-          // Refresh tasks or update state after a task is added
-          // refreshTasks();
-        }}
-        onTaskUpdated={() => {
-          // Refresh tasks or update state after a task is updated
-          // refreshTasks();
-        }}
-      // onTaskDeleted={() => {
-      //   // Refresh tasks or update state after a task is deleted
-      //   // refreshTasks();
-      // }}
+        onTaskAdded={fetchTasksData}
+        onTaskUpdated={fetchTasksData}
+        // onTaskDeleted={handleDeleteTask}
       />
-
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
