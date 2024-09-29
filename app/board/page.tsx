@@ -19,7 +19,6 @@ import {
   UserIcon,
   TagIcon,
   RefreshCw,
-  FilterIcon
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -31,15 +30,15 @@ import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
 import { collection, onSnapshot, query } from "firebase/firestore"
-import { getEffortColor, getPriorityColor } from '@/lib/colors/colors'
+import { getEffortColor, getPriorityColorMuted } from '@/lib/colors/colors'
 import { db } from "@/firebase"
 import LottieLoading from '@/components/LottieLoading'
 
 const columns = [
-  { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-background' },
-  { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-background' },
-  { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-background' },
-  { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-background' },
+  { id: 'backlog', title: 'Backlog', icon: BackpackIcon, color: 'bg-gray-100' },
+  { id: 'todo', title: 'To Do', icon: ListTodoIcon, color: 'bg-blue-100' },
+  { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
+  { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
 
 const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
@@ -48,29 +47,29 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className={`bg-card rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow duration-200`}
+      className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-primary`}
       onClick={onClick}
     >
-      <h3 className="font-medium text-sm mb-1 text-card-foreground">{task.title}</h3>
-      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{task.description}</p>
+      <h3 className="font-semibold text-sm mb-2 text-gray-800 line-clamp-1">{task.title}</h3>
+      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>
       <div className="flex flex-wrap gap-2 mb-2">
-        <Badge variant="outline" className="flex items-center gap-1 text-xs">
+        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-gray-100 text-gray-600">
           <ClockIcon className="w-3 h-3" />
           {task.time}h
         </Badge>
-        <Badge variant="outline" className={`flex items-center gap-1 text-xs ${getEffortColor(task.efforts)}`}>
+        <Badge variant="outline" className={`flex items-center gap-1 text-[10px] ${getEffortColor(task.efforts)}`}>
           <TagIcon className="w-3 h-3" />
           {task.efforts}
         </Badge>
-        <Badge variant="outline" className="flex items-center gap-1 text-xs">
+        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-gray-100 text-gray-600">
           <UserIcon className="w-3 h-3" />
           {task.assignee?.name}
         </Badge>
       </div>
       <div className="flex items-center justify-between">
-        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1 w-2/3" />
-        <Badge variant="secondary" className={`text-xs ${getPriorityColor(task.priority || 'null')}`}>
-          {task.priority}
+        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1.5 w-2/3" />
+        <Badge variant="secondary" className={`text-[10px] ${getPriorityColorMuted(task.priority || 'null')}`}>
+          {task.priority || 'Muted'}
         </Badge>
       </div>
     </div>
@@ -95,12 +94,12 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
   isDraggable: boolean;
 }) => {
   return (
-    <Card className={`w-full md:w-72 lg:w-80 ${color}`}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-card-foreground flex items-center">
-          <Icon className="mr-2 h-4 w-4" />
+    <Card className={`w-full md:w-72 lg:w-80 ${color} rounded-lg shadow-md`}>
+      <CardHeader className="pb-2 border-b">
+        <CardTitle className="text-sm font-semibold text-gray-700 flex items-center">
+          <Icon className="mr-2 h-4 w-4 text-gray-500" />
           {title}
-          <Badge variant="secondary" className="ml-auto">
+          <Badge variant="secondary" className="ml-auto bg-white text-gray-700">
             {tasks.length}
           </Badge>
         </CardTitle>
@@ -112,7 +111,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-accent' : ''}`}
+                className={`space-y-2 min-h-[200px] max-h-[calc(100vh-200px)] overflow-y-auto ${snapshot.isDraggingOver ? 'bg-gray-100' : ''} rounded-md p-1`}
               >
                 {tasks.map((task, index) => (
                   <TaskItem
@@ -336,20 +335,20 @@ export default function Kanban() {
   const isDraggable = employee?.role !== 'management'
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-card shadow-sm">
-        <h1 className="text-lg md:text-xl font-medium text-card-foreground flex items-center">
-          <KanbanIcon className="mr-2 h-5 w-5 text-primary" />
+    <div className="flex flex-col h-screen bg-gray-100">
+      <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-primary shadow-md">
+        <h1 className="text-lg md:text-2xl font-bold text-white flex items-center">
+          <KanbanIcon className="mr-2 h-6 w-6 text-white" />
           Kanban Board
         </h1>
         <div className="flex space-x-2 md:space-x-4">
           <Button
             onClick={() => setIsUploadModalOpen(true)}
-            variant="outline"
+            variant="secondary"
             size="sm"
-            className="text-xs md:text-sm"
+            className="text-xs md:text-sm bg-white text-primary hover:bg-gray-100 border-none"
           >
-            <UploadIcon className="mr-1 h-3 w-3 md:h-4 md:w-4" />
+            <UploadIcon className="mr-1 h-4 w-4" />
             Upload
           </Button>
           <Button
@@ -357,29 +356,29 @@ export default function Kanban() {
               setSelectedTask(null)
               setIsModalOpen(true)
             }}
-            variant="default"
+            variant="outline"
             size="sm"
-            className="text-xs md:text-sm"
+            className="text-xs md:text-sm bg-white text-primary hover:bg-gray-100 border-none"
           >
-            <PlusIcon className="mr-1 h-3 w-3 md:h-4 md:w-4" />
+            <PlusIcon className="mr-1 h-4 w-4" />
             Add Task
           </Button>
         </div>
       </header>
-      <div className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 bg-gray-100 border-b space-y-2 md:space-y-0">
-        <div className="flex flex-wrap items-center space-x-2 md:space-x-4 w-full bg-card-background md:w-auto">
-          <div className="relative flex-1 md:flex-none md:w-48">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      <div className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 bg-white border-b space-y-2 md:space-y-0 shadow-sm">
+        <div className="flex flex-wrap items-center space-x-2 md:space-x-4 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none md:w-60">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
               placeholder="Search tasks..."
-              className="pl-9 pr-4 py-1 text-sm w-full"
+              className="pl-10 pr-4 py-2 text-sm w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={filterEffort} onValueChange={setFilterEffort}>
-            <SelectTrigger className="w-32 md:w-40 text-sm">
+            <SelectTrigger className="w-36 md:w-48 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
               <SelectValue placeholder="Effort" />
             </SelectTrigger>
             <SelectContent>
@@ -391,7 +390,7 @@ export default function Kanban() {
           </Select>
           {(employee?.role === 'management' || employee?.role === 'projectManager') && (
             <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-              <SelectTrigger className="w-32 md:w-40 text-sm">
+              <SelectTrigger className="w-36 md:w-48 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                 <SelectValue placeholder="Assignee" />
               </SelectTrigger>
               <SelectContent>
@@ -405,15 +404,15 @@ export default function Kanban() {
           )}
         </div>
         <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-between md:justify-start">
-          <Button variant="ghost" onClick={fetchTasksData} size="sm" className="text-xs md:text-sm">
-            <RefreshCw className="mr-1 h-3 w-3 md:h-4 md:w-4" />
+          <Button variant="ghost" onClick={fetchTasksData} size="sm" className="text-xs md:text-sm text-gray-600 hover:text-primary">
+            <RefreshCw className="mr-1 h-4 w-4" />
             Refresh
           </Button>
           <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-700">
               Total: {tasks.length}
             </Badge>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-700">
               Filtered: {filteredTasks.length}
             </Badge>
           </div>
