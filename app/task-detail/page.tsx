@@ -33,6 +33,17 @@ import {
   SendIcon,
   Loader2Icon,
   SmileIcon,
+  FlagIcon,
+  AlertCircleIcon,
+  AlertTriangleIcon,
+  AlertOctagonIcon,
+  BellIcon,
+  HelpCircleIcon,
+  BugIcon,
+  LightbulbIcon,
+  FileTextIcon,
+  CheckSquareIcon,
+  RefreshCcwIcon,
 } from 'lucide-react'
 import {
   Popover,
@@ -47,8 +58,37 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { getPriorityColorMuted } from '@/lib/colors/colors'
 
 const emojis = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀']
+
+const priorityOptions = ['low', 'medium', 'high', 'urgent', 'critical', 'null'] as const
+const typeOptions = ['bug', 'feature', 'documentation', 'task', 'changeRequest', 'other'] as const
+
+const priorityIcons: Record<string, { icon: React.ComponentType<any>; color: string }> = {
+  low: { icon: FlagIcon, color: "text-green-500" },
+  medium: { icon: AlertCircleIcon, color: "text-yellow-500" },
+  high: { icon: AlertTriangleIcon, color: "text-orange-500" },
+  urgent: { icon: AlertOctagonIcon, color: "text-red-500" },
+  critical: { icon: BellIcon, color: "text-purple-500" },
+  null: { icon: HelpCircleIcon, color: "text-gray-500" },
+};
+
+const taskTypeIcons: Record<string, { icon: React.ComponentType<any>; color: string }> = {
+  bug: { icon: BugIcon, color: "text-red-500" },
+  feature: { icon: LightbulbIcon, color: "text-yellow-500" },
+  documentation: { icon: FileTextIcon, color: "text-blue-500" },
+  task: { icon: CheckSquareIcon, color: "text-green-500" },
+  changeRequest: { icon: RefreshCcwIcon, color: "text-purple-500" },
+  other: { icon: HelpCircleIcon, color: "text-gray-500" },
+};
 
 export default function TaskListView() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -159,6 +199,7 @@ export default function TaskListView() {
       }
     }
   }
+
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setNewComment(value)
@@ -186,6 +227,7 @@ export default function TaskListView() {
       textareaRef.current?.focus()
     }
   }
+
   const handleReaction = async (commentId: string, emoji: string) => {
     if (selectedTask && user) {
       const userName = user.displayName || user.email || 'Anonymous';
@@ -218,6 +260,58 @@ export default function TaskListView() {
         toast({
           title: 'Error',
           description: 'Failed to update reaction. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handlePriorityChange = async (priority: Task['priority']) => {
+    if (selectedTask && user) {
+      try {
+        const updatedTask = { ...selectedTask, priority };
+        await updateTask(updatedTask, user.email || '');
+        setSelectedTask(updatedTask);
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        );
+        toast({
+          title: 'Success',
+          description: 'Task priority updated successfully.',
+        });
+      } catch (error) {
+        console.error('Failed to update task priority', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update task priority. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleTypeChange = async (type: Task['type']) => {
+    if (selectedTask && user) {
+      try {
+        const updatedTask = { ...selectedTask, type };
+        await updateTask(updatedTask, user.email || '');
+        setSelectedTask(updatedTask);
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        );
+        toast({
+          title: 'Success',
+          description: 'Task type updated successfully.',
+        });
+      } catch (error) {
+        console.error('Failed to update task type', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update task type. Please try again.',
           variant: 'destructive',
         });
       }
@@ -299,6 +393,51 @@ export default function TaskListView() {
                     <UserIcon className="w-3 h-3" />
                     {selectedTask.assignee?.name}
                   </Badge>
+                  <Select
+                    value={selectedTask.priority || 'null'}
+                    onValueChange={(value) => handlePriorityChange(value as Task['priority'])}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map((priority) => {
+                        const { icon: Icon, color } = priorityIcons[priority];
+                        // const priorityColor = getPriorityColorMuted(priority);
+                        return (
+                          <SelectItem key={priority} value={priority}>
+                            <div className="flex items-center">
+                              <Icon className={`w-4 h-4 mr-2 ${color}`} />
+                              <span >
+                                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={selectedTask.type}
+                    onValueChange={(value) => handleTypeChange(value as Task['type'])}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {typeOptions.map((type) => {
+                        const { icon: Icon, color } = taskTypeIcons[type];
+                        return (
+                          <SelectItem key={type} value={type}>
+                            <div className="flex items-center">
+                              <Icon className={`w-4 h-4 mr-2 ${color}`} />
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <h3 className="font-semibold mb-2">Comments</h3>
                 <ScrollArea className="flex-grow pr-4">
