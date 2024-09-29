@@ -24,8 +24,8 @@ const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; is
   const lastUpdatedAtDate = task.lastUpdated ? convertToDateTime(task.lastUpdated) : null;
   const isCompleted = task.status === 'done'
       
-  console.log('task.completedAt:', task.completedAt, 'Type:', typeof task.completedAt);
-  console.log('task.lastUpdatedAt:', task.lastUpdated, 'Type:', typeof task.lastUpdated);
+            // console.log('task.completedAt:', task.completedAt, 'Type:', typeof task.completedAt);
+            // console.log('task.lastUpdatedAt:', task.lastUpdated, 'Type:', typeof task.lastUpdated);
 
   return (
     <Card 

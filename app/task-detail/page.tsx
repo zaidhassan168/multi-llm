@@ -144,7 +144,6 @@ export default function TaskListView() {
           title: 'Success',
           description: 'Comment added successfully.',
         })
-        // Notify mentioned users (implementation depends on your notification system)
         mentionedUsers.forEach((mentionedUser) => {
           console.log(
             `Notifying ${mentionedUser} about mention in task ${selectedTask.id}`
@@ -331,15 +330,19 @@ export default function TaskListView() {
                             {Object.entries(comment.reactions || {}).map(([emoji, users]) => (
                               <Tooltip key={emoji}>
                                 <TooltipTrigger asChild>
-                                  <Badge
+                                  <Button 
+                                  size = "icon"
                                     variant="outline"
-                                    className="cursor-pointer"
+                                    className="cursor-pointer hover:bg-secondary transition-colors"
                                     onClick={() => handleReaction(comment.id, emoji)}
                                   >
                                     {emoji} {users.length}
-                                  </Badge>
+                                  </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
+                                <TooltipContent 
+                                  side="top" 
+                                  className="z-50 bg-popover text-popover-foreground shadow-md p-2 rounded-md"
+                                >
                                   <p>{users.join(', ')}</p>
                                 </TooltipContent>
                               </Tooltip>
@@ -349,7 +352,7 @@ export default function TaskListView() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0"
+                                  className="h-8 w-8 p-0 hover:bg-secondary transition-colors"
                                 >
                                   <SmileIcon className="h-4 w-4" />
                                 </Button>
@@ -361,7 +364,7 @@ export default function TaskListView() {
                                       key={emoji}
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 w-8 p-0 hover:bg-secondary transition-colors"
                                       onClick={() =>
                                         handleReaction(comment.id, emoji)
                                       }
