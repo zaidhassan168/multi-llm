@@ -3,13 +3,19 @@ import { toast } from '@/components/ui/use-toast';
 import { Employee } from './employee';
 import { Stage } from './stage';
 import { EmployeeSummary } from './summaries';
+type Reactions = {
+  [emoji: string]: string[]
+}
+
 type Comment = {
-    id: string;
-    content: string;
-    author: string;
-    createdAt: Date;
-    taskId: string;
-    };
+  id: string
+  content: string
+  author: string
+  createdAt: Date
+  taskId: string
+  reactions: Reactions
+  mentions?: string[]
+}
 
     type Task = {
       id: string;
@@ -199,4 +205,4 @@ export const fetchTasksByProject = async (projectId: string): Promise<Task[]> =>
     }
 
 
-    export type { Task };
+    export type { Task, Comment, Reactions };
