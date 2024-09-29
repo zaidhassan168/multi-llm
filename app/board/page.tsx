@@ -47,29 +47,31 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className={`bg-white rounded-lg p-3 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-primary`}
+      className="bg-white rounded-md p-2 shadow-sm mb-1 cursor-pointer hover:shadow transition-all duration-200 border border-gray-200 hover:border-primary text-xs"
       onClick={onClick}
     >
-      <h3 className="font-semibold text-sm mb-2 text-gray-800 line-clamp-1">{task.title}</h3>
-      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>
-      <div className="flex flex-wrap gap-2 mb-2">
-        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-gray-100 text-gray-600">
-          <ClockIcon className="w-3 h-3" />
-          {task.time}h
-        </Badge>
-        <Badge variant="outline" className={`flex items-center gap-1 text-[10px] ${getEffortColor(task.efforts)}`}>
-          <TagIcon className="w-3 h-3" />
-          {task.efforts}
-        </Badge>
-        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-gray-100 text-gray-600">
-          <UserIcon className="w-3 h-3" />
-          {task.assignee?.name}
+      <h3 className="font-semibold mb-1 text-gray-800 line-clamp-1">{task.title}</h3>
+      <p className="text-gray-600 mb-1 line-clamp-1">{task.description}</p>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex gap-1">
+          <Badge variant="outline" className="flex items-center px-1 py-0 text-[9px] bg-gray-100 text-gray-600">
+            <ClockIcon className="w-2 h-2 mr-1" />
+            {task.time}h
+          </Badge>
+          <Badge variant="outline" className={`flex items-center px-1 py-0 text-[9px] ${getEffortColor(task.efforts)}`}>
+            <TagIcon className="w-2 h-2 mr-1" />
+            {task.efforts}
+          </Badge>
+        </div>
+        <Badge variant="secondary" className={`text-[9px] px-1 py-0 ${getPriorityColorMuted(task.priority || 'null')}`}>
+          {task.priority || 'Muted'}
         </Badge>
       </div>
-      <div className="flex items-center justify-between">
-        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1.5 w-2/3" />
-        <Badge variant="secondary" className={`text-[10px] ${getPriorityColorMuted(task.priority || 'null')}`}>
-          {task.priority || 'Muted'}
+      <div className="flex items-center gap-1">
+        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1 flex-grow" />
+        <Badge variant="outline" className="flex items-center px-1 py-0 text-[9px] bg-gray-100 text-gray-600">
+          <UserIcon className="w-2 h-2 mr-1" />
+          {task.assignee?.name}
         </Badge>
       </div>
     </div>
@@ -81,6 +83,7 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
     </Draggable>
   ) : renderContent({})
 })
+
 
 TaskItem.displayName = "TaskItem";
 
