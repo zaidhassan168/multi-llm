@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { fetchTasksEmail, updateTask, Task, Comment } from '@/models/task'
+import { fetchTasksEmail, updateTask, Task, Comment, updateTaskComments } from '@/models/task'
 import { fetchEmployees, Employee } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
@@ -132,7 +132,7 @@ export default function TaskListView() {
         comments: [...(selectedTask.comments || []), newCommentData],
       }
       try {
-        await updateTask(updatedTask, user?.email || '')
+        await updateTaskComments(selectedTask.id, updatedTask.comments, user?.email || '')
         setSelectedTask(updatedTask)
         setNewComment('')
         setTasks((prevTasks) =>
@@ -159,7 +159,6 @@ export default function TaskListView() {
       }
     }
   }
-
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setNewComment(value)
@@ -187,46 +186,43 @@ export default function TaskListView() {
       textareaRef.current?.focus()
     }
   }
-
   const handleReaction = async (commentId: string, emoji: string) => {
     if (selectedTask && user) {
-      const userName = user.displayName || user.email || 'Anonymous'
+      const userName = user.displayName || user.email || 'Anonymous';
       const updatedComments = selectedTask.comments?.map((comment) => {
         if (comment.id === commentId) {
-          const reactions = { ...comment.reactions }
+          const reactions = { ...comment.reactions };
           if (reactions[emoji]?.includes(userName)) {
-            reactions[emoji] = reactions[emoji].filter(
-              (name) => name !== userName
-            )
+            reactions[emoji] = reactions[emoji].filter((name) => name !== userName);
             if (reactions[emoji].length === 0) {
-              delete reactions[emoji]
+              delete reactions[emoji];
             }
           } else {
-            reactions[emoji] = [...(reactions[emoji] || []), userName]
+            reactions[emoji] = [...(reactions[emoji] || []), userName];
           }
-          return { ...comment, reactions }
+          return { ...comment, reactions };
         }
-        return comment
-      })
-      const updatedTask = { ...selectedTask, comments: updatedComments }
+        return comment;
+      }) || [];
+
       try {
-        await updateTask(updatedTask, user.email || '')
-        setSelectedTask(updatedTask)
+        await updateTaskComments(selectedTask.id, updatedComments, user.email || '');
+        setSelectedTask({ ...selectedTask, comments: updatedComments });
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
-            task.id === updatedTask.id ? updatedTask : task
+            task.id === selectedTask.id ? { ...task, comments: updatedComments } : task
           )
-        )
+        );
       } catch (error) {
-        console.error('Failed to update reaction', error)
+        console.error('Failed to update reaction', error);
         toast({
           title: 'Error',
           description: 'Failed to update reaction. Please try again.',
           variant: 'destructive',
-        })
+        });
       }
     }
-  }
+  };
 
   if (isLoading) {
     return (

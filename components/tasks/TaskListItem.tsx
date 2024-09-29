@@ -16,7 +16,7 @@ import {
   CheckCircleIcon,
   RefreshCwIcon
 } from 'lucide-react'
-import { getPriorityColor, getStatusColor } from '@/lib/colors/colors'
+import { getPriorityColorMuted, getStatusColor } from '@/lib/colors/colors'
 import { Task } from '@/models/task'
 
 const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; isSelected: boolean; onClick: () => void }) => {
@@ -109,7 +109,7 @@ const TaskListItem = React.memo(({ task, isSelected, onClick }: { task: Task; is
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className="flex space-x-2">
-          <Badge className={getPriorityColor(task.priority || 'null')}>
+          <Badge className={getPriorityColorMuted(task.priority || 'null')}>
             {task.priority}
           </Badge>
           <Badge className={getStatusColor(task.status)}>

@@ -154,6 +154,43 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
   }
 };
 
+
+// /models/task.ts
+
+export const updateTaskComments = async (taskId: string, comments: Comment[] , email: string): Promise<void> => {
+  console.log('Updating task comments:', taskId, comments);
+  try {
+    const response = await fetch('/api/project-management/tasks/comments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, comments, email }),
+    });
+
+    if (!response.ok) {
+      
+      throw new Error('Failed to update task comments');
+    }
+
+    const data = await response.json();
+    toast({
+      title: 'Success',
+      description: 'Added Comment successfully',
+    });
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update task comments');
+    }
+
+  } catch (error) {
+    console.error('Error updating task comments:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to update task comments',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
+
 export const deleteTask = async (id: string, email: string): Promise<void> => {
   try {
     const response = await fetch(API_URL, {
