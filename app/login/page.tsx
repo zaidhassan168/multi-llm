@@ -51,6 +51,11 @@ export default function Login() {
     try {
       const auth = getAuth(app);
       const provider = new OAuthProvider('microsoft.com');
+      provider.addScope('Calendars.Read');
+      provider.addScope('Calendars.ReadWrite');
+      provider.addScope('User.Read');
+      provider.addScope('offline_access');
+  
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
 
