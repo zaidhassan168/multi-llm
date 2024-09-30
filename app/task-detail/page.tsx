@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   CardContent,
@@ -14,10 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { fetchTasksEmail, updateTask, Task, Comment, updateTaskComments } from '@/models/task'
+import { fetchTasksEmail, updateTask, Task, Comment, updateTaskComments, fetchTasksAll } from '@/models/task'
 import { fetchEmployees, Employee } from '@/models/employee'
 import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
+import LottieLoading from '@/components/LottieLoading'
 import {
   Tooltip,
   TooltipContent,
@@ -31,19 +32,9 @@ import {
   UserIcon,
   TagIcon,
   SendIcon,
-  Loader2Icon,
   SmileIcon,
-  FlagIcon,
-  AlertCircleIcon,
-  AlertTriangleIcon,
-  AlertOctagonIcon,
-  BellIcon,
-  HelpCircleIcon,
-  BugIcon,
-  LightbulbIcon,
-  FileTextIcon,
-  CheckSquareIcon,
-  RefreshCcwIcon,
+  ArrowUpDown,
+  SlidersHorizontal,
 } from 'lucide-react'
 import {
   Popover,
@@ -56,7 +47,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList,
+  CommandList
 } from '@/components/ui/command'
 import {
   Select,
@@ -65,30 +56,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getPriorityColorMuted } from '@/lib/colors/colors'
+import { priorityIcons, taskTypeIcons } from '@/lib/icons/icons'
+import TaskFilterSidebar from '@/components/tasks/TaskFilterSidebar'
+import { fetchProjects, Project } from '@/models/project'
+type FilterState = {
+  assignee: string | null
+  project: string | null
+  priority: string | 'all' | null
+  type: string | 'all' | null
+}
 
 const emojis = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀']
-
-const priorityOptions = ['low', 'medium', 'high', 'urgent', 'critical', 'null'] as const
-const typeOptions = ['bug', 'feature', 'documentation', 'task', 'changeRequest', 'other'] as const
-
-const priorityIcons: Record<string, { icon: React.ComponentType<any>; color: string }> = {
-  low: { icon: FlagIcon, color: "text-green-500" },
-  medium: { icon: AlertCircleIcon, color: "text-yellow-500" },
-  high: { icon: AlertTriangleIcon, color: "text-orange-500" },
-  urgent: { icon: AlertOctagonIcon, color: "text-red-500" },
-  critical: { icon: BellIcon, color: "text-purple-500" },
-  null: { icon: HelpCircleIcon, color: "text-gray-500" },
-};
-
-const taskTypeIcons: Record<string, { icon: React.ComponentType<any>; color: string }> = {
-  bug: { icon: BugIcon, color: "text-red-500" },
-  feature: { icon: LightbulbIcon, color: "text-yellow-500" },
-  documentation: { icon: FileTextIcon, color: "text-blue-500" },
-  task: { icon: CheckSquareIcon, color: "text-green-500" },
-  changeRequest: { icon: RefreshCcwIcon, color: "text-purple-500" },
-  other: { icon: HelpCircleIcon, color: "text-gray-500" },
-};
 
 export default function TaskListView() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -103,16 +81,25 @@ export default function TaskListView() {
   const [mentionSearch, setMentionSearch] = useState('')
   const [mentionIndex, setMentionIndex] = useState(-1)
   const [isMentionPopoverOpen, setIsMentionPopoverOpen] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'createdAt'>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [filters, setFilters] = useState<FilterState>({
+    assignee: null,
+    project: null,
+    priority: null,
+    type: null,
+  })
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const { user } = useAuth()
   const { toast } = useToast()
-
   const fetchTasksData = useCallback(async () => {
     if (user?.email) {
       try {
         setIsLoading(true)
         const [tasksData, employeesData] = await Promise.all([
-          fetchTasksEmail(user.email, 'developer'),
+          fetchTasksAll(),
           fetchEmployees(),
         ])
 
@@ -145,12 +132,29 @@ export default function TaskListView() {
   }, [fetchTasksData])
 
   useEffect(() => {
-    const filtered = tasks.filter((task) =>
+    console.log('filters', filters)
+    let filtered = tasks.filter((task) =>
       task.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
+    
+    if (filters.assignee && filters.assignee !== 'all') {
+      filtered = filtered.filter((task) => task.assignee?.name === filters.assignee)
+    }
+    if (filters.project && filters.project !== 'all') {
+      filtered = filtered.filter((task) => task.projectId === filters.project)
+    }
+    if (filters.priority && filters.priority !== 'all') {
+      filtered = filtered.filter((task) => task.priority === filters.priority)
+    }
+    if (filters.type && filters.type !== 'all') {
+      filtered = filtered.filter((task) => task.type === filters.type)
+    }
+  
     setFilteredTasks(filtered)
-  }, [tasks, searchTerm])
-
+  }, [tasks, searchTerm, filters])
+  const handleFilterChange = (newFilters: Partial<FilterState>) => {
+    setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }))
+  }
   const handleAddComment = async () => {
     if (selectedTask && newComment.trim() !== '') {
       const mentionedUsers = newComment.match(/@(\w+)/g)?.map((mention) => mention.slice(1)) || []
@@ -318,11 +322,40 @@ export default function TaskListView() {
     }
   };
 
+  // const handleFilterChange = (newFilters: Partial<FilterState>) => {
+  //   setFilters(prevFilters => ({
+  //     ...prevFilters,
+  //     ...newFilters,
+  //   }))
+  // }
+
+  const handleSort = (key: 'priority' | 'dueDate' | 'createdAt') => {
+    setSortBy(key)
+    setSortOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'))
+  }
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortBy === 'priority') {
+      const priorityOrder = ['critical', 'urgent', 'high', 'medium', 'low', 'null']
+      return sortOrder === 'asc'
+        ? priorityOrder.indexOf(a.priority || 'null') - priorityOrder.indexOf(b.priority || 'null')
+        : priorityOrder.indexOf(b.priority || 'null') - priorityOrder.indexOf(a.priority || 'null')
+    } else if (sortBy === 'dueDate') {
+      const aDate = a.dueDate ? new Date(a.dueDate) : new Date(0)
+      const bDate = b.dueDate ? new Date(b.dueDate) : new Date(0)
+      return sortOrder === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime()
+    } else {
+      const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0)
+      const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0)
+      return sortOrder === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime()
+    }
+  })
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center">
-          <Loader2Icon className="animate-spin h-16 w-16 text-primary mb-4" />
+          <LottieLoading size='small' />
           <span className="text-xl font-semibold text-primary">
             Loading tasks...
           </span>
@@ -345,8 +378,8 @@ export default function TaskListView() {
     <TooltipProvider>
       <div className="container flex h-screen bg-background">
         <div className="w-1/3 p-4 overflow-auto border-r">
-          <div className="mb-4">
-            <div className="relative">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="relative flex-grow mr-2">
               <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
@@ -356,10 +389,26 @@ export default function TaskListView() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Select value={sortBy} onValueChange={(value: 'priority' | 'dueDate' | 'createdAt') => handleSort(value)}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="dueDate">Due Date</SelectItem>
+                <SelectItem value="createdAt">Created At</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
+              <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
           </div>
           <ScrollArea className="h-[calc(100vh-120px)]">
             <div className="space-y-4 pr-4">
-              {filteredTasks.map((task) => (
+              {sortedTasks.map((task) => (
                 <TaskListItem
                   key={task.id}
                   task={task}
@@ -394,48 +443,39 @@ export default function TaskListView() {
                     {selectedTask.assignee?.name}
                   </Badge>
                   <Select
-                    value={selectedTask.priority || 'null'}
+                    value={selectedTask.priority || undefined}
                     onValueChange={(value) => handlePriorityChange(value as Task['priority'])}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      {priorityOptions.map((priority) => {
-                        const { icon: Icon, color } = priorityIcons[priority];
-                        // const priorityColor = getPriorityColorMuted(priority);
-                        return (
-                          <SelectItem key={priority} value={priority}>
-                            <div className="flex items-center">
-                              <Icon className={`w-4 h-4 mr-2 ${color}`} />
-                              <span >
-                                {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
+                      {Object.entries(priorityIcons).map(([priority, { icon: Icon, color }]) => (
+                        <SelectItem key={priority} value={priority}>
+                          <div className="flex items-center">
+                            <Icon className={`w-4 h-4 mr-2 ${color}`} />
+                            <span className="capitalize">{priority}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select
-                    value={selectedTask.type}
+                    value={selectedTask.type || undefined}
                     onValueChange={(value) => handleTypeChange(value as Task['type'])}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {typeOptions.map((type) => {
-                        const { icon: Icon, color } = taskTypeIcons[type];
-                        return (
-                          <SelectItem key={type} value={type}>
-                            <div className="flex items-center">
-                              <Icon className={`w-4 h-4 mr-2 ${color}`} />
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
+                      {Object.entries(taskTypeIcons).map(([type, { icon: Icon, color }]) => (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex items-center">
+                            <Icon className={`w-4 h-4 mr-2 ${color}`} />
+                            <span className="capitalize">{type}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -466,7 +506,7 @@ export default function TaskListView() {
                               <Tooltip key={emoji}>
                                 <TooltipTrigger asChild>
                                   <Button 
-                                  size = "icon"
+                                    size="icon"
                                     variant="outline"
                                     className="cursor-pointer hover:bg-secondary transition-colors"
                                     onClick={() => handleReaction(comment.id, emoji)}
@@ -585,6 +625,13 @@ export default function TaskListView() {
             </div>
           )}
         </div>
+        <TaskFilterSidebar
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          onFilterChange={handleFilterChange}
+          projects={Array.from(new Set(tasks.map((task) => task.projectId || '')))}
+          employees={Array.from(new Set(tasks.map((task) => task.assignee?.name || '')))}
+        />
       </div>
     </TooltipProvider>
   )
