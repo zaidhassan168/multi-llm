@@ -629,7 +629,7 @@ export default function TaskListView() {
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           onFilterChange={handleFilterChange}
-          projects={Array.from(new Set(tasks.map((task) => task.projectId || '')))}
+          projectIds={Array.from(new Set(tasks.map((task) => task.projectId || '')))}
           employees={Array.from(new Set(tasks.map((task) => task.assignee?.name || '')))}
         />
       </div>

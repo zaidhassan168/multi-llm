@@ -40,39 +40,51 @@ const columns = [
   { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
   { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
-
+const getCardColor = (priority: string | undefined) => {
+  switch (priority) {
+    case 'high':
+      return 'bg-gradient-to-br from-red-50/80 to-red-100/80 hover:from-red-100/90 hover:to-red-200/90'
+    case 'medium':
+      return 'bg-gradient-to-br from-orange-50/80 to-orange-100/80 hover:from-orange-100/90 hover:to-orange-200/90'
+    case 'low':
+      return 'bg-gradient-to-br from-blue-50/80 to-blue-100/80 hover:from-blue-100/90 hover:to-blue-200/90'
+    default:
+      return 'bg-gradient-to-br from-purple-50/80 to-purple-100/80 hover:from-purple-100/90 hover:to-purple-200/90'
+  }
+}
 const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
   const renderContent = (provided: any) => (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className="bg-white rounded-md p-2 shadow-sm mb-1 cursor-pointer hover:shadow transition-all duration-200 border border-gray-200 hover:border-primary text-xs"
+      className={`rounded-md p-3 shadow-sm mb-2 cursor-pointer transition-all duration-200 text-sm ${getCardColor(task.priority)}`}
       onClick={onClick}
     >
-      <h3 className="font-semibold mb-1 text-gray-800 line-clamp-1">{task.title}</h3>
-      <p className="text-gray-600 mb-1 line-clamp-1">{task.description}</p>
-      <div className="flex items-center justify-between mb-1">
+      <h3 className="font-semibold mb-2 text-gray-800 line-clamp-2">{task.title}</h3>
+      <div className="flex items-center justify-between mb-2">
         <div className="flex gap-1">
-          <Badge variant="outline" className="flex items-center px-1 py-0 text-[9px] bg-gray-100 text-gray-600">
-            <ClockIcon className="w-2 h-2 mr-1" />
+          <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
+            <ClockIcon className="w-3 h-3 mr-1" />
             {task.time}h
           </Badge>
-          <Badge variant="outline" className={`flex items-center px-1 py-0 text-[9px] ${getEffortColor(task.efforts)}`}>
-            <TagIcon className="w-2 h-2 mr-1" />
+          <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
+            <TagIcon className="w-3 h-3 mr-1" />
             {task.efforts}
           </Badge>
         </div>
-        <Badge variant="secondary" className={`text-[9px] px-1 py-0 ${getPriorityColorMuted(task.priority || 'null')}`}>
-          {task.priority || 'Muted'}
-        </Badge>
       </div>
-      <div className="flex items-center gap-1">
-        <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1 flex-grow" />
-        <Badge variant="outline" className="flex items-center px-1 py-0 text-[9px] bg-gray-100 text-gray-600">
-          <UserIcon className="w-2 h-2 mr-1" />
+      <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1.5 mb-2" />
+      <div className="flex items-center justify-between">
+        <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
+          <UserIcon className="w-3 h-3 mr-1" />
           {task.assignee?.name}
         </Badge>
+        {task.priority && (
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-white">
+            {task.priority}
+          </Badge>
+        )}
       </div>
     </div>
   )
@@ -84,10 +96,10 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
   ) : renderContent({})
 })
 
+TaskItem.displayName = "TaskItem"
 
-TaskItem.displayName = "TaskItem";
 
-const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, isDraggable }: {
+const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDraggable }: {
   id: string;
   title: string;
   icon: React.ElementType;
@@ -97,7 +109,7 @@ const Column = React.memo(({ id, title, icon: Icon, color, tasks, onTaskClick, i
   isDraggable: boolean;
 }) => {
   return (
-    <Card className={`w-full md:w-72 lg:w-80 ${color} rounded-lg shadow-md`}>
+    <Card className={`w-full md:w-72 lg:w-80 rounded-lg shadow-md`}>
       <CardHeader className="pb-2 border-b">
         <CardTitle className="text-sm font-semibold text-gray-700 flex items-center">
           <Icon className="mr-2 h-4 w-4 text-gray-500" />

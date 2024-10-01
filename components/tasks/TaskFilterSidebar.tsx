@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { use, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-
+import { fetchProjects,Project } from '@/models/project'
 type Priority = 'low' | 'medium' | 'high' | 'urgent' | 'critical' | 'all' | null
 type TaskType = 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other' | 'all' | null
 
@@ -18,7 +18,7 @@ type FilterProps = {
   isOpen: boolean
   onToggle: () => void
   onFilterChange: (filters: Partial<FilterState>) => void
-  projects: string[]
+  projectIds: string[]
   employees: string[] 
 }
 
@@ -33,16 +33,22 @@ type FilterState = {
   } | null
 }
 
-export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, projects, employees }: FilterProps) {
-    console.log('projects:', employees)
-  const [filters, setFilters] = useState<FilterState>({
+export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, projectIds, employees }: FilterProps) {
+    const [projects, setProjects] = useState<Project[]>([])
+    const [filters, setFilters] = useState<FilterState>({
     assignee: null,
     project: null,
     priority: 'all',
     type: 'all',
     dateRange: null,
   })
+  const memoizedFetchProjects = React.useMemo(() => fetchProjects, [])
 
+  useEffect(() => {
+    memoizedFetchProjects().then((projects) => {
+      setProjects(projects)
+    })
+  }, [memoizedFetchProjects])
   const handleFilterChange = (key: keyof FilterState, value: any) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
@@ -106,9 +112,9 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project} value={project}>
-                    {project}
+                {projectIds.map((projectId) => (
+                  <SelectItem key={projectId} value={projectId}>
+                    {projects.find(p => p.id === projectId)?.name || projectId}
                   </SelectItem>
                 ))}
               </SelectContent>
