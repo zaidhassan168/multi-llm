@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Task, addTask, updateTask, deleteTask, fetchTasksByProject } from "@/models/task"
-import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon, LinkIcon } from "lucide-react"
+import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon,SearchIcon ,ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon, LinkIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
@@ -697,63 +697,98 @@ export function TaskModal({
               </Card>
             </TabsContent>
             <TabsContent value="dependencies">
-              <Card className="border-none shadow-md">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-primary">Task Dependencies</CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">Select tasks that this task depends on.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dependency-search" className="text-sm font-medium">Search Tasks</Label>
-                      <Input
-                        id="dependency-search"
-                        placeholder="Search by task title or ID"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-10 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Select Dependencies</Label>
-                      <ScrollArea className="h-[200px] w-full border rounded-md p-4">
-                        {filteredTasks.map((t) => (
-                          <div key={t.id} className="flex items-center space-x-2 py-2">
-                            <Checkbox
-                              id={`task-${t.id}`}
-                              checked={formData.dependencies?.taskIds.includes(t.id)}
-                              onCheckedChange={(checked) => handleDependencyChange(t.id, checked as boolean)}
-                              disabled={!isEditMode}
-                            />
-                            <label
-                              htmlFor={`task-${t.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              {t.title} (ID: {t.id})
-                            </label>
-                          </div>
-                        ))}
-                      </ScrollArea>
-                    </div>
-                    {formData.dependencies?.taskIds && formData.dependencies.taskIds.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Selected Dependencies</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {formData.dependencies?.taskIds.map((taskId) => {
-                            const dependentTask = projectTasks.find(t => t.id === taskId);
-                            return (
-                              <Badge key={taskId} variant="secondary" className="text-xs">
-                                {dependentTask ? dependentTask.title : taskId}
-                              </Badge>
-                            );
+  <Card className="border-none shadow-md">
+    <CardHeader className="pb-4">
+      <CardTitle className="text-lg font-semibold text-primary">Task Dependencies</CardTitle>
+      <CardDescription className="text-xs text-muted-foreground">Select tasks that this task depends on.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            id="dependency-search"
+            placeholder="Search tasks by title or ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 text-sm pl-10"
+          />
+        </div>
+        <ScrollArea className="h-[400px] w-full rounded-md border">
+          {filteredTasks.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No tasks found matching your search.
+            </div>
+          ) : (
+            filteredTasks.map((t) => (
+              <Card key={t.id} className="m-2 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <Checkbox
+                      id={`task-${t.id}`}
+                      checked={formData.dependencies?.taskIds.includes(t.id)}
+                      onCheckedChange={(checked) => handleDependencyChange(t.id, checked as boolean)}
+                      disabled={!isEditMode}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label
+                          htmlFor={`task-${t.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {t.title}
+                        </label>
+                        <Badge variant="outline" className="text-xs">
+                          {t.id}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{t.description || 'No description'}</p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <div className="flex items-center">
+                          <CalendarIcon className="h-3 w-3 mr-1 text-muted-foreground" />
+                          <span>{t.dueDate ? format(new Date(t.dueDate), 'PP') : 'No due date'}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Avatar className="h-4 w-4 mr-1">
+                            <AvatarImage src={t.assignee?.phtoURL || "/placeholder.svg"} alt={t.assignee?.name} />
+                            <AvatarFallback>{t.assignee?.name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <span>{t.assignee?.name || 'Unassigned'}</span>
+                        </div>
+                        <div className="flex items-center">
+                          {React.createElement(priorityIcons[t.priority || 'null'].icon, {
+                            className: `h-3 w-3 mr-1 ${priorityIcons[t.priority || 'null'].color}`,
                           })}
+                          <span className="capitalize">{t.priority || 'No priority'}</span>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            ))
+          )}
+        </ScrollArea>
+        {formData.dependencies?.taskIds && formData.dependencies.taskIds.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Selected Dependencies</Label>
+            <div className="flex flex-wrap gap-2">
+              {formData.dependencies.taskIds.map((taskId) => {
+                const dependentTask = projectTasks.find(t => t.id === taskId);
+                return (
+                  <Badge key={taskId} variant="secondary" className="text-xs">
+                    {dependentTask ? dependentTask.title : taskId}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
           </Tabs>
           <div className="flex justify-between mt-6 space-x-4">
             {isEditMode ? (
