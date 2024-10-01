@@ -17,6 +17,10 @@ type Comment = {
   mentions?: string[]
 }
 
+type Dependencies = {
+  taskIds: string[]
+}
+
     type Task = {
       id: string;
       title: string;
@@ -38,6 +42,8 @@ type Comment = {
       complexity?: 'simple' | 'moderate' | 'complex';
       qualityRating?: number;
       startDate?: Date;
+      dependencies?: Dependencies;
+
     };
     
     const API_URL = '/api/project-management/tasks';

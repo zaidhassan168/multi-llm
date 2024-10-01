@@ -1,16 +1,19 @@
-import React, { use, useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { ChevronRightIcon, XIcon, CalendarIcon } from 'lucide-react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ChevronRight, X, Calendar, User, Briefcase, Flag, Tag } from "lucide-react"
 import { priorityIcons, taskTypeIcons } from '@/lib/icons/icons'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
-import { Calendar } from '@/components/ui/calendar'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
-import { fetchProjects,Project } from '@/models/project'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { fetchProjects, Project } from '@/models/project'
+
 type Priority = 'low' | 'medium' | 'high' | 'urgent' | 'critical' | 'all' | null
 type TaskType = 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other' | 'all' | null
 
@@ -33,9 +36,9 @@ type FilterState = {
   } | null
 }
 
-export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, projectIds, employees }: FilterProps) {
-    const [projects, setProjects] = useState<Project[]>([])
-    const [filters, setFilters] = useState<FilterState>({
+export default function Component({ isOpen, onToggle, onFilterChange, projectIds, employees }: FilterProps) {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [filters, setFilters] = useState<FilterState>({
     assignee: null,
     project: null,
     priority: 'all',
@@ -49,6 +52,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
       setProjects(projects)
     })
   }, [memoizedFetchProjects])
+
   const handleFilterChange = (key: keyof FilterState, value: any) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
@@ -70,20 +74,20 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
   return (
     <div className={`fixed right-0 top-0 h-full bg-background shadow-lg transition-all duration-300 ${isOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
       <Button variant="ghost" className="absolute -left-8 top-4" onClick={onToggle}>
-        <ChevronRightIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </Button>
       <ScrollArea className="h-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold">Filters</h3>
           <Button variant="ghost" size="sm" onClick={resetFilters}>
-            <XIcon className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 mr-2" />
             Reset
           </Button>
         </div>
         <div className="space-y-6">
-          <FilterSection title="Assignee" value={filters.assignee}>
+          <FilterSection title="Assignee" value={filters.assignee} icon={<User className="h-4 w-4" />}>
             <Select
-              value={filters.assignee || 'no name'}
+              value={filters.assignee || ''}
               onValueChange={(value) => handleFilterChange('assignee', value)}
             >
               <SelectTrigger>
@@ -92,17 +96,15 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {employees.map((employee) => (
-                <SelectItem key={employee} value={employee || 'unNamed'}>
+                  <SelectItem key={employee} value={employee || 'unNamed'}>
                     {employee}
-
-
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </FilterSection>
 
-          <FilterSection title="Project" value={filters.project}>
+          <FilterSection title="Project" value={filters.project} icon={<Briefcase className="h-4 w-4" />}>
             <Select
               value={filters.project || ''}
               onValueChange={(value) => handleFilterChange('project', value)}
@@ -121,7 +123,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
             </Select>
           </FilterSection>
 
-          <FilterSection title="Priority" value={filters.priority}>
+          <FilterSection title="Priority" value={filters.priority} icon={<Flag className="h-4 w-4" />}>
             <Select
               value={filters.priority || 'all'}
               onValueChange={(value) => handleFilterChange('priority', value as Priority)}
@@ -143,7 +145,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
             </Select>
           </FilterSection>
 
-          <FilterSection title="Type" value={filters.type}>
+          <FilterSection title="Type" value={filters.type} icon={<Tag className="h-4 w-4" />}>
             <Select
               value={filters.type || 'all'}
               onValueChange={(value) => handleFilterChange('type', value as TaskType)}
@@ -165,7 +167,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
             </Select>
           </FilterSection>
 
-          <FilterSection title="Date Range" value={filters.dateRange}>
+          <FilterSection title="Date Range" value={filters.dateRange} icon={<Calendar className="h-4 w-4" />}>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -175,7 +177,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
                     !filters.dateRange && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   {filters.dateRange?.from ? (
                     filters.dateRange.to ? (
                       <>
@@ -191,7 +193,7 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
+                <CalendarComponent
                   initialFocus
                   mode="range"
                   defaultMonth={filters.dateRange?.from}
@@ -208,11 +210,14 @@ export default function TaskFilterSidebar({ isOpen, onToggle, onFilterChange, pr
   )
 }
 
-function FilterSection({ title, children, value }: { title: string; children: React.ReactNode; value: any }) {
+function FilterSection({ title, children, value, icon }: { title: string; children: React.ReactNode; value: any; icon: React.ReactNode }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
-        <Label className="text-sm font-medium">{title}</Label>
+        <Label className="text-sm font-medium flex items-center">
+          {icon}
+          <span className="ml-2">{title}</span>
+        </Label>
         {value && value !== 'all' && (
           <Badge variant="secondary" className="text-xs">
             1

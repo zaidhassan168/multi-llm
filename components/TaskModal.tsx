@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Task, addTask, updateTask, deleteTask } from "@/models/task"
-import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon } from "lucide-react"
+import { Task, addTask, updateTask, deleteTask, fetchTasksByProject } from "@/models/task"
+import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon, LinkIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
@@ -23,7 +23,9 @@ import { useAuth } from "@/lib/hooks"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import LottieLoading from "./LottieLoading"
+
 type TaskModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -77,6 +79,7 @@ const DEFAULT_FORM_DATA: Omit<Task, "id"> = {
   stageId: "",
   type: "task",
   complexity: "moderate",
+  dependencies: { taskIds: [] },
 };
 
 export function TaskModal({
@@ -98,6 +101,8 @@ export function TaskModal({
   const [formData, setFormData] = useState<Omit<Task, "id">>(DEFAULT_FORM_DATA);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -147,7 +152,6 @@ export function TaskModal({
           const selectedProject = projectsData.find((p) => p.id === currentProjectId);
           if (selectedProject) {
             setStages(selectedProject.stages || []);
-            // If editing a task, ensure the current stage is set
             if (task && task.stageId) {
               setFormData(prev => ({
                 ...prev,
@@ -169,6 +173,23 @@ export function TaskModal({
       fetchInitialData();
     }
   }, [isOpen, projectId]);
+
+  useEffect(() => {
+    const fetchProjectTasks = async () => {
+      if (formData.projectId) {
+        try {
+          // Assuming you have a function to fetch tasks for a specific project
+          const tasks = await fetchTasksByProject(formData.projectId);
+          setProjectTasks(tasks);
+        } catch (error) {
+          console.error("Error fetching project tasks:", error);
+          setError("Failed to load project tasks");
+        }
+      }
+    };
+
+    fetchProjectTasks();
+  }, [formData.projectId]);
 
   const handleProjectChange = (projectId: string) => {
     setFormData((prev) => ({ ...prev, projectId }));
@@ -264,23 +285,41 @@ export function TaskModal({
     setIsEditMode(true);
   };
 
+  const handleDependencyChange = (taskId: string, isChecked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      dependencies: {
+        taskIds: isChecked
+          ? [...(prev.dependencies?.taskIds || []), taskId]
+          : (prev.dependencies?.taskIds || []).filter(id => id !== taskId)
+      }
+    }));
+  };
+
+  const filteredTasks = projectTasks.filter(t =>
+    t.id !== task?.id && // Exclude the current task
+    (t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   const taskPriorities = ["low", "medium", "high", "urgent", "critical", "null"];
   const taskTypes = ["bug", "feature", "documentation", "task", "changeRequest", "other"];
 
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px] h-[80vh] p-0">
+        <DialogContent className="sm:max-w-[800px] h-[95vh] p-0">
           <div className="flex items-center justify-center h-full">
-           <LottieLoading size="small" />
+            <LottieLoading size="small" />
           </div>
         </DialogContent>
       </Dialog>
     );
   }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] p-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <DialogContent className="sm:max-w-[800px] h-[95vh] p-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <ScrollArea className="h-full px-6 py-4">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold text-primary">
@@ -295,9 +334,10 @@ export function TaskModal({
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="details" className="text-sm">Details</TabsTrigger>
               <TabsTrigger value="description" className="text-sm">Description</TabsTrigger>
+              <TabsTrigger value="dependencies" className="text-sm">Dependencies</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
               <Card className="border-none shadow-md">
@@ -325,7 +365,7 @@ export function TaskModal({
                         name="projectId"
                         value={formData.projectId}
                         onValueChange={handleProjectChange}
-                        disabled={!isEditMode || !!projectId}
+                        disabled={!isEditMode || !!projects}
                       >
                         <SelectTrigger className="h-10 text-sm">
                           <SelectValue placeholder="Select project" />
@@ -653,6 +693,64 @@ export function TaskModal({
                     disabled={!isEditMode}
                     className="min-h-[200px] text-sm"
                   />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="dependencies">
+              <Card className="border-none shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-primary">Task Dependencies</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">Select tasks that this task depends on.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dependency-search" className="text-sm font-medium">Search Tasks</Label>
+                      <Input
+                        id="dependency-search"
+                        placeholder="Search by task title or ID"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Select Dependencies</Label>
+                      <ScrollArea className="h-[200px] w-full border rounded-md p-4">
+                        {filteredTasks.map((t) => (
+                          <div key={t.id} className="flex items-center space-x-2 py-2">
+                            <Checkbox
+                              id={`task-${t.id}`}
+                              checked={formData.dependencies?.taskIds.includes(t.id)}
+                              onCheckedChange={(checked) => handleDependencyChange(t.id, checked as boolean)}
+                              disabled={!isEditMode}
+                            />
+                            <label
+                              htmlFor={`task-${t.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {t.title} (ID: {t.id})
+                            </label>
+                          </div>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                    {formData.dependencies?.taskIds && formData.dependencies.taskIds.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Selected Dependencies</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.dependencies?.taskIds.map((taskId) => {
+                            const dependentTask = projectTasks.find(t => t.id === taskId);
+                            return (
+                              <Badge key={taskId} variant="secondary" className="text-xs">
+                                {dependentTask ? dependentTask.title : taskId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
