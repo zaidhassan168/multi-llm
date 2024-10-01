@@ -37,7 +37,7 @@ type Comment = {
       completedAt?: Date | null;
       complexity?: 'simple' | 'moderate' | 'complex';
       qualityRating?: number;
-
+      startDate?: Date;
     };
     
     const API_URL = '/api/project-management/tasks';

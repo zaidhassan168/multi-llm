@@ -72,6 +72,9 @@ export async function PATCH(request: Request) {
   if(updates.status === 'done' ) {
     updates.completedAt = new Date();
   }
+  else if(updates.status === 'inProgress') {
+    updates.startDate = new Date();
+  }
   else {
     updates.completedAt = null;
   }
