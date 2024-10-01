@@ -3,13 +3,19 @@ import { toast } from '@/components/ui/use-toast';
 import { Employee } from './employee';
 import { Stage } from './stage';
 import { EmployeeSummary } from './summaries';
+type Reactions = {
+  [emoji: string]: string[]
+}
+
 type Comment = {
-    id: string;
-    content: string;
-    author: string;
-    createdAt: Date;
-    taskId: string;
-    };
+  id: string
+  content: string
+  author: string
+  createdAt: Date
+  taskId: string
+  reactions: Reactions
+  mentions?: string[]
+}
 
     type Task = {
       id: string;
@@ -17,7 +23,7 @@ type Comment = {
       description: string;
       time: number; // in hours
       efforts: 'backend' | 'frontend' | 'backend + frontend';
-      assignee: EmployeeSummary
+      assignee: EmployeeSummary | null,
       status: 'backlog' | 'todo' | 'inProgress' | 'done';
       createdAt?: Date;
       projectId?: string;
@@ -28,10 +34,10 @@ type Comment = {
       reporter?: EmployeeSummary
       type: 'bug' | 'feature' | 'documentation' | 'task' | 'changeRequest' | 'other';
       lastUpdated?: Date;
-      completedAt?: Date;
+      completedAt?: Date | null;
       complexity?: 'simple' | 'moderate' | 'complex';
       qualityRating?: number;
-
+      startDate?: Date;
     };
     
     const API_URL = '/api/project-management/tasks';
@@ -148,6 +154,43 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
   }
 };
 
+
+// /models/task.ts
+
+export const updateTaskComments = async (taskId: string, comments: Comment[] , email: string): Promise<void> => {
+  console.log('Updating task comments:', taskId, comments);
+  try {
+    const response = await fetch('/api/project-management/tasks/comments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, comments, email }),
+    });
+
+    if (!response.ok) {
+      
+      throw new Error('Failed to update task comments');
+    }
+
+    const data = await response.json();
+    toast({
+      title: 'Success',
+      description: 'Added Comment successfully',
+    });
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update task comments');
+    }
+
+  } catch (error) {
+    console.error('Error updating task comments:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to update task comments',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
+
 export const deleteTask = async (id: string, email: string): Promise<void> => {
   try {
     const response = await fetch(API_URL, {
@@ -199,4 +242,4 @@ export const fetchTasksByProject = async (projectId: string): Promise<Task[]> =>
     }
 
 
-    export type { Task };
+    export type { Task, Comment, Reactions };

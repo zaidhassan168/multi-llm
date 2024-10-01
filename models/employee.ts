@@ -5,7 +5,7 @@ import { fetchTasksEmail, Task } from './task';
     name: string;
     role: 'developer' | 'management' | 'projectManager' | 'undefined';
     availability?: number;
-    currentProject?: string;
+    currentProjects?: string[];
     email: string;
     projectIds?: string[];
     taskIds?: string[];

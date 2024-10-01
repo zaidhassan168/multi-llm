@@ -3,8 +3,7 @@ import { db } from '@/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, setDoc } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
 import { Task } from '@/models/task';
-import { report } from 'process';
-import { randomUUID } from 'crypto';
+
 import { updateProjectStage } from '@/utils/ayncfunctions/addTaskToStage';
 import { updateProjectAndStageProgress } from '@/utils/ayncfunctions/updateProgress';
 /**
@@ -67,9 +66,19 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const { email, id, ...updates }: Partial<Task> & { email: string; id: string } = await request.json();
-  console.log('in api,',email, id, updates);
-  if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  // console.log('in api updatin dtasdsdfghjk,', updates);
 
+  if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  if(updates.status === 'done' ) {
+    updates.completedAt = new Date();
+  }
+  else if(updates.status === 'inProgress') {
+    updates.startDate = new Date();
+  }
+  else {
+    updates.completedAt = null;
+  }
+  updates.lastUpdated = new Date();
   const taskRef = doc(db, 'tasks', id);
   await updateDoc(taskRef, updates);
   updateProjectAndStageProgress({ ...updates, id } as Task);

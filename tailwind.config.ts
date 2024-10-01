@@ -24,6 +24,7 @@ const config = {
   			ring: 'hsl(var(--ring))',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+			
   			primary: {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
@@ -52,7 +53,11 @@ const config = {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))',
   				background: 'hsl(var(--custom-bg-container))'
-  			}
+  			},
+					'primary-muted': {
+						DEFAULT: 'hsl(var(--primary-muted))',
+						foreground: 'hsl(var(--primary-muted-foreground))'
+					},
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

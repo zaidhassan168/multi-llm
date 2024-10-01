@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -60,7 +61,10 @@ export default function Sidebar({ email, isCollapsed, toggleSidebar }: SidebarPr
     { icon: <BarChart2Icon />, label: "Tasks Board", id: "taskaBoard", route: "/board" },
     { icon: <CalendarIcon />, label: "Projects", id: "projects", route: "/projects" },
     { icon: <ArrowsUpFromLine />, label: "Stages", id: "processes", route: "/stage-management" },
+    { icon: <UserIcon />, label: "Employees", id: "employees", route: "/employees" },
     { icon: <BotMessageSquare />, label: "Ai", id: "ai", route: "/history" },
+    { icon: <CalendarIcon />, label: "Timeline", id: "timeline", route: "/timeline" },
+    { icon: <MessageSquareIcon />, label: "Task Detail", id: "taskDetail", route: "/task-detail" },
 
     { icon: <UserIcon />, label: "Profile", id: "profile", route: "/profile" },
   ];

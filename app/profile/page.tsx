@@ -274,7 +274,7 @@ function UserProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                 <InfoItem icon={<Mail />} label="Email" value={employee.email} />
                 <InfoItem icon={<User />} label="Role" value={capitalize(employee.role)} />
-                <InfoItem icon={<Briefcase />} label="Current Project" value={employee.currentProject || "N/A"} />
+                <InfoItem icon={<Briefcase />} label="Current Project" value={employee.currentProjects?.map(project => project).join(', ') || "N/A"} />
                 <InfoItem icon={<Clock />} label="Availability" value={`${employee.availability || 0}%`} />
                 <InfoItem icon={<Calendar />} label="Join Date" value={employee.lastStatsUpdate ? new Date(employee.lastStatsUpdate).toLocaleDateString() : "N/A"} />
                 <InfoItem icon={<Target />} label="Points" value={employee.points?.toString() || "0"} />

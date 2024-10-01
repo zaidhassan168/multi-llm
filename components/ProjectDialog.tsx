@@ -3,22 +3,23 @@
 import React, { useState, useEffect } from 'react'
 import { useAtom } from 'jotai'
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { createProject, updateProject } from '@/models/project'
 import { Employee, fetchEmployees } from '@/models/employee'
-import { PlusCircle, Loader2, Search, Edit } from "lucide-react"
+import { PlusCircle, Loader2, Search, Edit, Users, Briefcase, Layers } from "lucide-react"
 import { ProcessSelector } from './ProcessSelector'
-import { Stage } from '@/models/project'
-import { motion, AnimatePresence } from 'framer-motion'
 import { EmployeeSummary } from '@/models/summaries'
 import { Project } from '@/models/project'
 import { selectedProcessesAtom } from '@/lib/states/stageAtom'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { motion, AnimatePresence } from 'framer-motion'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface ProjectDialogProps {
   project?: Project
@@ -55,7 +56,6 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
         setEmployees(fetchedEmployees)
         setFilteredEmployees(fetchedEmployees)
         setProjectManagers(fetchedEmployees.filter(emp => emp.role === 'projectManager'))
-        console.log('Project Managers:', projectManagers)
       } catch (error: unknown) {
         console.error('Error fetching employees:', error instanceof Error ? error.message : String(error))
         toast({
@@ -85,13 +85,12 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
   const handleManagerChange = (value: string) => {
     const selectedManager = projectManagers.find(manager => manager.id === value);
     if (selectedManager) {
-      const manager: EmployeeSummary = {
+      setProjectManager({
         id: selectedManager.id,
         name: selectedManager.name,
         email: selectedManager.email,
         role: selectedManager.role,
-      };
-      setProjectManager(manager);
+      });
     } else {
       setProjectManager(null);
     }
@@ -140,17 +139,11 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
       if (project) {
         await updateProject({ ...projectData, id: project.id })
         onProjectUpdated?.()
-        toast({
-          title: "Success",
-          description: "Project updated successfully",
-        })
+        toast({ title: "Success", description: "Project updated successfully" })
       } else {
         await createProject(projectData)
         onProjectAdded?.()
-        toast({
-          title: "Success",
-          description: "New project added successfully",
-        })
+        toast({ title: "Success", description: "New project added successfully" })
       }
 
       setIsOpen(false)
@@ -169,83 +162,104 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" aria-label={project ? "Edit project" : "Add new project"}>
+        <Button variant="outline" size="sm">
           {project ? <Edit className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
           {project ? "Edit Project" : "Add Project"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{project ? "Edit Project" : "Add New Project"}</DialogTitle>
-          <DialogDescription>Enter the details for the project.</DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="flex-grow pr-4">
-          <motion.div
-            className="space-y-6 py-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="name">Project Name</Label>
-              <Input
-                id="name"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Enter project name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="manager">Project Manager</Label>
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <p className="text-sm text-muted-foreground">Loading project managers...</p>
-                </div>
-              ) : (
-                <Select onValueChange={handleManagerChange} value={projectManager?.id}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a project manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectManagers.map(manager => (
-                      <SelectItem key={manager.id} value={manager.id}>
-                        {manager.name ? manager.name : manager.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Project Resources</Label>
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <p className="text-sm text-muted-foreground">Loading employees...</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+      <DialogContent className="sm:max-w-[80vw] sm:h-[90vh] p-0 bg-card-background rounded-lg overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+          className="h-full flex flex-col"
+        >
+          <DialogHeader className="px-6 py-4 bg-background rounded-t-lg">
+            <DialogTitle className="text-2xl font-bold text-center text-foreground">
+              {project ? "Edit Project" : "Create New Project"}
+            </DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="details" className="flex-grow flex flex-col">
+            <TabsList className="w-full justify-start px-6 py-2 bg-background">
+              <TabsTrigger value="details" className="data-[state=active]:bg-primary/20">
+                <Briefcase className="w-4 h-4 mr-2" />
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="team" className="data-[state=active]:bg-primary/20">
+                <Users className="w-4 h-4 mr-2" />
+                Team
+              </TabsTrigger>
+              <TabsTrigger value="processes" className="data-[state=active]:bg-primary/20">
+                <Layers className="w-4 h-4 mr-2" />
+                Processes
+              </TabsTrigger>
+            </TabsList>
+            <ScrollArea className="flex-grow px-6 py-4">
+              <TabsContent value="details" className="mt-0">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-lg font-semibold">Project Name</Label>
                     <Input
-                      type="text"
-                      placeholder="Search employees..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
+                      id="name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="Enter project name"
+                      className="mt-1"
                     />
                   </div>
-                  <div className="border rounded-md">
-                    <ScrollArea className="h-40 w-full">
-                      <div className="p-1">
+                  <div>
+                    <Label htmlFor="manager" className="text-lg font-semibold">Project Manager</Label>
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <p className="text-sm text-muted-foreground">Loading project managers...</p>
+                      </div>
+                    ) : (
+                      <Select onValueChange={handleManagerChange} value={projectManager?.id}>
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select a project manager" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projectManagers.map(manager => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.name || manager.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="team" className="mt-0">
+                <div className="space-y-4">
+                  <Label className="text-lg font-semibold">Project Resources</Label>
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <p className="text-sm text-muted-foreground">Loading employees...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                        <Input
+                          type="text"
+                          placeholder="Search employees..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {filteredEmployees.map(employee => (
                           <div
                             key={employee.id}
                             className={`flex items-center space-x-2 p-2 rounded-md transition-colors ${
                               selectedEmployees.some(e => e.id === employee.id)
                                 ? 'bg-primary/20'
-                                : 'bg-gray-50 hover:bg-gray-100'
+                                : 'bg-background hover:bg-accent'
                             }`}
                           >
                             <Checkbox
@@ -253,39 +267,48 @@ export default function ProjectDialog({ project, onProjectAdded, onProjectUpdate
                               checked={selectedEmployees.some(e => e.id === employee.id)}
                               onCheckedChange={() => handleEmployeeToggle(employee)}
                             />
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={employee.photoURL} alt={employee.name} />
+                              <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
                             <Label htmlFor={`employee-${employee.id}`} className="text-sm cursor-pointer">
-                              {employee.name} ({employee.role})
+                              {employee.name}
+                              <span className="block text-xs text-muted-foreground">{employee.role}</span>
                             </Label>
                           </div>
                         ))}
                       </div>
-                    </ScrollArea>
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </TabsContent>
+              <TabsContent value="processes" className="mt-0">
+                <div className="space-y-4">
+                  <Label className="text-lg font-semibold">Project Processes</Label>
+                  <ProcessSelector />
+                </div>
+              </TabsContent>
+            </ScrollArea>
+          </Tabs>
+          <DialogFooter className="px-6 py-4 bg-background rounded-b-lg mt-auto">
+            <div className="w-full flex ">
+              <Button
+                onClick={handleProjectAction}
+                disabled={!projectName || !projectManager || selectedProcesses.length === 0 || isProcessing}
+                className="w-1/7"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {project ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  project ? "Update Project" : "Create Project"
+                )}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Project Processes</Label>
-              <ProcessSelector />
-            </div>
-          </motion.div>
-        </ScrollArea>
-        <DialogFooter>
-          <Button
-            onClick={handleProjectAction}
-            disabled={!projectName || !projectManager || selectedProcesses.length === 0 || isProcessing}
-            className="w-full mt-4"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {project ? "Updating Project..." : "Adding Project..."}
-              </>
-            ) : (
-              project ? "Update Project" : "Add Project"
-            )}
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </motion.div>
       </DialogContent>
     </Dialog>
   )

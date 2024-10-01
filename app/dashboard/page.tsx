@@ -35,6 +35,8 @@ export default function ProjectManagementDashboard() {
   const [topResources, setTopResources] = useState<{ id: string; percentage: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [hoveredBar, setHoveredBar] = useState<string | null>(null)
+  const [selectedProjectReport, setSelectedProjectReport] = useState<string | null>(null)
+
   useEffect(() => {
     if (user?.email) {
       fetchAllData()
@@ -69,6 +71,7 @@ export default function ProjectManagementDashboard() {
         setStats(stats)
         setTopResources(getTopUtilizedResources(utilizationPercentage, 5))
         setLoading(false)
+        console.log('Stats:', stats)
       } catch (error) {
         console.error('Error fetching project data:', error)
         setLoading(false)
@@ -106,7 +109,19 @@ export default function ProjectManagementDashboard() {
   const getTrackStatusColor = (onTrack: boolean) => {
     return onTrack ? 'text-green-600' : 'text-red-600'
   }
-
+  const handleGenerateReport = async (projectId: string) => {
+    try {
+      const report = await generateProjectReport(projectId)
+      setSelectedProjectReport(report)
+    } catch (error) {
+      console.error('Error generating project report:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to generate project report',
+        variant: 'destructive'
+      })
+    }
+  }
 
   const projectData = [
     { month: 'Jan', completed: 4, ongoing: 6, newProjects: 2 },
@@ -164,7 +179,7 @@ export default function ProjectManagementDashboard() {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">Project Management Dashboard</h1>
+      {/* <h1 className="text-3xl font-bold mb-6">Dashboard</h1> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -241,10 +256,32 @@ export default function ProjectManagementDashboard() {
 
         <TabsContent value="ceo-overview" className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPICard title="Total Revenue" value="$415,000" change="12" isPositive={true} />
-        <KPICard title="Project Completion Rate" value="92%" change="3" isPositive={true} />
-        <KPICard title="Customer Satisfaction" value="4.8/5" change="0.2" isPositive={true} />
-        <KPICard title="Team Productivity" value="87%" change="1" isPositive={false} />
+        {/* <KPICard title="Total Revenue" value="$415,000" change="12" isPositive={true} /> */}
+            <KPICard
+              title="Project Completion Rate"
+              value={`${stats?.projectCompletionRate.toFixed(2) || 0}%`}
+              change="3"
+              isPositive={true}
+            />
+            <KPICard
+              title="Average Project Progress"
+              value={`${stats?.averageProjectProgress.toFixed(2) || 0}%`}
+              change="1.5"
+              isPositive={true}
+            />
+            <KPICard
+              title="Tasks Completed"
+              value={stats?.tasksCompleted || 0}
+              change="5"
+              isPositive={true}
+            />
+            <KPICard
+              title="Team Productivity"
+              value={`${(((stats?.tasksCompleted ?? 0) / (stats?.totalTasks ?? 1)) * 100).toFixed(2)}%`}
+              change="1"
+              isPositive={true}
+            />
+        
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -348,7 +385,7 @@ export default function ProjectManagementDashboard() {
                 </div>
               </CardContent>
             </Card>
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Revenue Trend</CardTitle>
           </CardHeader>
@@ -366,7 +403,7 @@ export default function ProjectManagementDashboard() {
               </ResponsiveContainer>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </TabsContent>
         <TabsContent value="projects">
@@ -415,6 +452,9 @@ export default function ProjectManagementDashboard() {
                             </>
                           )}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                      <Button onClick={() => handleGenerateReport(project.id)}>Generate Report</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -480,7 +520,7 @@ export default function ProjectManagementDashboard() {
                     <TableRow key={employee.id}>
                       <TableCell className="font-medium">{employee.name}</TableCell>
                       <TableCell>{employee.role}</TableCell>
-                      <TableCell>{employee.currentProject || 'Not Assigned'}</TableCell>
+                      <TableCell>{employee.currentProjects && employee.currentProjects.length > 0 ? employee.currentProjects.join(', ') : 'Not Assigned'}</TableCell>
                       <TableCell>
                         {employee.availability !== undefined ? (
                           <span className={`font-bold ${getAvailabilityColor(employee.availability)}`}>
@@ -502,3 +542,10 @@ export default function ProjectManagementDashboard() {
     </div>
   )
 }
+
+
+
+
+
+
+
