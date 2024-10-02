@@ -20,6 +20,7 @@ import {
   UserIcon,
   TagIcon,
   RefreshCw,
+  CalendarIcon,
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -41,51 +42,55 @@ const columns = [
   { id: 'inProgress', title: 'In Progress', icon: ActivityIcon, color: 'bg-yellow-100' },
   { id: 'done', title: 'Done', icon: CheckIcon, color: 'bg-green-100' },
 ]
-const getCardColor = (priority: string | undefined) => {
-  switch (priority) {
-    case 'high':
-      return 'bg-gradient-to-br from-rose-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 border-rose-200'
-    case 'medium':
-      return 'bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 border-amber-200'
-    case 'low':
-      return 'bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 border-emerald-200'
-    default:
-      return 'bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 border-indigo-200'
-  }
-}
+
 const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
+  const getDueDateColor = (dueDate: Date) => {
+    const today = new Date()
+    const due = new Date(dueDate)
+    if (due < today) return 'bg-red-100 text-red-700 border-red-200'
+    if (due.toDateString() === today.toDateString()) return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    return 'bg-blue-100 text-blue-700 border-blue-200'
+  }
+
   const renderContent = (provided: any) => (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className={`rounded-md p-3 shadow-sm mb-2 cursor-pointer transition-all duration-200 text-sm ${getCardColor(task.priority)}`}
+      className="rounded-lg p-4 shadow-sm mb-3 cursor-pointer transition-all duration-200 text-sm bg-white border border-gray-100 hover:border-gray-200 hover:shadow-md"
       onClick={onClick}
     >
       <h3 className="font-semibold mb-2 text-gray-800 line-clamp-2">{task.title}</h3>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex gap-1">
-          <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
-            <ClockIcon className="w-3 h-3 mr-1" />
-            {task.time}h
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Badge variant="outline" className={`flex items-center px-2 py-1 text-xs ${getEffortColor(task.efforts)}`}>
+          <TagIcon className="w-3 h-3 mr-1" />
+          {task.efforts}
+        </Badge>
+        <Badge variant="outline" className="flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700">
+          <ClockIcon className="w-3 h-3 mr-1" />
+          {task.time}h
+        </Badge>
+        {task.dueDate && (
+          <Badge variant="outline" className={`flex items-center px-2 py-1 text-xs ${getDueDateColor(task.dueDate)}`}>
+            <CalendarIcon className="w-3 h-3 mr-1" />
+            {new Date(task.dueDate).toLocaleDateString()}
           </Badge>
-          <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
-            <TagIcon className="w-3 h-3 mr-1" />
-            {task.efforts}
-          </Badge>
-        </div>
+        )}
       </div>
-      <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1.5 mb-2" />
+      <Progress 
+        value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} 
+        className="h-1.5 mb-3"
+      />
       <div className="flex items-center justify-between">
-        <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
-          <Avatar className="w-4 h-4 mr-1">
+        <div className="flex items-center space-x-2">
+          <Avatar className="w-6 h-6">
             <AvatarImage src={task.assignee?.phtoURL || "/placeholder.svg"} alt={task.assignee?.name || "Assignee"} />
             <AvatarFallback>{task.assignee?.name?.[0] || "A"}</AvatarFallback>
           </Avatar>
-          <span className="ml-1">{task.assignee?.name || "Unassigned"}</span>
-        </Badge>
+          <span className="text-xs text-gray-600">{task.assignee?.name || "Unassigned"}</span>
+        </div>
         {task.priority && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-white">
+          <Badge variant="secondary" className={`text-xs px-2 py-1 ${getPriorityColorMuted(task.priority)}`}>
             {task.priority}
           </Badge>
         )}
@@ -113,7 +118,7 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
   isDraggable: boolean;
 }) => {
   return (
-    <Card className={`w-full md:w-72 lg:w-80 rounded-lg shadow-md`}>
+    <Card className="w-full md:w-72 lg:w-80 rounded-lg shadow-md">
       <CardHeader className="pb-2 border-b">
         <CardTitle className="text-sm font-semibold text-gray-700 flex items-center">
           <Icon className="mr-2 h-4 w-4 text-gray-500" />
@@ -355,35 +360,6 @@ export default function Kanban() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-primary shadow-md">
-        <h1 className="text-lg md:text-2xl font-bold text-white flex items-center">
-          <KanbanIcon className="mr-2 h-6 w-6 text-white" />
-          Kanban Board
-        </h1>
-        <div className="flex space-x-2 md:space-x-4">
-          <Button
-            onClick={() => setIsUploadModalOpen(true)}
-            variant="secondary"
-            size="sm"
-            className="text-xs md:text-sm bg-white text-primary hover:bg-gray-100 border-none"
-          >
-            <UploadIcon className="mr-1 h-4 w-4" />
-            Upload
-          </Button>
-          <Button
-            onClick={() => {
-              setSelectedTask(null)
-              setIsModalOpen(true)
-            }}
-            variant="outline"
-            size="sm"
-            className="text-xs md:text-sm bg-white text-primary hover:bg-gray-100 border-none"
-          >
-            <PlusIcon className="mr-1 h-4 w-4" />
-            Add Task
-          </Button>
-        </div>
-      </header>
       <div className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 bg-white border-b space-y-2 md:space-y-0 shadow-sm">
         <div className="flex flex-wrap items-center space-x-2 md:space-x-4 w-full md:w-auto">
           <div className="relative flex-1 md:flex-none md:w-60">
@@ -423,6 +399,27 @@ export default function Kanban() {
           )}
         </div>
         <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-between md:justify-start">
+          <Button
+            onClick={() => setIsUploadModalOpen(true)}
+            variant="outline"
+            size="sm"
+            className="text-xs md:text-sm"
+          >
+            <UploadIcon className="mr-1 h-4 w-4" />
+            Upload
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectedTask(null)
+              setIsModalOpen(true)
+            }}
+            variant="default"
+            size="sm"
+            className="text-xs md:text-sm"
+          >
+            <PlusIcon className="mr-1 h-4 w-4" />
+            Add Task
+          </Button>
           <Button variant="ghost" onClick={fetchTasksData} size="sm" className="text-xs md:text-sm text-gray-600 hover:text-primary">
             <RefreshCw className="mr-1 h-4 w-4" />
             Refresh
