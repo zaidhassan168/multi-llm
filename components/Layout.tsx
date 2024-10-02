@@ -13,7 +13,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  // const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const { isAuthenticated, email, checkAuthState } = useAuth()
   const pathname = usePathname()
@@ -40,9 +40,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [isAuthenticated, isLoading, pathname, router])
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed)
-  }
+  // const toggleSidebar = () => {
+  //   setIsSidebarCollapsed(!isSidebarCollapsed)
+  // }
 
   if (isLoading) {
     return (
@@ -62,8 +62,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="h-screen sticky top-0">
           <Sidebar
             email={email || ''}
-            isCollapsed={isSidebarCollapsed}
-            toggleSidebar={toggleSidebar}
+            // isCollapsed={isSidebarCollapsed}
+            // toggleSidebar={toggleSidebar}
           />
         </div>
       )}
