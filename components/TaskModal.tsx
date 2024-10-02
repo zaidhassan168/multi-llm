@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Task, addTask, updateTask, deleteTask } from "@/models/task"
-import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon } from "lucide-react"
+import { Task, addTask, updateTask, deleteTask, fetchTasksByProject } from "@/models/task"
+import { CalendarIcon, EditIcon, SaveIcon, XIcon, TrashIcon, SearchIcon, ClockIcon, UserIcon, FlagIcon, LayersIcon, BugIcon, LightbulbIcon, FileTextIcon, CheckSquareIcon, RefreshCcwIcon, HelpCircleIcon, AlertCircleIcon, AlertTriangleIcon, AlertOctagonIcon, BellIcon, LinkIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
@@ -23,7 +23,9 @@ import { useAuth } from "@/lib/hooks"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import LottieLoading from "./LottieLoading"
+import {taskDependencyNotification} from "@/utils/ayncfunctions/pushNotification"
 type TaskModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -77,6 +79,7 @@ const DEFAULT_FORM_DATA: Omit<Task, "id"> = {
   stageId: "",
   type: "task",
   complexity: "moderate",
+  dependencies: { taskIds: [] },
 };
 
 export function TaskModal({
@@ -98,6 +101,9 @@ export function TaskModal({
   const [formData, setFormData] = useState<Omit<Task, "id">>(DEFAULT_FORM_DATA);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [newDependencies, setNewDependencies] = useState<string[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -147,7 +153,6 @@ export function TaskModal({
           const selectedProject = projectsData.find((p) => p.id === currentProjectId);
           if (selectedProject) {
             setStages(selectedProject.stages || []);
-            // If editing a task, ensure the current stage is set
             if (task && task.stageId) {
               setFormData(prev => ({
                 ...prev,
@@ -169,6 +174,23 @@ export function TaskModal({
       fetchInitialData();
     }
   }, [isOpen, projectId]);
+
+  useEffect(() => {
+    const fetchProjectTasks = async () => {
+      if (formData.projectId) {
+        try {
+          // Assuming you have a function to fetch tasks for a specific project
+          const tasks = await fetchTasksByProject(formData.projectId);
+          setProjectTasks(tasks);
+        } catch (error) {
+          console.error("Error fetching project tasks:", error);
+          setError("Failed to load project tasks");
+        }
+      }
+    };
+
+    fetchProjectTasks();
+  }, [formData.projectId]);
 
   const handleProjectChange = (projectId: string) => {
     setFormData((prev) => ({ ...prev, projectId }));
@@ -216,6 +238,11 @@ export function TaskModal({
         onTaskAdded?.();
       }
       setIsEditMode(false);
+      if (newDependencies.length > 0) {
+        const tasksToNotify = projectTasks.filter(t => newDependencies.includes(t.id));
+        console.log("Tasks to notify:", tasksToNotify);
+        await sendtaskDependencyNotification(tasksToNotify, user.displayName || user.email);
+      }
       onClose();
     } catch (error) {
       console.error("Error processing task:", error);
@@ -264,23 +291,66 @@ export function TaskModal({
     setIsEditMode(true);
   };
 
+  const handleDependencyChange = (taskId: string, isChecked: boolean) => {
+    setFormData(prev => {
+      const updatedTaskIds = isChecked
+        ? [...(prev.dependencies?.taskIds || []), taskId]
+        : (prev.dependencies?.taskIds || []).filter(id => id !== taskId);
+
+      if (isChecked && !prev.dependencies?.taskIds.includes(taskId)) {
+        setNewDependencies(prevNewDeps => [...prevNewDeps, taskId]);
+      } else if (!isChecked) {
+        setNewDependencies(prevNewDeps => prevNewDeps.filter(id => id !== taskId));
+      }
+
+      return {
+        ...prev,
+        dependencies: { taskIds: updatedTaskIds }
+      };
+    });
+  };
+  const sendtaskDependencyNotification = async (tasks: Task[], addedBy: string) => {
+    try {
+      // Assuming this function is defined elsewhere and handles the notification logic
+      await taskDependencyNotification(tasks, addedBy);
+      toast({
+        title: "Notification Sent",
+        description: "Task dependency notifications have been sent.",
+      });
+    } catch (error) {
+      console.error("Error sending task dependency notifications:", error);
+      toast({
+        title: "Notification Error",
+        description: "Failed to send task dependency notifications.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredTasks = projectTasks.filter(t =>
+    t.id !== task?.id && // Exclude the current task
+    (t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   const taskPriorities = ["low", "medium", "high", "urgent", "critical", "null"];
   const taskTypes = ["bug", "feature", "documentation", "task", "changeRequest", "other"];
 
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px] h-[80vh] p-0">
+        <DialogContent className="sm:max-w-[800px] h-[95vh] p-0">
           <div className="flex items-center justify-center h-full">
-           <LottieLoading size="small" />
+            <LottieLoading size="small" />
           </div>
         </DialogContent>
       </Dialog>
     );
   }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] p-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <DialogContent className="sm:max-w-[800px] h-[95vh] p-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <ScrollArea className="h-full px-6 py-4">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold text-primary">
@@ -295,9 +365,10 @@ export function TaskModal({
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="details" className="text-sm">Details</TabsTrigger>
               <TabsTrigger value="description" className="text-sm">Description</TabsTrigger>
+              <TabsTrigger value="dependencies" className="text-sm">Dependencies</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
               <Card className="border-none shadow-md">
@@ -325,7 +396,7 @@ export function TaskModal({
                         name="projectId"
                         value={formData.projectId}
                         onValueChange={handleProjectChange}
-                        disabled={!isEditMode || !!projectId}
+                        disabled={!isEditMode || !!projects}
                       >
                         <SelectTrigger className="h-10 text-sm">
                           <SelectValue placeholder="Select project" />
@@ -653,6 +724,99 @@ export function TaskModal({
                     disabled={!isEditMode}
                     className="min-h-[200px] text-sm"
                   />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="dependencies">
+              <Card className="border-none shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-primary">Task Dependencies</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">Select tasks that this task depends on.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="dependency-search"
+                        placeholder="Search tasks by title or ID"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-10 text-sm pl-10"
+                      />
+                    </div>
+                    <ScrollArea className="h-[400px] w-full rounded-md border">
+                      {filteredTasks.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          No tasks found matching your search.
+                        </div>
+                      ) : (
+                        filteredTasks.map((t) => (
+                          <Card key={t.id} className="m-2 overflow-hidden">
+                            <CardContent className="p-4">
+                              <div className="flex items-start space-x-4">
+                                <Checkbox
+                                  id={`task-${t.id}`}
+                                  checked={formData.dependencies?.taskIds.includes(t.id)}
+                                  onCheckedChange={(checked) => handleDependencyChange(t.id, checked as boolean)}
+                                  disabled={!isEditMode}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label
+                                      htmlFor={`task-${t.id}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                      {t.title}
+                                    </label>
+                                    <Badge variant="outline" className="text-xs">
+                                      {t.id}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground line-clamp-2">{t.description || 'No description'}</p>
+                                  <div className="flex flex-wrap gap-2 text-xs">
+                                    <div className="flex items-center">
+                                      <CalendarIcon className="h-3 w-3 mr-1 text-muted-foreground" />
+                                      <span>{t.dueDate ? format(new Date(t.dueDate), 'PP') : 'No due date'}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <Avatar className="h-4 w-4 mr-1">
+                                        <AvatarImage src={t.assignee?.phtoURL || "/placeholder.svg"} alt={t.assignee?.name} />
+                                        <AvatarFallback>{t.assignee?.name?.charAt(0) || 'U'}</AvatarFallback>
+                                      </Avatar>
+                                      <span>{t.assignee?.name || 'Unassigned'}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      {React.createElement(priorityIcons[t.priority || 'null'].icon, {
+                                        className: `h-3 w-3 mr-1 ${priorityIcons[t.priority || 'null'].color}`,
+                                      })}
+                                      <span className="capitalize">{t.priority || 'No priority'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </ScrollArea>
+                    {formData.dependencies?.taskIds && formData.dependencies.taskIds.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Selected Dependencies</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.dependencies.taskIds.map((taskId) => {
+                            const dependentTask = projectTasks.find(t => t.id === taskId);
+                            return (
+                              <Badge key={taskId} variant="secondary" className="text-xs">
+                                {dependentTask ? dependentTask.title : taskId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
