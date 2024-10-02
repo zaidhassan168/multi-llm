@@ -30,10 +30,10 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, taskId, taskTitle, newStatus, messageBody, title } = await request.json();
+    const { userId, messageBody, title } = await request.json();
 
     // Basic validation
-    if (!userId || !taskId || !taskTitle || !newStatus) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
