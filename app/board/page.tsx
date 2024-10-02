@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/hooks'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { addTask, fetchTasksEmail, deleteTask, updateTask } from '@/models/task'
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
   ActivityIcon,
   BackpackIcon,
@@ -43,13 +44,13 @@ const columns = [
 const getCardColor = (priority: string | undefined) => {
   switch (priority) {
     case 'high':
-      return 'bg-gradient-to-br from-red-50/80 to-red-100/80 hover:from-red-100/90 hover:to-red-200/90'
+      return 'bg-gradient-to-br from-rose-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 border-rose-200'
     case 'medium':
-      return 'bg-gradient-to-br from-orange-50/80 to-orange-100/80 hover:from-orange-100/90 hover:to-orange-200/90'
+      return 'bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 border-amber-200'
     case 'low':
-      return 'bg-gradient-to-br from-blue-50/80 to-blue-100/80 hover:from-blue-100/90 hover:to-blue-200/90'
+      return 'bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 border-emerald-200'
     default:
-      return 'bg-gradient-to-br from-purple-50/80 to-purple-100/80 hover:from-purple-100/90 hover:to-purple-200/90'
+      return 'bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 border-indigo-200'
   }
 }
 const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task; index: number; onClick: () => void; isDraggable: boolean }) => {
@@ -77,8 +78,11 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
       <Progress value={task.status === 'done' ? 100 : task.status === 'inProgress' ? 50 : task.status === 'todo' ? 25 : 0} className="h-1.5 mb-2" />
       <div className="flex items-center justify-between">
         <Badge variant="outline" className="flex items-center px-2 py-0.5 text-xs bg-white text-gray-600">
-          <UserIcon className="w-3 h-3 mr-1" />
-          {task.assignee?.name}
+          <Avatar className="w-4 h-4 mr-1">
+            <AvatarImage src={task.assignee?.phtoURL || "/placeholder.svg"} alt={task.assignee?.name || "Assignee"} />
+            <AvatarFallback>{task.assignee?.name?.[0] || "A"}</AvatarFallback>
+          </Avatar>
+          <span className="ml-1">{task.assignee?.name || "Unassigned"}</span>
         </Badge>
         {task.priority && (
           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-white">
