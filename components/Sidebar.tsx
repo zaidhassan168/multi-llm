@@ -31,7 +31,7 @@ import { app } from "../firebase"
 import { useRouter } from "next/navigation"
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from 'next-themes'
-
+import { NotificationPanel } from './NotificationPanel'
 interface SidebarProps {
   email: string | null
 }
@@ -136,7 +136,7 @@ export default function Sidebar({ email }: SidebarProps) {
               <MoonIcon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Switch>
           </div>
-
+          <NotificationPanel />
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button

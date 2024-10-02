@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import type { NextRequest } from 'next/server';
 import { ServiceAccount } from 'firebase-admin';
-
+import { storeNotification } from '@/utils/storeNotifications'; // Adjust the import path as needed
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   const serviceAccount = {
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Send the notification to all tokens
     const response = await admin.messaging().sendEachForMulticast(message);
+    await storeNotification(userId, title, messageBody);
     console.log('Successfully sent notifications:', response);
     response.responses.forEach((resp, idx) => {
       if (!resp.success) {

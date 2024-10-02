@@ -207,6 +207,7 @@ export function EmployeeProfileDropdown({ email}: { email: string}) {
                       Change Photo
                     </Button>
                     <input
+                    title="file-input"
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
