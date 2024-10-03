@@ -21,8 +21,14 @@ export async function middleware(request: NextRequest) {
         return redirectToHome(request);
       }
 
+      // Add session expiration checks
+      const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+      if (Date.now() - decodedToken.auth_time * 1000 > SESSION_DURATION) {
+        return redirectToLogin(request);
+      }
+
       return NextResponse.next({
-        
+
         request: {
           headers
         }

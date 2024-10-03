@@ -1,3 +1,4 @@
+'use client'
 import React, { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -9,12 +10,12 @@ import Markdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-interface ChatProps {
-  initialMessages?: Message[];
-}
+// interface ChatProps {
+//   initialMessages?: Message[];
+// }
 
-const Chat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
-  const [conversation, setConversation] = useState<Message[]>(initialMessages);
+export default function OpenAI() {
+  const [conversation, setConversation] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -176,5 +177,4 @@ const Chat: React.FC<ChatProps> = ({ initialMessages = [] }) => {
       </div>
     </div>
   );
-};
-export default Chat;
+}
