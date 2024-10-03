@@ -19,6 +19,11 @@ import {
   CalendarIcon,
   ChevronDown,
 ChevronUp,
+ArrowUpDown,
+  AlertTriangle,
+  Flag,
+  FlagTriangleRight,
+  Calendar,
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -32,6 +37,12 @@ import { collection, onSnapshot, query } from "firebase/firestore"
 import { getEffortColor, getPriorityColor } from '@/lib/colors/colors'
 import { db } from "@/firebase"
 import LottieLoading from '@/components/LottieLoading'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon },
@@ -96,7 +107,6 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
 })
 
 TaskItem.displayName = "TaskItem"
-
 const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDraggable }: {
   id: string;
   title: string;
@@ -137,27 +147,29 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
 
   return (
     <div className="bg-background rounded-lg shadow-lg p-4 sm:p-6">
-      <h2 className="text-lg font-semibold mb-4 flex items-center">
-        <Icon className="mr-2 h-5 w-5" />
-        {title}
-      </h2>
-      <div className="flex space-x-2 mb-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleSort('priority')}
-          className="text-xs"
-        >
-          Priority {sortBy === 'priority' && (sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />)}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleSort('dueDate')}
-          className="text-xs"
-        >
-          Due Date {sortBy === 'dueDate' && (sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />)}
-        </Button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold flex items-center">
+          <Icon className="mr-2 h-5 w-5" />
+          {title}
+        </h2>
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => toggleSort('priority')}
+            className={sortBy === 'priority' ? 'text-primary' : ''}
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => toggleSort('dueDate')}
+            className={sortBy === 'dueDate' ? 'text-primary' : ''}
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <div className="space-y-4">
         {isDraggable ? (
