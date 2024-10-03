@@ -245,7 +245,8 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClos
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto mt-2 sm:mt-0"
+            variant="outline"
+            className=" w-full sm:w-auto mt-2 sm:mt-0"
           >
             {loading ? (
               <>

@@ -35,7 +35,7 @@ const getPriorityColor = (priority: Task["priority"]) => {
         case "critical":
             return "bg-red-500";
         case "high":
-            return "bg-orange-500";
+            return "bg-red-500";
         case "medium":
             return "bg-yellow-500";
         case "low":
@@ -45,7 +45,16 @@ const getPriorityColor = (priority: Task["priority"]) => {
     }
 };
 
+const getDueDateColor = (dueDate?: Date) => {
+  if (!dueDate) return 'text-gray-500'
 
+  const today = new Date()
+  const due = new Date(dueDate)
+
+  if (due < today) return 'text-red-500'
+  if (due.toDateString() === today.toDateString()) return 'text-yellow-500'
+  return 'text-blue-500'
+}
 
 const getSeverityColor = (severity: Risk['severity']) => {
     switch (severity) {
@@ -101,4 +110,4 @@ const getSeverityColor = (severity: Risk['severity']) => {
         return 'bg-gray-100 text-gray-800'
     }
   }
-export { getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor, getEffortColor, getPriorityBorderColor };
+export {getDueDateColor ,getStatusColor, getStatusColorMuted, getPriorityColor, getSeverityColor, getAvailabilityColor, getTrackStatusColor, getEffortColor, getPriorityBorderColor };

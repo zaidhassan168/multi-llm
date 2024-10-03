@@ -44,6 +44,7 @@ type Dependencies = {
       qualityRating?: number;
       startDate?: Date;
       dependencies?: Dependencies;
+      order?: number
 
     };
     

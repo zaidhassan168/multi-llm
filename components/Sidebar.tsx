@@ -75,13 +75,7 @@ export default function Sidebar({ email }: SidebarProps) {
   return (
     <TooltipProvider>
       <aside className={`flex flex-col h-screen bg-background dark:bg-background border-r border-border transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"}`}>
-        <div className="flex items-center justify-between p-4">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-2">
-              <HomeIcon className="w-8 h-8 text-primary dark:text-primary" />
-              <span className="text-xl font-bold text-foreground dark:text-foreground">elTrack</span>
-            </div>
-          )}
+        <div className="flex items-center justify-between p-4 pb-0">
           <Button
             variant="ghost"
             size="icon"
@@ -89,7 +83,7 @@ export default function Sidebar({ email }: SidebarProps) {
             className="rounded-full hover:bg-secondary dark:hover:bg-secondary"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <PanelsTopLeftIcon className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? "rotate-180" : ""}`} />
+            <PanelsTopLeftIcon className={`w-5 h-5 transition-transform text-gray-500 duration-200 ${isCollapsed ? "rotate-180" : ""}`} />
           </Button>
         </div>
 
@@ -136,7 +130,6 @@ export default function Sidebar({ email }: SidebarProps) {
               <MoonIcon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Switch>
           </div>
-          <NotificationPanel />
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button
