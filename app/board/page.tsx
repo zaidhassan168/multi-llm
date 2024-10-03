@@ -17,6 +17,8 @@ import {
   RefreshCw,
   FilterIcon,
   CalendarIcon,
+  ChevronDown,
+ChevronUp,
 } from 'lucide-react'
 import { Task } from '@/models/task'
 import { TaskModal } from '@/components/TaskModal'
@@ -27,10 +29,9 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Employee, fetchEmployee } from '@/models/employee'
 import { collection, onSnapshot, query } from "firebase/firestore"
-import { getEffortColor, getPriorityColorMuted } from '@/lib/colors/colors'
+import { getEffortColor, getPriorityColor } from '@/lib/colors/colors'
 import { db } from "@/firebase"
 import LottieLoading from '@/components/LottieLoading'
-
 const columns = [
   { id: 'backlog', title: 'Backlog', icon: BackpackIcon },
   { id: 'todo', title: 'To Do', icon: ListTodoIcon },
@@ -58,8 +59,8 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
-      className="rounded-lg p-4 mb-4 cursor-pointer"
-      onClick={onClick}
+      className="rounded-lg p-4 mb-4 cursor-pointer transition-colors duration-200 hover:bg-accent"
+      nClick={onClick}
     >
       <div className="mb-2">
         <h3 className="text-sm font-semibold line-clamp-2">{task.title}</h3>
@@ -81,13 +82,12 @@ const TaskItem = React.memo(({ task, index, onClick, isDraggable }: { task: Task
           </Badge>
         )}
         <div className="flex items-center gap-1 ml-auto">
-          <div className={`${getPriorityColorMuted(task.priority || '')} rounded-full w-3 h-3`} />
+          <div className={`${getPriorityColor(task.priority || undefined)} rounded-full w-3 h-3`} />
           <span className="text-xs text-muted-foreground capitalize">{task.priority}</span>
         </div>
       </div>
     </Card>
   )
-
   return isDraggable ? (
     <Draggable draggableId={task.id} index={index}>
       {(provided) => renderContent(provided)}
@@ -105,12 +105,60 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
   onTaskClick: (task: Task) => void;
   isDraggable: boolean;
 }) => {
+  const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  const sortedTasks = useMemo(() => {
+    if (!sortBy) return tasks
+
+    return [...tasks].sort((a, b) => {
+      if (sortBy === 'priority') {
+        const priorityOrder = { high: 3, medium: 2, low: 1 }
+        const aPriority = priorityOrder[a.priority?.toLowerCase() as keyof typeof priorityOrder] || 0
+        const bPriority = priorityOrder[b.priority?.toLowerCase() as keyof typeof priorityOrder] || 0
+        return sortDirection === 'asc' ? aPriority - bPriority : bPriority - aPriority
+      } else if (sortBy === 'dueDate') {
+        const aDate = a.dueDate ? new Date(a.dueDate).getTime() : 0
+        const bDate = b.dueDate ? new Date(b.dueDate).getTime() : 0
+        return sortDirection === 'asc' ? aDate - bDate : bDate - aDate
+      }
+      return 0
+    })
+  }, [tasks, sortBy, sortDirection])
+
+  const toggleSort = (newSortBy: 'priority' | 'dueDate') => {
+    if (sortBy === newSortBy) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(newSortBy)
+      setSortDirection('asc')
+    }
+  }
+
   return (
     <div className="bg-background rounded-lg shadow-lg p-4 sm:p-6">
       <h2 className="text-lg font-semibold mb-4 flex items-center">
         <Icon className="mr-2 h-5 w-5" />
         {title}
       </h2>
+      <div className="flex space-x-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleSort('priority')}
+          className="text-xs"
+        >
+          Priority {sortBy === 'priority' && (sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />)}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleSort('dueDate')}
+          className="text-xs"
+        >
+          Due Date {sortBy === 'dueDate' && (sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />)}
+        </Button>
+      </div>
       <div className="space-y-4">
         {isDraggable ? (
           <Droppable droppableId={id}>
@@ -120,7 +168,7 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
                 {...provided.droppableProps}
                 className="space-y-4 min-h-[200px]"
               >
-                {tasks.map((task, index) => (
+                {sortedTasks.map((task, index) => (
                   <TaskItem
                     key={task.id}
                     task={task}
@@ -135,7 +183,7 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
           </Droppable>
         ) : (
           <div className="space-y-4 min-h-[200px]">
-            {tasks.map((task, index) => (
+            {sortedTasks.map((task, index) => (
               <TaskItem
                 key={task.id}
                 task={task}
@@ -150,7 +198,6 @@ const Column = React.memo(({ id, title, icon: Icon, tasks, onTaskClick, isDragga
     </div>
   )
 })
-
 Column.displayName = "Column";
 
 export default function Kanban() {
@@ -357,6 +404,14 @@ export default function Kanban() {
           >
             <PlusIcon className="w-4 h-4 mr-2" />
             Add Task
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsUploadModalOpen(true)}
+          >
+            <UploadIcon className="w-4 h-4 mr-2" />
+            Upload
           </Button>
           <Button
             variant="outline"
