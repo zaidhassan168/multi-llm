@@ -143,10 +143,12 @@ export async function POST(req: Request) {
     }
   ]
 }`
-    console.log('Employees: here iam' , TasksResponseSchema)
+    // console.log('Employees: here iam' , TasksResponseSchema)
     // Call the OpenAI model with Structured Outputs
+    const model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-3.5-turbo'
+    console.log('Model:', model)
     const completion = await openai.beta.chat.completions.parse({
-      model: 'gpt-4o-2024-08-06', // Ensure you're using a supported model
+      model: model,
       messages: [
         { role: 'system', content: systemInstruction },
         { role: 'user', content: userMessage },
