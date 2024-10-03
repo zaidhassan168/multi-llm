@@ -1,143 +1,144 @@
-'use client'
+"use client"
 
-import React, { useState } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React, { useState } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import {
-  BriefcaseIcon,
   HomeIcon,
-  LogOutIcon,
-  MailIcon,
-  UserIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
+  LayoutDashboardIcon,
+  CheckSquareIcon,
+  FolderIcon,
+  UsersIcon,
+  BrainCircuitIcon,
+  CalendarIcon,
   MessageSquareIcon,
-  CodeIcon,
-  BotIcon,
-  HistoryIcon
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { getAuth, signOut } from "firebase/auth";
-import { app } from "../firebase";
-
+  UserIcon,
+  LogOutIcon,
+  SunIcon,
+  MoonIcon,
+  BarChart2Icon,
+  ArrowsUpFromLineIcon,
+  PanelsTopLeftIcon,
+} from "lucide-react"
+import { getAuth, signOut } from "firebase/auth"
+import { app } from "../firebase"
+import { useRouter } from "next/navigation"
+import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from 'next-themes'
+import { NotificationPanel } from './NotificationPanel'
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
-  email?: string;
-  onButtonClick: (component: string) => void;
+  email: string | null
 }
 
-export default function Sidebar({
-  isCollapsed,
-  onToggleCollapse,
-  email,
-  onButtonClick,
-}: SidebarProps) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeItem, setActiveItem] = useState("chat");
+export default function Sidebar({ email }: SidebarProps) {
+  const pathname = usePathname()
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { setIsAuthenticated, setEmail, user } = useAuth()
+  const { theme, setTheme } = useTheme()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleLogout = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await signOut(getAuth(app));
-      await fetch("/api/logout");
-      router.push("/login");
+      await signOut(getAuth(app))
+      await fetch("/api/logout")
+      setIsAuthenticated(false)
+      setEmail(null)
+      router.push('/login')
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout failed:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const navItems = [
-    { icon: <HomeIcon className="w-5 h-5" />, label: "Chat", id: "chat" },
-    { icon: <UserIcon className="w-5 h-5" />, label: "About", id: "about" },
-    { icon: <BriefcaseIcon className="w-5 h-5" />, label: "Profile", id: "profile" },
-    { icon: <MessageSquareIcon className="w-5 h-5" />, label: "Gemini", id: "gemini" },
-    { icon: <CodeIcon className="w-5 h-5" />, label: "Code", id: "code" },
-    { icon: <BotIcon className="w-5 h-5" />, label: "Assistant", id: "assistant" },
-    { icon: <HistoryIcon className="w-5 h-5" />, label: "History", id: "history" },
-  ];
+    { icon: LayoutDashboardIcon, label: "Dashboard", route: "/dashboard" },
+    { icon: CheckSquareIcon, label: "My Tasks", route: "/task-swiper" },
+    { icon: BarChart2Icon, label: "Tasks Board", route: "/board" },
+    { icon: FolderIcon, label: "Projects", route: "/projects" },
+    { icon: ArrowsUpFromLineIcon, label: "Stages", route: "/stage-management" },
+    { icon: UsersIcon, label: "Employees", route: "/employees" },
+    { icon: BrainCircuitIcon, label: "AI Assistant", route: "/history" },
+    { icon: CalendarIcon, label: "Timeline", route: "/timeline" },
+    { icon: MessageSquareIcon, label: "Task Detail", route: "/task-detail" },
+    { icon: UserIcon, label: "Profile", route: "/profile" },
+  ]
 
   return (
     <TooltipProvider>
-      <div
-        className={`bg-gradient-to-b from-gray-50 to-white border-r flex flex-col h-screen transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-20" : "w-64"
-        }`}
-      >
-        <div className="p-4 flex items-center justify-between border-b">
-          {!isCollapsed && <h1 className="text-xl font-bold text-gray-800">Menu</h1>}
+      <aside className={`flex flex-col h-screen bg-background dark:bg-background border-r border-border transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"}`}>
+        <div className="flex items-center justify-between p-4 pb-0">
           <Button
             variant="ghost"
             size="icon"
-            className={`ml-auto transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
-            onClick={onToggleCollapse}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="rounded-full hover:bg-secondary dark:hover:bg-secondary"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <ArrowLeftIcon className="w-5 h-5" />
+            <PanelsTopLeftIcon className={`w-5 h-5 transition-transform text-gray-500 duration-200 ${isCollapsed ? "rotate-180" : ""}`} />
           </Button>
         </div>
 
-        <div className="p-4 border-b flex items-center gap-3">
-          <Avatar className="w-10 h-10 ring-2 ring-primary ring-offset-2">
-            <AvatarImage src="/placeholder-user.jpg" alt="User avatar" />
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-800">{email}</span>
-              <span className="text-xs text-gray-500">User</span>
-            </div>
-          )}
-        </div>
+        <ScrollArea className="flex-grow px-3 py-2">
+          <nav className="space-y-1">
+            {navItems.map(({ icon: Icon, label, route }) => (
+              <Tooltip key={route} delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Link href={route} passHref>
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start ${isCollapsed ? "px-3" : "px-4"} py-2 ${
+                        pathname === route
+                          ? "bg-primary-muted text-primary dark:bg-primary dark:text-primary-foreground"
+                          : "text-muted-foreground hover:bg-secondary dark:hover:bg-secondary"
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${isCollapsed ? "mx-auto" : "mr-3"}`} />
+                      {!isCollapsed && <span>{label}</span>}
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right">
+                    <p>{label}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            ))}
+          </nav>
+        </ScrollArea>
 
-        <nav className="flex-1 py-6 px-4 space-y-2">
-          {navItems.map(({ icon, label, id }) => (
-            <Tooltip key={id} delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={activeItem === id ? "default" : "ghost"}
-                  className={`w-full flex items-center gap-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all ${
-                    isCollapsed ? "justify-center px-2" : "justify-start px-4"
-                  } ${activeItem === id ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : ""}`}
-                  onClick={() => {
-                    setActiveItem(id);
-                    onButtonClick(id);
-                  }}
-                >
-                  <div className="flex-shrink-0">{icon}</div>
-                  {!isCollapsed && <span>{label}</span>}
-                </Button>
-              </TooltipTrigger>
-              {isCollapsed && (
-                <TooltipContent side="right">
-                  <p>{label}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          ))}
-        </nav>
+        <Separator className="my-2" />
 
-        <div className="mt-auto p-4 border-t">
-          <Tooltip delayDuration={0}>
+        <div className="p-4 space-y-4">
+          <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
+            {!isCollapsed && <span className="text-sm font-medium text-muted-foreground">Dark Mode</span>}
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle dark mode"
+            >
+              <SunIcon className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <MoonIcon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Switch>
+          </div>
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button
-                className={`w-full  hover:bg-red-100 transition-all flex items-center justify-center gap-2 ${
-                  isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                variant="ghost"
+                className={`w-full justify-start ${isCollapsed ? "px-3" : "px-4"} py-2 text-destructive hover:bg-destructive/10`}
                 onClick={handleLogout}
                 disabled={isLoading}
               >
-                {isLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <LogOutIcon className="w-5 h-5 flex-shrink-0" />
-                )}
+                <LogOutIcon className={`w-5 h-5 ${isCollapsed ? "mx-auto" : "mr-3"}`} />
                 {!isCollapsed && <span>Logout</span>}
               </Button>
             </TooltipTrigger>
@@ -148,7 +149,23 @@ export default function Sidebar({
             )}
           </Tooltip>
         </div>
-      </div>
+
+        <Separator className="my-2" />
+
+        <div className={`p-4 flex items-center ${isCollapsed ? "justify-center" : "space-x-3"}`}>
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={user?.photoURL || "/placeholder-user.jpg"} alt="User avatar" />
+            <AvatarFallback>{user?.displayName?.charAt(0) || "U"}</AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">{user?.displayName}</span>
+              <span className="text-xs text-muted-foreground">{email}</span>
+              {/* <span className="text-xs text-primary capitalize">{user?.role || "User"}</span> */}
+            </div>
+          )}
+        </div>
+      </aside>
     </TooltipProvider>
-  );
+  )
 }

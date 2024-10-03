@@ -1,24 +1,39 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "@/components/ui/toaster"
-const inter = Inter({ subsets: ["latin"] });
+import './globals.css';
+import { Inter } from 'next/font/google';
+import Layout from '@/components/Layout';
+import { AuthProvider } from '../contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import { ThemeProvider } from 'next-themes';
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { FcmHandler } from '../components/FcmHandler';
 
-export const metadata: Metadata = {
-  title: "AI 100",
-  description: "Created using OpenAI",
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'AI 100',
+  description: 'Created using OpenAI',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        {children}
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            <Layout>
+              <FcmHandler />
+              {children}
+            </Layout>
+            <Toaster />
+            <Analytics />
+            <SpeedInsights />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

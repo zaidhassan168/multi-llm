@@ -7,11 +7,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, MessageSquare, Send, Loader2, Plus } from "lucide-react"
+import { Trash2, MessageSquare, Send, Loader2, Plus, Search, Copy, Check, AtSign, Code, Paperclip, ChevronLeft, ChevronRight } from "lucide-react"
 import { useAuth } from '@/lib/hooks'
 import { useChat } from 'ai/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import ReactMarkdown from 'react-markdown'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import remarkGfm from 'remark-gfm'
 
 type Conversation = {
   id: string
@@ -37,6 +42,8 @@ export default function ImprovedMultiModelChat() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState<string>('gemini')
   const [isSending, setIsSending] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isConversationListCollapsed, setIsConversationListCollapsed] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -56,15 +63,6 @@ export default function ImprovedMultiModelChat() {
     onFinish: (message) => {
       updateConversationName(selectedConversation, message.content);
       setIsSending(false);
-
-      // Ensure that the new message has the model data
-      if (message.data && typeof message.data === 'object' && 'model' in message.data) {
-        console.log('Model found in message:', message.data.model);
-      } else {
-        console.warn('Model not found in message:', message);
-      }
-
-      // Trigger a re-render if needed
       setMessages(prevMessages => [...prevMessages]);
     },
   })
@@ -87,6 +85,7 @@ export default function ImprovedMultiModelChat() {
   }, [user])
 
   useEffect(() => {
+    console.log("user", user)
     fetchConversations()
   }, [fetchConversations])
 
@@ -128,12 +127,30 @@ export default function ImprovedMultiModelChat() {
     }
   }
 
-  const updateConversationName = useCallback((id: string | null, content: string) => {
-    if (!id) return
-    setConversations(prev => prev.map(conv =>
-      conv.id === id ? { ...conv, name: content.slice(0, 30), timestamp: Date.now() } : conv
-    ))
-  }, [])
+  const updateConversationName = useCallback(async (id: string | null, content: string) => {
+    if (!id) return;
+    try {
+      const messages = [{ content }];
+      const response = await fetch('/api/get-conv-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+
+      const data = await response.json();
+      const generatedName = data.conversationName || content.slice(0, 30);
+
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === id ? { ...conv, name: generatedName, timestamp: Date.now() } : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to generate conversation name:', error);
+    }
+  }, []);
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -169,35 +186,88 @@ export default function ImprovedMultiModelChat() {
     setMessages([])
     setConversations(prev => [{ id: newId, name: 'New Conversation' }, ...prev])
   }
+
   const modelImageMap: Record<string, string> = {
     'gemini-1.5-flash': "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg",
     'gpt-4o': "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
-    // Add more models and their corresponding image URLs here
   };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const CodeBlock = ({ language, value }: { language: string, value: string }) => {
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="relative">
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute top-2 right-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={copyToClipboard}
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        </Button>
+        <SyntaxHighlighter language={language} style={atomDark}>
+          {value}
+        </SyntaxHighlighter>
+      </div>
+    );
+  };
+  const toggleConversationList = () => {
+    setIsConversationListCollapsed(!isConversationListCollapsed)
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Chat History</h2>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={startNewConversation}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Start New Conversation</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      <div className={`border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${isConversationListCollapsed ? 'w-16' : 'w-1/4'}`}>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between">
+          {!isConversationListCollapsed && (
+            <>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Conversations</h2>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={startNewConversation}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Start New Conversation</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
+          )}
+          <Button variant="ghost" size="icon" onClick={toggleConversationList}>
+            {isConversationListCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
         </div>
+        {!isConversationListCollapsed && (
+          <div className="p-4">
+            <Input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="absolute left-7 top-20 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+        )}
         <ScrollArea className="flex-grow">
           <AnimatePresence>
-            {isLoading ? (
+            {!isConversationListCollapsed && (isLoading ? (
               [...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)
             ) : (
-              conversations.map((conv) => (
+              filteredConversations.map((conv) => (
                 <motion.div
                   key={conv.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -206,11 +276,11 @@ export default function ImprovedMultiModelChat() {
                   transition={{ duration: 0.2 }}
                 >
                   <Card className="m-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
-                    <CardHeader className="p-4">
+                    <CardHeader className="p-3">
                       <CardTitle className="flex items-center justify-between">
                         <Button
                           variant="ghost"
-                          className="text-left w-full"
+                          className="text-left w-full p-0 truncate"
                           onClick={() => loadConversation(conv.id)}
                         >
                           <MessageSquare className="w-5 h-5 mr-2" />
@@ -229,17 +299,17 @@ export default function ImprovedMultiModelChat() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete Conversation</p>
+                              <p>Delete</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </CardTitle>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatTimestamp(Number(conv.id))}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatTimestamp(Number(conv.id))}</p>
                     </CardHeader>
                   </Card>
                 </motion.div>
               ))
-            )}
+            ))}
           </AnimatePresence>
         </ScrollArea>
       </div>
@@ -249,7 +319,7 @@ export default function ImprovedMultiModelChat() {
             {selectedConversation ? 'Conversation' : 'Select a Conversation'}
           </h2>
           <Select value={selectedModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] text-sm">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
@@ -285,11 +355,10 @@ export default function ImprovedMultiModelChat() {
                 transition={{ duration: 0.2 }}
                 className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
               >
-                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} shadow-lg max-w-[70%]`}>
+                <div className={`inline-block p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'} max-w-[80%]`}>
                   {message.role === 'assistant' && (
                     <div className="flex items-center mb-2">
                       <Avatar className="w-6 h-6 mr-2">
-
                         <AvatarImage
                           src={message.data && typeof message.data === 'object' && 'model' in message.data
                             ? modelImageMap[(message.data as any).model] || "/placeholder.svg"
@@ -298,17 +367,44 @@ export default function ImprovedMultiModelChat() {
                             ? (message.data as any).model
                             : 'AI'}
                         />
-
                         <AvatarFallback>AI</AvatarFallback>
                       </Avatar>
-                      <span className="font-semibold">
+                      <span className="font-semibold text-sm">
                         {message.data && typeof message.data === 'object' && 'model' in message.data
                           ? (message.data as any).model.charAt(0).toUpperCase() + (message.data as any).model.slice(1)
                           : 'AI'}
                       </span>
                     </div>
                   )}
-                  {message.content}
+                  <ReactMarkdown
+                    className="text-sm leading-relaxed prose dark:prose-invert max-w-none"
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <CodeBlock
+                            language={match[1]}
+                            value={String(children).replace(/\n$/, '')}
+                            {...props}
+                          />
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      h1: ({ children }) => <h1 className="text-2xl font-bold mt-4 mb-2">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xl font-bold mt-3 mb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-lg font-bold mt-2 mb-1">{children}</h3>,
+                      ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
+                      // li: ({ children }) => <li className="mb-1">{children}</li>,
+                      p: ({ children }) => <p className="mb-2">{children}</p>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </motion.div>
             ))}
@@ -316,18 +412,22 @@ export default function ImprovedMultiModelChat() {
           <div ref={messagesEndRef} />
         </ScrollArea>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
-          <form onSubmit={onSubmit} className="flex space-x-2">
-            <input
-              className="flex-1 p-2 border rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-              value={input}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={!selectedConversation || isSending}
-            />
-            <Button type="submit" disabled={!selectedConversation || isSending} className="text-white transition-colors duration-200">
-              {isSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              {isSending ? 'Sending...' : 'Send'}
+          <form onSubmit={onSubmit} className="flex items-center space-x-2">
+            <div className="flex-1 flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+              <AtSign className="w-5 h-5 text-gray-400" />
+              <Code className="w-5 h-5 text-gray-400" />
+              <Paperclip className="w-5 h-5 text-gray-400" />
+              <Input
+                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 dark:text-white placeholder-gray-400"
+                value={input}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Message Blackbox..."
+                disabled={!selectedConversation || isSending}
+              />
+            </div>
+            <Button type="submit" disabled={!selectedConversation || isSending} className="rounded-full bg-green-500 hover:bg-green-600 text-white">
+              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
             </Button>
           </form>
         </div>

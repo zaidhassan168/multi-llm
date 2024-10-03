@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from 'react'
 import { Message, useAssistant } from 'ai/react'
 import { Button } from "@/components/ui/button"
@@ -10,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon, SunIcon, MoonIcon, ChevronDownIcon } from 'lucide-react'
+import { PaperclipIcon, SendIcon, FileIcon, Trash2Icon, SunIcon, MoonIcon, ChevronDownIcon, X } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import Markdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -22,7 +24,11 @@ interface FileInfo {
   status: string
 }
 
-export default function ChatBotInterface() {
+interface ChatBotInterfaceProps {
+  onClose: () => void
+}
+
+export default function ChatBotInterface({ onClose }: ChatBotInterfaceProps) {
   const [files, setFiles] = useState<FileInfo[]>([])
   const [loadingFileUpload, setLoadingFileUpload] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -175,9 +181,16 @@ export default function ChatBotInterface() {
   }
 
   return (
-    <div className={`flex flex-col h-screen w-full bg-background transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
-      <div className="flex-grow flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="flex justify-between items-center py-4 gap-4">
+    <div className={`fixed bottom-4 right-4 w-96 h-[600px] bg-background border rounded-lg shadow-xl flex flex-col overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
+      <div className="flex justify-between items-center p-4 border-b">
+        <h2 className="text-lg font-semibold">Chat Assistant</h2>
+        <Button onClick={onClose} variant="ghost" size="icon">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </div>
+      <div className="flex-grow flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center py-2 px-4 gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">
@@ -229,7 +242,7 @@ export default function ChatBotInterface() {
               <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <span>
                   <PaperclipIcon className="mr-2 h-4 w-4" />
-                  {loadingFileUpload ? 'Uploading...' : 'Upload File'}
+                  {loadingFileUpload ? 'Uploading...' : 'Upload'}
                 </span>
               </Button>
             </label>
@@ -238,7 +251,7 @@ export default function ChatBotInterface() {
             </Button>
           </div>
         </div>
-        <ScrollArea className="flex-grow border rounded-md p-4 mb-4 relative" ref={scrollAreaRef}>
+        <ScrollArea className="flex-grow p-4 relative" ref={scrollAreaRef}>
           {messages.map((message: Message) => (
             <div
               key={message.id}
@@ -297,24 +310,26 @@ export default function ChatBotInterface() {
             <ChevronDownIcon className="h-4 w-4" />
           </Button>
         )}
-        <form onSubmit={submitMessage} className="sticky bottom-0 bg-background pb-4">
-          <Textarea
-            value={input}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message here..."
-            className="pr-12 resize-none"
-            rows={3}
-            disabled={status !== 'awaiting_message'}
-          />
-          <Button
-            type="submit"
-            className="absolute bottom-7 right-2 px-2 py-1"
-            size="sm"
-            disabled={status !== 'awaiting_message'}
-          >
-            <SendIcon className="h-4 w-4" />
-          </Button>
+        <form onSubmit={submitMessage} className="p-4 border-t">
+          <div className="relative">
+            <Textarea
+              value={input}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message here..."
+              className="pr-12 resize-none"
+              rows={3}
+              disabled={status !== 'awaiting_message'}
+            />
+            <Button
+              type="submit"
+              className="absolute bottom-2 right-2 px-2 py-1"
+              size="sm"
+              disabled={status !== 'awaiting_message'}
+            >
+              <SendIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </form>
       </div>
     </div>

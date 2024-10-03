@@ -16,8 +16,9 @@ export async function GET(request: NextRequest) {
     const snapshot = await getDocs(conversationsRef);
     const conversations = snapshot.docs.map(doc => ({
       id: doc.id,
-      name: doc.data().messages[0]?.content.slice(0, 30) || 'New Chat'
+      name: doc.data().name ||doc.data().messages[0]?.content.slice(0, 30) || 'New Chat'
     }));
+    console.log(conversations);
     return NextResponse.json(conversations);
   } catch (error) {
     console.error('Error fetching conversations:', error);

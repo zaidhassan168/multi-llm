@@ -31,7 +31,6 @@ async function saveChat(email: string, conversationId: string, message: Message)
 export async function POST(req: Request) {
   try {
     const { messages, email, conversationId, selectedModel } = await req.json();
-    console.log('messages', messages)
     if (!email || !conversationId) {
       console.error('Missing email or conversationId in POST request');
       return NextResponse.json({ error: 'Missing email or conversationId' }, { status: 400 });

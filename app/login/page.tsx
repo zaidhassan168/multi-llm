@@ -2,15 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, OAuthProvider, signInWithPopup } from "firebase/auth";
 import { app } from "../../firebase";
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
-
+import { Loader2, Mail } from "lucide-react"
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -31,6 +30,29 @@ export default function Login() {
         password
       );
       const idToken = await credential.user.getIdToken();
+
+      await fetch("/api/login", {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      setIsLoading(false);
+      router.push("/");
+    } catch (e) {
+      setError((e as Error).message);
+      setIsLoading(false);
+    }
+  }
+
+  async function handleMicrosoftSignIn() {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const auth = getAuth(app);
+      const provider = new OAuthProvider('microsoft.com');
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
 
       await fetch("/api/login", {
         headers: {
@@ -83,11 +105,33 @@ export default function Login() {
               </div>
             )}
             <Button disabled={isLoading}
-           
                type="submit" className="w-full">
                {isLoading ? <Loader2 className="animate-spin" /> : "Sign In"}
             </Button>
           </form>
+          <div className="mt-4">
+          <Button
+              onClick={handleMicrosoftSignIn}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full"
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>
+                  <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23">
+                    <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
+                    <path fill="#f35325" d="M1 1h10v10H1z"/>
+                    <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                    <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                  </svg>
+                  Sign in with Microsoft
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="text-center text-sm">
           Do not have an account?{" "}
