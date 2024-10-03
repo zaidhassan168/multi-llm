@@ -11,8 +11,8 @@ import { FcmHandler } from '../components/FcmHandler';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'AI 100',
-  description: 'Created using OpenAI',
+  title: 'elTrackEz',
+  description: "ElTrackEZ is your intuitive project management tool designed for effortless tracking and seamless collaboration. Simplify your workflow, manage tasks with ease, and elevate your team's productivity—all in one place. Experience a stress-free approach to project management and stay organized with ElTrackEZ.",
 };
 
 export default function RootLayout({
