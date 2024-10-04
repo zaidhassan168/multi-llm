@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Task,
@@ -103,6 +103,7 @@ export default function TaskView() {
   const [tempEditValues, setTempEditValues] = useState<Partial<Task>>({})
   const [isAddingComment, setIsAddingComment] = useState(false)
 
+  // Fetch Task and Employees
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -128,8 +129,10 @@ export default function TaskView() {
     if (taskId) {
       fetchData()
     }
-  }, [taskId, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId]) // Removed 'toast' from dependencies
 
+  // Handle Click Outside for Mentions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mentionRef.current && !mentionRef.current.contains(event.target as Node)) {
@@ -143,29 +146,34 @@ export default function TaskView() {
     }
   }, [])
 
-  const handleChange = async (field: keyof Task, value: any) => {
-    if (!task || !user?.email) return
+  // Handle Field Changes
+  const handleChange = useCallback(
+    async (field: keyof Task, value: any) => {
+      if (!task || !user?.email) return
 
-    const updatedTask = { ...task, [field]: value }
-    setTask(updatedTask)
+      const updatedTask = { ...task, [field]: value }
+      setTask(updatedTask)
 
-    try {
-      await updateTask(updatedTask, user.email)
-      toast({
-        title: 'Success',
-        description: 'Task updated successfully',
-      })
-    } catch (error) {
-      console.error('Error updating task:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to update task',
-        variant: 'destructive',
-      })
-    }
-  }
+      try {
+        await updateTask(updatedTask, user.email)
+        toast({
+          title: 'Success',
+          description: 'Task updated successfully',
+        })
+      } catch (error) {
+        console.error('Error updating task:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to update task',
+          variant: 'destructive',
+        })
+      }
+    },
+    [task, user?.email, toast]
+  )
 
-  const handleAddComment = async () => {
+  // Handle Adding Comments
+  const handleAddComment = useCallback(async () => {
     if (task && newComment.trim() !== '') {
       setIsAddingComment(true)
       const mentionedUsers = newComment.match(/@(\w+)/g)?.map((mention) => mention.slice(1)) || []
@@ -215,95 +223,113 @@ export default function TaskView() {
         setIsAddingComment(false)
       }
     }
-  }
+  }, [task, newComment, user, employees, toast])
 
-  const handleMention = (employee: Employee) => {
-    const commentWords = newComment.split(' ')
-    const lastWord = commentWords[commentWords.length - 1]
-    const newCommentText =
-      newComment.slice(0, newComment.length - lastWord.length) + `@${employee.name} `
-    setNewComment(newCommentText)
-    setShowMentions(false)
-  }
-
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewComment(e.target.value)
-    const words = e.target.value.split(' ')
-    const lastWord = words[words.length - 1]
-    if (lastWord.startsWith('@')) {
-      setMentionSearch(lastWord.slice(1))
-      setShowMentions(true)
-    } else {
+  // Handle Mention Selection
+  const handleMention = useCallback(
+    (employee: Employee) => {
+      const commentWords = newComment.split(' ')
+      const lastWord = commentWords[commentWords.length - 1]
+      const newCommentText =
+        newComment.slice(0, newComment.length - lastWord.length) + `@${employee.name} `
+      setNewComment(newCommentText)
       setShowMentions(false)
-    }
-  }
+    },
+    [newComment]
+  )
 
-  const handleEditField = (field: string) => {
+  // Handle Comment Input Change
+  const handleCommentChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setNewComment(e.target.value)
+      const words = e.target.value.split(' ')
+      const lastWord = words[words.length - 1]
+      if (lastWord.startsWith('@')) {
+        setMentionSearch(lastWord.slice(1))
+        setShowMentions(true)
+      } else {
+        setShowMentions(false)
+      }
+    },
+    []
+  )
+
+  // Handle Editing Fields
+  const handleEditField = useCallback((field: string) => {
     setEditingField(field)
     setTempEditValues({ ...tempEditValues, [field]: task?.[field as keyof Task] })
-  }
+  }, [tempEditValues, task])
 
-  const handleSaveField = async (field: keyof Task) => {
-    if (task && tempEditValues[field] !== undefined) {
-      await handleChange(field, tempEditValues[field])
-      setEditingField(null)
-    }
-  }
+  const handleSaveField = useCallback(
+    async (field: keyof Task) => {
+      if (task && tempEditValues[field] !== undefined) {
+        await handleChange(field, tempEditValues[field])
+        setEditingField(null)
+      }
+    },
+    [handleChange, task, tempEditValues]
+  )
 
-  const handleInputChange = (field: keyof Task, value: any) => {
-    setTempEditValues({ ...tempEditValues, [field]: value })
-  }
+  const handleInputChange = useCallback(
+    (field: keyof Task, value: any) => {
+      setTempEditValues({ ...tempEditValues, [field]: value })
+    },
+    [tempEditValues]
+  )
 
   // Handle Reactions
-  const handleReaction = async (commentId: string, emoji: string) => {
-    if (!task || !user?.email) return
+  const handleReaction = useCallback(
+    async (commentId: string, emoji: string) => {
+      if (!task || !user?.email) return
 
-    const updatedComments = task.comments?.map((comment) => {
-      if (comment.id === commentId) {
-        const users = comment.reactions[emoji] || []
-        const userIdentifier = user.displayName || user.email || ''
+      const updatedComments = task.comments?.map((comment) => {
+        if (comment.id === commentId) {
+          const users = comment.reactions[emoji] || []
+          const userIdentifier = user.displayName || user.email || ''
 
-        if (users.includes(userIdentifier)) {
-          // Remove reaction
-          return {
-            ...comment,
-            reactions: {
-              ...comment.reactions,
-              [emoji]: users.filter((u) => u !== userIdentifier),
-            },
-          }
-        } else {
-          // Add reaction
-          return {
-            ...comment,
-            reactions: {
-              ...comment.reactions,
-              [emoji]: [...users, userIdentifier],
-            },
+          if (users.includes(userIdentifier)) {
+            // Remove reaction
+            return {
+              ...comment,
+              reactions: {
+                ...comment.reactions,
+                [emoji]: users.filter((u) => u !== userIdentifier),
+              },
+            }
+          } else {
+            // Add reaction
+            return {
+              ...comment,
+              reactions: {
+                ...comment.reactions,
+                [emoji]: [...users, userIdentifier],
+              },
+            }
           }
         }
+        return comment
+      })
+
+      const updatedTask = { ...task, comments: updatedComments } as Task
+      setTask(updatedTask)
+
+      try {
+        await updateTaskComments(task.id, updatedTask.comments || [], user.email)
+        toast({
+          title: 'Success',
+          description: 'Reaction updated successfully',
+        })
+      } catch (error) {
+        console.error('Error updating reaction:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to update reaction',
+          variant: 'destructive',
+        })
       }
-      return comment
-    })
-
-    const updatedTask = { ...task, comments: updatedComments } as Task
-    setTask(updatedTask)
-
-    try {
-      await updateTaskComments(task.id, updatedTask.comments || [], user.email)
-      toast({
-        title: 'Success',
-        description: 'Reaction updated successfully',
-      })
-    } catch (error) {
-      console.error('Error updating reaction:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to update reaction',
-        variant: 'destructive',
-      })
-    }
-  }
+    },
+    [task, user?.email, toast]
+  )
 
   if (isLoading) {
     return (
@@ -468,7 +494,8 @@ export default function TaskView() {
                     task.comments.map((comment) => {
                       // Extract user's reactions
                       const userReactions = Object.keys(comment.reactions).filter((emoji) =>
-                        comment.reactions[emoji].includes(user?.uid || user?.email || ''))                      
+                        comment.reactions[emoji].includes(user?.uid || user?.email || '')
+                      )
 
                       return (
                         <div
@@ -487,8 +514,6 @@ export default function TaskView() {
                             </div>
                             <p className="mt-1 text-sm">{comment.content}</p>
                             {/* User's Reactions */}
-                            
-                              <div className="flex items-center mt-2 space-x-2">
                             {Object.entries(comment.reactions || {}).map(([emoji, users]) => (
                               <Tooltip key={emoji}>
                                 <TooltipTrigger asChild>
@@ -509,7 +534,6 @@ export default function TaskView() {
                                 </TooltipContent>
                               </Tooltip>
                             ))}
-                              </div>
                             {/* Smile Icon for Adding/Removing Reactions */}
                             <div className="flex items-center mt-2 space-x-2">
                               <Popover>
@@ -528,6 +552,12 @@ export default function TaskView() {
                                     const users = comment.reactions[emoji] || []
                                     const userIdentifier = user?.displayName || user?.email || ''
                                     const hasReacted = users.includes(userIdentifier)
+
+                                    // Map userIdentifiers to user names
+                                    const userNames = users
+                                      .map((id) => employees.find(emp => emp.email === id)?.name || id)
+                                      .join(', ')
+
                                     return (
                                       <Tooltip key={emoji}>
                                         <TooltipTrigger asChild>
@@ -542,14 +572,18 @@ export default function TaskView() {
                                           </button>
                                         </TooltipTrigger>
                                         <TooltipContent side="top">
-                                          {hasReacted
-                                            ? 'Remove your reaction'
-                                            : `React with ${emoji}`}
+                                          {hasReacted ? 'Remove your reaction' : `React with ${emoji}`}
+                                          {users.length > 0 && (
+                                            <>
+                                              <br />
+                                              <span className="text-xs">Reacted by: {userNames}</span>
+                                            </>
+                                          )}
                                         </TooltipContent>
                                       </Tooltip>
                                     )
-                                  })} 
-                                                                 </PopoverContent>
+                                  })}
+                                </PopoverContent>
                               </Popover>
                             </div>
                           </div>
