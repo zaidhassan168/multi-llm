@@ -59,6 +59,7 @@ import {
 import { priorityIcons, taskTypeIcons } from '@/lib/icons/icons'
 import TaskFilterSidebar from '@/components/tasks/TaskFilterSidebar'
 import { fetchProjects, Project } from '@/models/project'
+import { storeCommentNotification } from '@/utils/storeNotifications'
 type FilterState = {
   assignee: string | null
   project: string | null
@@ -193,6 +194,16 @@ export default function TaskListView() {
             `Notifying ${mentionedUser} about mention in task ${selectedTask.id}`
           )
         })
+        await storeCommentNotification(
+          selectedTask.id,
+          selectedTask.title,
+          newCommentData.id,
+          user?.uid || '',
+          authorName,
+          newComment,
+          mentionedUsers,
+          employees
+        )
       } catch (error) {
         console.error('Failed to add comment', error)
         toast({

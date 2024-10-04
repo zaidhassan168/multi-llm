@@ -23,16 +23,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  getDatabase,
-  ref,
-  onValue,
-  off,
   update,
   remove,
+  getDatabase, ref, onValue, off, query, orderByChild, limitToLast
 } from 'firebase/database'
 import { app } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
-
+import { CommentNotification } from '@/utils/storeNotifications'
 // Define Notification Interface
 interface Notification {
   id: string
@@ -43,6 +40,29 @@ interface Notification {
 }
 
 // NotificationItem Component
+const CommentNotificationItem = React.memo(
+  ({ notification }: { notification: CommentNotification }) => {
+    const formattedDate = useMemo(() => {
+      return new Date(notification.timestamp as unknown as number).toLocaleString()
+    }, [notification.timestamp])
+
+    return (
+      <div className="flex items-start p-4 hover:bg-muted/50 transition-colors">
+        <MessageSquare className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
+        <div className="ml-4 flex-1">
+          <p className="text-sm">
+            <span className="font-semibold">{notification.authorName}</span> mentioned you in a comment
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">Task: {notification.task?.title}</p>
+          <p className="text-xs mt-1">{notification.content}</p>
+          <p className="text-xs text-muted-foreground mt-1">{formattedDate}</p>
+        </div>
+      </div>
+    )
+  }
+)
+
+CommentNotificationItem.displayName = 'CommentNotificationItem'
 const NotificationItem = React.memo(
   ({
     notification,
@@ -115,7 +135,7 @@ export function NotificationPanel() {
   const [activeTab, setActiveTab] = useState<'inbox' | 'viewed' | 'comments'>('inbox')
   const [isOpen, setIsOpen] = useState(false)
   const { user } = useAuth()
-
+  const [commentNotifications, setCommentNotifications] = useState<CommentNotification[]>([])
   // Fetch notifications from Firebase
   const fetchNotifications = useCallback(() => {
     if (user?.uid) {
@@ -151,8 +171,48 @@ export function NotificationPanel() {
       if (unsubscribe) unsubscribe()
     }
   }, [fetchNotifications])
+  const fetchCommentNotifications = useCallback(() => {
+    console.log('fetchCommentNotifications')
+    if (!user?.uid) return
+    console.log('Fetching comment notifications for user:', user.uid)
+    const db = getDatabase(app)
+    const commentNotificationsRef = query(
+      ref(db, `commentNotifications/${user.uid}`),
+      orderByChild('timestamp'),
+      limitToLast(50)
+    )
+    
+    const handleSnapshot = (snapshot: any) => {
+      const data = snapshot.val()
+      if (data) {
+        const notificationList: CommentNotification[] = Object.entries(data).map(
+          ([id, notif]: [string, any]) => ({
+            id,
+            ...notif,
+            timestamp: notif.timestamp || Date.now(),
+          })
+        ).sort((a, b) => b.timestamp - a.timestamp)
+        console.log('Fetched comment notifications:', notificationList)
+        setCommentNotifications(notificationList)
+      } else {
+        setCommentNotifications([])
+      }
+    }
+    
 
+    onValue(commentNotificationsRef, handleSnapshot)
+    
+    return () => {
+      off(commentNotificationsRef, 'value', handleSnapshot)
+    }
+  }, [user])
   // Calculate unviewed notifications count
+  useEffect(() => {
+    const unsubscribe = fetchCommentNotifications()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [fetchCommentNotifications])
   const unviewedCount = useMemo(() => {
     return notifications.filter(n => !n.viewed).length
   }, [notifications])
@@ -258,7 +318,22 @@ export function NotificationPanel() {
           </div>
           {/* Notification List */}
           <ScrollArea className="h-80">
-            {filteredNotifications.length > 0 ? (
+            {activeTab === 'comments' ? (
+              commentNotifications.length > 0 ? (
+                <div className="divide-y divide-muted">
+                  {commentNotifications.map(notification => (
+                    <CommentNotificationItem
+                      key={notification.commentId}
+                      notification={notification}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full p-4">
+                  <p className="text-muted-foreground">No comment notifications.</p>
+                </div>
+              )
+            ) : filteredNotifications.length > 0 ? (
               <div className="divide-y divide-muted">
                 {filteredNotifications.map(notification => (
                   <NotificationItem
@@ -275,6 +350,7 @@ export function NotificationPanel() {
               </div>
             )}
           </ScrollArea>
+
         </PopoverContent>
       </Popover>
     </TooltipProvider>
