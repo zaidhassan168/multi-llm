@@ -143,7 +143,23 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
   }
 };
 
-
+export const fetchTask = async (taskId: string): Promise<Task> => {
+  try {
+    const response = await fetch(`${API_URL}/getById/?taskId=${taskId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch task');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch task',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
 // /models/task.ts
 
 export const updateTaskComments = async (taskId: string, comments: Comment[] , email: string): Promise<void> => {

@@ -30,6 +30,7 @@ import {
 import { app } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { CommentNotification } from '@/utils/storeNotifications'
+import Link from 'next/link'
 // Define Notification Interface
 interface Notification {
   id: string
@@ -53,7 +54,13 @@ const CommentNotificationItem = React.memo(
           <p className="text-sm">
             <span className="font-semibold">{notification.authorName}</span> mentioned you in a comment
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Task: {notification.task?.title}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Task: {notification.task ? (
+              <Link href={`/tasks/${notification.task.id}`} className="hover:underline text-primary">
+                {notification.task.title}
+              </Link>
+            ) : 'Unknown Task'}
+          </p>
           <p className="text-xs mt-1">{notification.content}</p>
           <p className="text-xs text-muted-foreground mt-1">{formattedDate}</p>
         </div>
