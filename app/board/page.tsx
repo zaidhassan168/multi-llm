@@ -48,12 +48,8 @@ import { collection, onSnapshot, query } from 'firebase/firestore'
 import { getEffortColor, getPriorityColor, getDueDateColor } from '@/lib/colors/colors'
 import { db } from '@/firebase'
 import LottieLoading from '@/components/LottieLoading'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+
+import { fetchProjects, Project } from '@/models/project'
 
 // Define Kanban columns
 const columns = [
@@ -113,9 +109,8 @@ const TaskItem = React.memo(
           )}
           <div className="flex items-center gap-1 ml-auto">
             <div
-              className={`${
-                getPriorityColor(task.priority || undefined)
-              } rounded-full w-3 h-3`}
+              className={`${getPriorityColor(task.priority || undefined)
+                } rounded-full w-3 h-3`}
             />
             <span className="text-xs text-muted-foreground capitalize">
               {task.priority}
@@ -175,13 +170,13 @@ const Column = React.memo(
           const priorityOrder = { high: 3, medium: 2, low: 1 }
           const aPriority =
             priorityOrder[
-              (a.priority?.toLowerCase() as keyof typeof priorityOrder) ||
-                'low'
+            (a.priority?.toLowerCase() as keyof typeof priorityOrder) ||
+            'low'
             ]
           const bPriority =
             priorityOrder[
-              (b.priority?.toLowerCase() as keyof typeof priorityOrder) ||
-                'low'
+            (b.priority?.toLowerCase() as keyof typeof priorityOrder) ||
+            'low'
             ]
           return sortDirection === 'asc'
             ? aPriority - bPriority
@@ -216,9 +211,8 @@ const Column = React.memo(
               variant="ghost"
               size="icon"
               onClick={() => toggleSort('priority')}
-              className={`p-1 ${
-                sortBy === 'priority' ? 'text-primary' : 'text-muted-foreground'
-              }`}
+              className={`p-1 ${sortBy === 'priority' ? 'text-primary' : 'text-muted-foreground'
+                }`}
               aria-label="Sort by priority"
             >
               <AlertTriangle className="h-4 w-4" />
@@ -227,9 +221,8 @@ const Column = React.memo(
               variant="ghost"
               size="icon"
               onClick={() => toggleSort('dueDate')}
-              className={`p-1 ${
-                sortBy === 'dueDate' ? 'text-primary' : 'text-muted-foreground'
-              }`}
+              className={`p-1 ${sortBy === 'dueDate' ? 'text-primary' : 'text-muted-foreground'
+                }`}
               aria-label="Sort by due date"
             >
               <Calendar className="h-4 w-4" />
@@ -277,6 +270,8 @@ export default function Kanban() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [filterProject, setFilterProject] = useState('all')
 
   // Fetch tasks and employee data
   const fetchTasksData = useCallback(async () => {
@@ -299,6 +294,22 @@ export default function Kanban() {
       }
     }
   }, [user, toast])
+  useEffect(() => {
+    const fetchProjectsData = async () => {
+      try {
+        const projectsData: Project[] = await fetchProjects()
+        setProjects([{ id: 'all', name: 'All Projects' } as Project, ...projectsData])
+      } catch (error) {
+        console.error('Failed to load projects', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to load projects. Please try again.',
+          variant: 'destructive',
+        })
+      }
+    }
+    fetchProjectsData()
+  }, [])
 
   useEffect(() => {
     fetchTasksData()
@@ -451,14 +462,13 @@ export default function Kanban() {
   const filteredTasks = useMemo(() => {
     return tasks.filter(
       (task) =>
-        task.title
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) &&
+        task.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
         (filterEffort === 'all' || task.efforts === filterEffort) &&
-        (filterAssignee === 'all' ||
-          task.assignee?.name === filterAssignee)
+        (filterAssignee === 'all' || task.assignee?.name === filterAssignee) &&
+        (filterProject === 'all' || task.projectId === filterProject)
     )
-  }, [tasks, searchTerm, filterEffort, filterAssignee])
+  }, [tasks, searchTerm, filterEffort, filterAssignee, filterProject])
+
 
   // Unique assignees for filter options
   const uniqueAssignees = useMemo(() => {
@@ -549,27 +559,46 @@ export default function Kanban() {
               <SelectItem value="full-stack">Full Stack</SelectItem>
             </SelectContent>
           </Select>
+          {/* Project Filter */}
+          <Select
+            value={filterProject}
+            onValueChange={setFilterProject}
+            aria-label="Filter by Project"
+          >
+            <SelectTrigger className="w-36 md:w-48 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+              <SelectValue placeholder="Project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects
+                .filter((project) => project !== null && project !== undefined)
+                .map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
 
           {/* Assignee Filter */}
           {(employee?.role === 'management' ||
             employee?.role === 'projectManager') && (
-            <Select
-              value={filterAssignee}
-              onValueChange={setFilterAssignee}
-              aria-label="Filter by Assignee"
-            >
-              <SelectTrigger className="w-36 md:w-48 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                <SelectValue placeholder="Assignee" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueAssignees.map((assignee) => (
-                  <SelectItem key={assignee} value={assignee}>
-                    {assignee === 'all' ? 'All Assignees' : assignee}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+              <Select
+                value={filterAssignee}
+                onValueChange={setFilterAssignee}
+                aria-label="Filter by Assignee"
+              >
+                <SelectTrigger className="w-36 md:w-48 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                  <SelectValue placeholder="Assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueAssignees.map((assignee) => (
+                    <SelectItem key={assignee} value={assignee}>
+                      {assignee === 'all' ? 'All Assignees' : assignee}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
           {/* Refresh Button */}
           <Button
