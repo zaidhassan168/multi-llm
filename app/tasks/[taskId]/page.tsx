@@ -48,7 +48,14 @@ import {
   SaveIcon,
   Loader2,
   InfoIcon,
-  SmileIcon, // Added SmileIcon for reaction button
+  SmileIcon,
+  MessageSquare,
+  Clock,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { fetchEmployees, Employee } from '@/models/employee'
 import { storeCommentNotification } from '@/utils/storeNotifications'
@@ -59,11 +66,12 @@ import {
   TooltipTrigger,
   TooltipContent,
   TooltipProvider,
-} from '@/components/ui/tooltip' // Ensure correct import path
+} from '@/components/ui/tooltip'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import ReactMarkdown from 'react-markdown'
 
-// Define the Reaction Emojis you want to support
 const reactionEmojis = ['👍', '❤️', '😂', '🎉', '😢', '👏']
-
 const taskPriorities = ['low', 'medium', 'high', 'urgent', 'critical', 'null']
 const taskTypes = ['bug', 'feature', 'documentation', 'task', 'changeRequest', 'other']
 const taskComplexities = ['simple', 'moderate', 'complex']
@@ -88,7 +96,7 @@ const taskTypeIcons: Record<string, { icon: React.ComponentType<any>; color: str
   other: { icon: HelpCircle, color: 'text-gray-500' },
 }
 
-export default function TaskView() {
+export default function EnhancedTaskView() {
   const { taskId } = useParams()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -103,7 +111,6 @@ export default function TaskView() {
   const [tempEditValues, setTempEditValues] = useState<Partial<Task>>({})
   const [isAddingComment, setIsAddingComment] = useState(false)
 
-  // Fetch Task and Employees
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -129,10 +136,8 @@ export default function TaskView() {
     if (taskId) {
       fetchData()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId]) // Removed 'toast' from dependencies
+  }, [taskId, toast])
 
-  // Handle Click Outside for Mentions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mentionRef.current && !mentionRef.current.contains(event.target as Node)) {
@@ -146,7 +151,6 @@ export default function TaskView() {
     }
   }, [])
 
-  // Handle Field Changes
   const handleChange = useCallback(
     async (field: keyof Task, value: any) => {
       if (!task || !user?.email) return
@@ -172,7 +176,6 @@ export default function TaskView() {
     [task, user?.email, toast]
   )
 
-  // Handle Adding Comments
   const handleAddComment = useCallback(async () => {
     if (task && newComment.trim() !== '') {
       setIsAddingComment(true)
@@ -225,7 +228,6 @@ export default function TaskView() {
     }
   }, [task, newComment, user, employees, toast])
 
-  // Handle Mention Selection
   const handleMention = useCallback(
     (employee: Employee) => {
       const commentWords = newComment.split(' ')
@@ -238,7 +240,6 @@ export default function TaskView() {
     [newComment]
   )
 
-  // Handle Comment Input Change
   const handleCommentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setNewComment(e.target.value)
@@ -254,7 +255,6 @@ export default function TaskView() {
     []
   )
 
-  // Handle Editing Fields
   const handleEditField = useCallback((field: string) => {
     setEditingField(field)
     setTempEditValues({ ...tempEditValues, [field]: task?.[field as keyof Task] })
@@ -277,7 +277,6 @@ export default function TaskView() {
     [tempEditValues]
   )
 
-  // Handle Reactions
   const handleReaction = useCallback(
     async (commentId: string, emoji: string) => {
       if (!task || !user?.email) return
@@ -288,7 +287,6 @@ export default function TaskView() {
           const userIdentifier = user.displayName || user.email || ''
 
           if (users.includes(userIdentifier)) {
-            // Remove reaction
             return {
               ...comment,
               reactions: {
@@ -297,7 +295,6 @@ export default function TaskView() {
               },
             }
           } else {
-            // Add reaction
             return {
               ...comment,
               reactions: {
@@ -331,6 +328,42 @@ export default function TaskView() {
     [task, user?.email, toast]
   )
 
+  const insertMarkdown = (tag: string) => {
+    const textarea = document.getElementById('comment-textarea') as HTMLTextAreaElement
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const text = textarea.value
+      const before = text.substring(0, start)
+      const selection = text.substring(start, end)
+      const after = text.substring(end)
+      
+      let insertion = ''
+      switch (tag) {
+        case 'bold':
+          insertion = `**${selection || 'bold text'}**`
+          break
+        case 'italic':
+          insertion = `*${selection || 'italic text'}*`
+          break
+        case 'list':
+          insertion = `\n- ${selection || 'List item'}`
+          break
+        case 'ordered-list':
+          insertion = `\n1. ${selection || 'List item'}`
+          break
+        case 'link':
+          insertion = `[${selection || 'Link text'}](url)`
+          break
+      }
+
+      textarea.value = before + insertion + after
+      setNewComment(textarea.value)
+      textarea.focus()
+      textarea.selectionStart = textarea.selectionEnd = start + insertion.length
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -355,10 +388,8 @@ export default function TaskView() {
     <TooltipProvider>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content */}
           <div className="flex-grow">
-            {/* Task Card */}
-            <Card className="border-none">
+            <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   {React.createElement(taskTypeIcons[task.type || 'other'].icon, {
@@ -418,9 +449,8 @@ export default function TaskView() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description" className="text-lg font-semibold">Description</Label>
                   {editingField === 'description' ? (
                     <div className="flex flex-col gap-2">
                       <Textarea
@@ -428,6 +458,7 @@ export default function TaskView() {
                         value={tempEditValues.description || ''}
                         onChange={(e) => handleInputChange('description', e.target.value)}
                         rows={6}
+                        className="resize-none"
                         aria-label="Edit Description"
                         autoFocus
                         onKeyDown={(e) => {
@@ -452,7 +483,7 @@ export default function TaskView() {
                         <Button
                           onClick={() => setEditingField(null)}
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           aria-label="Cancel Editing Description"
                         >
                           Cancel
@@ -461,7 +492,9 @@ export default function TaskView() {
                     </div>
                   ) : (
                     <div className="flex items-start gap-2">
-                      <p className="flex-grow whitespace-pre-wrap">{task.description}</p>
+                      <div className="flex-grow whitespace-pre-wrap bg-gray-50 p-4 rounded-md">
+                        <ReactMarkdown>{task.description || 'No description provided.'}</ReactMarkdown>
+                      </div>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -480,147 +513,174 @@ export default function TaskView() {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Comments Section */}
-            <Card className="mt-8 border-none">
-              <CardHeader>
-                <CardTitle>Comments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-4">
-                  {task.comments && task.comments.length > 0 ? (
-                    task.comments.map((comment) => {
-                      // Extract user's reactions
-                      const userReactions = Object.keys(comment.reactions).filter((emoji) =>
-                        comment.reactions[emoji].includes(user?.uid || user?.email || '')
-                      )
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Comments</h3>
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="space-y-4">
+                      {task.comments && task.comments.length > 0 ? (
+                        task.comments.map((comment) => {
+                          const userReactions = Object.keys(comment.reactions).filter((emoji) =>
+                            comment.reactions[emoji].includes(user?.uid || user?.email || '')
+                          )
 
-                      return (
-                        <div
-                          key={comment.id}
-                          className="flex space-x-3 p-2 transition duration-200"
-                        >
-                          <Avatar>
-                            <AvatarFallback>{comment.author[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="font-semibold text-sm">{comment.author}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(comment.createdAt), 'PPp')}
-                              </p>
-                            </div>
-                            <p className="mt-1 text-sm">{comment.content}</p>
-                            {/* User's Reactions */}
-                            {Object.entries(comment.reactions || {}).map(([emoji, users]) => (
-                              <Tooltip key={emoji}>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="icon"
-                                    variant="outline"
-                                    className="cursor-pointer hover:bg-secondary transition-colors"
-                                    onClick={() => handleReaction(comment.id, emoji)}
-                                  >
-                                    {emoji} {users.length}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent 
-                                  side="top" 
-                                  className="z-50 bg-popover text-popover-foreground shadow-md p-2 rounded-md"
-                                >
-                                  <p>{users.join(', ')}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            ))}
-                            {/* Smile Icon for Adding/Removing Reactions */}
-                            <div className="flex items-center mt-2 space-x-2">
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    aria-label="Add Reaction"
-                                    className="p-1"
-                                  >
-                                    <SmileIcon className="h-4 w-4" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="flex space-x-2 p-2">
-                                  {reactionEmojis.map((emoji) => {
-                                    const users = comment.reactions[emoji] || []
-                                    const userIdentifier = user?.displayName || user?.email || ''
-                                    const hasReacted = users.includes(userIdentifier)
-
-                                    // Map userIdentifiers to user names
-                                    const userNames = users
-                                      .map((id) => employees.find(emp => emp.email === id)?.name || id)
-                                      .join(', ')
-
-                                    return (
+                          return (
+                            <Card key={comment.id} className="p-4">
+                              <div className="flex items-start space-x-4">
+                                <Avatar>
+                                  <AvatarFallback>{comment.author[0]}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-semibold">{comment.author}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {format(new Date(comment.createdAt), 'PPp')}
+                                    </p>
+                                  </div>
+                                  <ReactMarkdown className="text-sm prose max-w-none">
+                                    {comment.content}
+                                  </ReactMarkdown>
+                                  <div className="flex flex-wrap gap-2">
+                                    {Object.entries(comment.reactions || {}).map(([emoji, users]) => (
                                       <Tooltip key={emoji}>
                                         <TooltipTrigger asChild>
-                                          <button
-                                            className={`text-xl focus:outline-none ${
-                                              hasReacted ? 'text-blue-600' : 'text-gray-600'
-                                            }`}
+                                          <Badge
+                                            variant="secondary"
+                                            className="cursor-pointer hover:bg-secondary/80 transition-colors"
                                             onClick={() => handleReaction(comment.id, emoji)}
-                                            aria-label={`${hasReacted ? 'Remove' : 'Add'} reaction ${emoji}`}
                                           >
-                                            {emoji}
-                                          </button>
+                                            {emoji} {users.length}
+                                          </Badge>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                          {hasReacted ? 'Remove your reaction' : `React with ${emoji}`}
-                                          {users.length > 0 && (
-                                            <>
-                                              <br />
-                                              <span className="text-xs">Reacted by: {userNames}</span>
-                                            </>
-                                          )}
+                                        <TooltipContent side="top" className="max-w-xs">
+                                          <p className="text-xs">{users.join(', ')}</p>
                                         </TooltipContent>
                                       </Tooltip>
-                                    )
-                                  })}
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <p className="text-center text-gray-500">No comments yet.</p>
-                  )}
-                </div>
-                <div className="flex space-x-3 mt-4">
-                  <Avatar>
-                    <AvatarFallback>
-                      {user?.displayName?.[0] || user?.email?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 relative">
+                                    ))}
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="rounded-full"
+                                          aria-label="Add Reaction"
+                                        >
+                                          <SmileIcon className="h-4 w-4" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="flex flex-wrap gap-2 p-2" side="top">
+                                        {reactionEmojis.map((emoji) => {
+                                          const users = comment.reactions[emoji] || []
+                                          const userIdentifier = user?.displayName || user?.email || ''
+                                          const hasReacted = users.includes(userIdentifier)
+
+                                          return (
+                                            <Tooltip key={emoji}>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  className={`text-xl focus:outline-none ${
+                                                    hasReacted ? 'bg-secondary' : ''
+                                                  }`}
+                                                  onClick={() => handleReaction(comment.id, emoji)}
+                                                  aria-label={`${hasReacted ? 'Remove' : 'Add'} reaction ${emoji}`}
+                                                >
+                                                  {emoji}
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="top">
+                                                {hasReacted ? 'Remove your reaction' : `React with ${emoji}`}
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          )
+                                        })}
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
+                          )
+                        })
+                      ) : (
+                        <p className="text-center text-muted-foreground">No comments yet.</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <div className="mt-4">
+                    <div className="flex gap-2 mb-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => insertMarkdown('bold')}>
+                            <Bold className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Bold</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => insertMarkdown('italic')}>
+                            <Italic className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Italic</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => insertMarkdown('list')}>
+                            <List className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Bullet List</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => insertMarkdown('ordered-list')}>
+                            <ListOrdered className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Numbered List</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => insertMarkdown('link')}>
+                            <LinkIcon className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Insert Link</TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Textarea
+                      id="comment-textarea"
                       placeholder="Add a comment..."
                       value={newComment}
                       onChange={handleCommentChange}
                       rows={3}
+                      className="resize-none"
                       aria-label="Add a comment"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          if (!isAddingComment && newComment.trim() !== '') {
-                            handleAddComment()
-                          }
-                        }
-                      }}
                     />
+                    <div className="mt-2 flex justify-between items-center">
+                      <p className="text-sm text-muted-foreground">
+                        Use @ to mention team members
+                      </p>
+                      <Button
+                        onClick={handleAddComment}
+                        disabled={newComment.trim() === '' || isAddingComment}
+                        aria-label="Add Comment"
+                      >
+                        {isAddingComment ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                        )}
+                        Add Comment
+                      </Button>
+                    </div>
                     {showMentions && (
                       <div
                         ref={mentionRef}
-                        className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-white border border-gray-300 rounded-md shadow-lg"
-                      >
+                       >
                         {employees
                           .filter((emp) =>
                             emp.name.toLowerCase().includes(mentionSearch.toLowerCase())
@@ -628,10 +688,10 @@ export default function TaskView() {
                           .map((emp) => (
                             <div
                               key={emp.id}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                              className="px-4 py-2 hover:bg-accent cursor-pointer flex items-center"
                               onClick={() => handleMention(emp)}
                             >
-                              <Avatar className="h-5 w-5 mr-2">
+                              <Avatar className="h-6 w-6 mr-2">
                                 <AvatarImage
                                   src={emp.photoURL || '/placeholder.svg'}
                                   alt={emp.name}
@@ -641,41 +701,101 @@ export default function TaskView() {
                               <span>{emp.name}</span>
                             </div>
                           ))}
-                        {employees.filter((emp) =>
-                          emp.name.toLowerCase().includes(mentionSearch.toLowerCase())
-                        ).length === 0 && (
-                          <div className="px-4 py-2 text-gray-500">No users found</div>
-                        )}
                       </div>
                     )}
-                    <Button
-                      onClick={handleAddComment}
-                      className="mt-2"
-                      disabled={newComment.trim() === '' || isAddingComment}
-                      aria-label="Add Comment"
-                    >
-                      {isAddingComment ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <FileTextIcon className="mr-2 h-4 w-4" />
-                      )}
-                      Add Comment
-                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Side Panel */}
-          <div className="w-full lg:w-1/3 border border-gray-200 rounded-md">
-            <Card className="border-none">
+          <div className="w-full lg:w-1/3">
+            <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle>Task Details</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Due Date */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={task.status}
+                        onValueChange={(value) => handleChange('status', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskStatuses.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              <span className="capitalize">{status}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select
+                        value={task.priority}
+                        onValueChange={(value) => handleChange('priority', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskPriorities.map((priority) => (
+                            <SelectItem key={priority} value={priority}>
+                              <div className="flex items-center">
+                                {React.createElement(priorityIcons[priority].icon, {
+                                  className: `h-4 w-4 mr-2 ${priorityIcons[priority].color}`,
+                                })}
+                                <span className="capitalize">{priority}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assignee">Assigned To</Label>
+                    <Select
+                      value={task.assignee?.id || ''}
+                      onValueChange={(value) => {
+                        const selectedEmployee = employees.find((emp) => emp.id === value)
+                        if (selectedEmployee) {
+                          handleChange('assignee', {
+                            id: selectedEmployee.id,
+                            name: selectedEmployee.name,
+                            email: selectedEmployee.email,
+                            role: selectedEmployee.role,
+                          })
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select assignee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.map((emp) => (
+                          <SelectItem key={emp.id} value={emp.id}>
+                            <div className="flex items-center">
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage
+                                  src={emp.photoURL || '/placeholder.svg'}
+                                  alt={emp.name}
+                                />
+                                <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              {emp.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="dueDate">Due Date</Label>
                     <Popover>
@@ -686,7 +806,6 @@ export default function TaskView() {
                             'w-full justify-start text-left font-normal',
                             !task.dueDate && 'text-muted-foreground'
                           )}
-                          aria-label="Select Due Date"
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {task.dueDate
@@ -704,150 +823,54 @@ export default function TaskView() {
                       </PopoverContent>
                     </Popover>
                   </div>
-
-                  {/* Status */}
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={task.status}
-                      onValueChange={(value) => handleChange('status', value)}
-                      aria-label="Select Status"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taskStatuses.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="type">Type</Label>
+                      <Select
+                        value={task.type}
+                        onValueChange={(value) => handleChange('type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              <div className="flex items-center">
+                                {React.createElement(taskTypeIcons[type].icon, {
+                                  className: `h-4 w-4 mr-2 ${taskTypeIcons[type].color}`,
+                                })}
+                                <span className="capitalize">{type}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="complexity">Complexity</Label>
+                      <Select
+                        value={task.complexity}
+                        onValueChange={(value) => handleChange('complexity', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select complexity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskComplexities.map((complexity) => (
+                            <SelectItem key={complexity} value={complexity}>
+                              <span className="capitalize">{complexity}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-
-                  {/* Assignee */}
-                  <div className="space-y-2">
-                    <Label htmlFor="assignee">Assigned To</Label>
-                    <Select
-                      value={task.assignee?.id || ''}
-                      onValueChange={(value) => {
-                        const selectedEmployee = employees.find((emp) => emp.id === value)
-                        if (selectedEmployee) {
-                          handleChange('assignee', {
-                            id: selectedEmployee.id,
-                            name: selectedEmployee.name,
-                            email: selectedEmployee.email,
-                            role: selectedEmployee.role,
-                          })
-                        }
-                      }}
-                      aria-label="Select Assignee"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select assignee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            <div className="flex items-center">
-                              <Avatar className="h-5 w-5 mr-2">
-                                <AvatarImage
-                                  src={emp.photoURL || '/placeholder.svg'}
-                                  alt={emp.name}
-                                />
-                                <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              {emp.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Priority */}
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select
-                      value={task.priority}
-                      onValueChange={(value) => handleChange('priority', value)}
-                      aria-label="Select Priority"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taskPriorities.map((priority) => (
-                          <SelectItem key={priority} value={priority}>
-                            <div className="flex items-center">
-                              {React.createElement(priorityIcons[priority].icon, {
-                                className: `h-4 w-4 mr-2 ${priorityIcons[priority].color}`,
-                                'aria-hidden': true,
-                              })}
-                              <span className="capitalize">{priority}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Type */}
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select
-                      value={task.type}
-                      onValueChange={(value) => handleChange('type', value)}
-                      aria-label="Select Type"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taskTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            <div className="flex items-center">
-                              {React.createElement(taskTypeIcons[type].icon, {
-                                className: `h-4 w-4 mr-2 ${taskTypeIcons[type].color}`,
-                                'aria-hidden': true,
-                              })}
-                              <span className="capitalize">{type}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Complexity */}
-                  <div className="space-y-2">
-                    <Label htmlFor="complexity">Complexity</Label>
-                    <Select
-                      value={task.complexity}
-                      onValueChange={(value) => handleChange('complexity', value)}
-                      aria-label="Select Complexity"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select complexity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taskComplexities.map((complexity) => (
-                          <SelectItem key={complexity} value={complexity}>
-                            <span className="capitalize">{complexity}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Efforts */}
                   <div className="space-y-2">
                     <Label htmlFor="efforts">Efforts</Label>
                     <Select
                       value={task.efforts}
                       onValueChange={(value) => handleChange('efforts', value)}
-                      aria-label="Select Efforts"
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select efforts" />
@@ -861,8 +884,6 @@ export default function TaskView() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Time Estimate */}
                   <div className="space-y-2">
                     <Label htmlFor="time">Time Estimate (hours)</Label>
                     <div className="flex items-center gap-2">
@@ -873,18 +894,16 @@ export default function TaskView() {
                         onChange={(e) => handleInputChange('time', e.target.value)}
                         onBlur={() => handleSaveField('time')}
                         onFocus={() => setEditingField('time')}
-                        aria-label="Edit Time Estimate"
                       />
                       {editingField !== 'time' && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               onClick={() => handleEditField('time')}
-                              size="sm"
+                              size="icon"
                               variant="ghost"
-                              aria-label="Edit Time Estimate"
                             >
-                              <PencilIcon className="h-4 w-4" />
+                              <Clock className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="top">
