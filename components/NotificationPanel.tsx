@@ -29,26 +29,40 @@ import {
 } from 'firebase/database'
 import { app } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
-import { CommentNotification } from '@/utils/storeNotifications'
+import { CommentNotification, Notification } from '@/utils/storeNotifications'
 import Link from 'next/link'
-// Define Notification Interface
-interface Notification {
-  id: string
-  title: string
-  message: string
-  timestamp: number
-  viewed: boolean
-}
 
-// NotificationItem Component
+
+// CommentNotification Interface (ensure it includes 'read')
+export type { CommentNotification }
+
+// CommentNotificationItem Component
 const CommentNotificationItem = React.memo(
-  ({ notification }: { notification: CommentNotification }) => {
+  ({
+    notification,
+    onMarkAsRead,
+  }: {
+    notification: CommentNotification
+    onMarkAsRead: (id: string) => void
+  }) => {
     const formattedDate = useMemo(() => {
       return new Date(notification.timestamp as unknown as number).toLocaleString()
     }, [notification.timestamp])
 
+    const handleClick = () => {
+      if (!notification.read) {
+        onMarkAsRead(notification.id)
+      }
+    }
+
     return (
-      <div className="flex items-start p-4 hover:bg-muted/50 transition-colors">
+      <div
+        className={`flex items-start p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
+          !notification.read ? 'font-semibold' : 'font-normal'
+        }`}
+        onClick={handleClick}
+        aria-label="Comment notification"
+      >
         <MessageSquare className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
         <div className="ml-4 flex-1">
           <p className="text-sm">
@@ -56,7 +70,12 @@ const CommentNotificationItem = React.memo(
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Task: {notification.task ? (
-              <Link href={`/tasks/${notification.task.id}`} className="hover:underline text-primary">
+              <Link
+                href={`/tasks/${notification.task.id}`}
+                className={`${
+                  notification.read ? 'text-primary' : 'text-primary underline'
+                } hover:underline`}
+              >
                 {notification.task.title}
               </Link>
             ) : 'Unknown Task'}
@@ -70,6 +89,8 @@ const CommentNotificationItem = React.memo(
 )
 
 CommentNotificationItem.displayName = 'CommentNotificationItem'
+
+// NotificationItem Component
 const NotificationItem = React.memo(
   ({
     notification,
@@ -81,7 +102,7 @@ const NotificationItem = React.memo(
     onDelete: (id: string) => void
   }) => {
     const formattedDate = useMemo(() => {
-      return new Date(notification.timestamp).toLocaleString()
+      return new Date(notification.timestamp as string | number | Date).toLocaleString()
     }, [notification.timestamp])
 
     return (
@@ -101,14 +122,14 @@ const NotificationItem = React.memo(
                   variant="ghost"
                   size="icon"
                   onClick={() => onMarkAsViewed(notification.id)}
-                  className={notification.viewed ? 'text-muted-foreground' : 'text-primary'}
-                  aria-label={notification.viewed ? 'Viewed' : 'Mark as viewed'}
+                  className={notification.read ? 'text-muted-foreground' : 'text-primary'}
+                  aria-label={notification.read ? 'Viewed' : 'Mark as viewed'}
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{notification.viewed ? 'Viewed' : 'Mark as viewed'}</p>
+                <p>{notification.read ? 'Viewed' : 'Mark as viewed'}</p>
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -143,7 +164,8 @@ export function NotificationPanel() {
   const [isOpen, setIsOpen] = useState(false)
   const { user } = useAuth()
   const [commentNotifications, setCommentNotifications] = useState<CommentNotification[]>([])
-  // Fetch notifications from Firebase
+
+  // Fetch general notifications from Firebase
   const fetchNotifications = useCallback(() => {
     if (user?.uid) {
       const db = getDatabase(app)
@@ -178,17 +200,17 @@ export function NotificationPanel() {
       if (unsubscribe) unsubscribe()
     }
   }, [fetchNotifications])
+
+  // Fetch comment notifications from Firebase
   const fetchCommentNotifications = useCallback(() => {
-    console.log('fetchCommentNotifications')
     if (!user?.uid) return
-    console.log('Fetching comment notifications for user:', user.uid)
     const db = getDatabase(app)
     const commentNotificationsRef = query(
       ref(db, `commentNotifications/${user.uid}`),
       orderByChild('timestamp'),
       limitToLast(50)
     )
-    
+
     const handleSnapshot = (snapshot: any) => {
       const data = snapshot.val()
       if (data) {
@@ -199,32 +221,37 @@ export function NotificationPanel() {
             timestamp: notif.timestamp || Date.now(),
           })
         ).sort((a, b) => b.timestamp - a.timestamp)
-        console.log('Fetched comment notifications:', notificationList)
         setCommentNotifications(notificationList)
       } else {
         setCommentNotifications([])
       }
     }
-    
 
     onValue(commentNotificationsRef, handleSnapshot)
-    
+
     return () => {
       off(commentNotificationsRef, 'value', handleSnapshot)
     }
   }, [user])
-  // Calculate unviewed notifications count
+
   useEffect(() => {
     const unsubscribe = fetchCommentNotifications()
     return () => {
       if (unsubscribe) unsubscribe()
     }
   }, [fetchCommentNotifications])
+
+  // Calculate unviewed notifications count
   const unviewedCount = useMemo(() => {
-    return notifications.filter(n => !n.viewed).length
+    return notifications.filter(n => !n.read).length
   }, [notifications])
 
-  // Handler to mark a notification as viewed
+  // Calculate unread comment notifications count
+  const unreadCommentCount = useMemo(() => {
+    return commentNotifications.filter(n => !n.read).length
+  }, [commentNotifications])
+
+  // Handler to mark a general notification as viewed
   const markAsViewed = useCallback(async (notificationId: string) => {
     if (user?.uid) {
       const db = getDatabase(app)
@@ -237,7 +264,7 @@ export function NotificationPanel() {
     }
   }, [user])
 
-  // Handler to delete a notification
+  // Handler to delete a general notification
   const deleteNotification = useCallback(async (notificationId: string) => {
     if (user?.uid) {
       const db = getDatabase(app)
@@ -250,12 +277,25 @@ export function NotificationPanel() {
     }
   }, [user])
 
+  // Handler to mark a comment notification as read
+  const markCommentAsRead = useCallback(async (notificationId: string) => {
+    if (user?.uid) {
+      const db = getDatabase(app)
+      const commentNotificationRef = ref(db, `commentNotifications/${user.uid}/${notificationId}`)
+      try {
+        await update(commentNotificationRef, { read: true })
+      } catch (error) {
+        console.error('Failed to mark comment as read:', error)
+      }
+    }
+  }, [user])
+
   // Filter notifications based on active tab
   const filteredNotifications = useMemo(() => {
     return notifications.filter(notification => {
-      if (activeTab === 'inbox') return !notification.viewed
-      if (activeTab === 'viewed') return notification.viewed
-      return true // 'comments' tab shows all notifications
+      if (activeTab === 'inbox') return !notification.read
+      if (activeTab === 'viewed') return notification.read
+      return true // 'comments' tab shows all comment notifications
     })
   }, [notifications, activeTab])
 
@@ -270,12 +310,12 @@ export function NotificationPanel() {
             aria-label="Open notifications"
           >
             <Bell className="h-5 w-5" />
-            {unviewedCount > 0 && (
+            {(unviewedCount > 0 || unreadCommentCount > 0) && (
               <Badge
                 variant="destructive"
                 className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
               >
-                {unviewedCount}
+                {unviewedCount + unreadCommentCount}
               </Badge>
             )}
           </Button>
@@ -320,7 +360,15 @@ export function NotificationPanel() {
               onClick={() => setActiveTab('comments')}
               aria-label="Comments notifications"
             >
-              Comments
+              Comments{" "}
+              {unreadCommentCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1 px-2 py-0.5 text-xs font-semibold"
+                >
+                  {unreadCommentCount}
+                </Badge>
+              )}
             </button>
           </div>
           {/* Notification List */}
@@ -330,8 +378,9 @@ export function NotificationPanel() {
                 <div className="divide-y divide-muted">
                   {commentNotifications.map(notification => (
                     <CommentNotificationItem
-                      key={notification.commentId}
+                      key={notification.id}
                       notification={notification}
+                      onMarkAsRead={markCommentAsRead}
                     />
                   ))}
                 </div>
@@ -357,7 +406,6 @@ export function NotificationPanel() {
               </div>
             )}
           </ScrollArea>
-
         </PopoverContent>
       </Popover>
     </TooltipProvider>

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Send the notification to all tokens
     const response = await admin.messaging().sendEachForMulticast(message);
-    await storeNotification(userId, title, messageBody);
+    // storeNotification(userId, title, messageBody, );
     console.log('Successfully sent notifications:', response);
     response.responses.forEach((resp, idx) => {
       if (!resp.success) {

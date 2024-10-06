@@ -4,23 +4,27 @@ import { getDatabase, ref, push, serverTimestamp } from 'firebase/database';
 import { app } from '../firebase'; // Adjust this import path as needed
 
 interface Notification {
+  id: string;
   title: string;
   message: string;
   read: boolean;
   timestamp: object;
+  taskId?: string;
 }
 
-export async function storeNotification(userId: string, title: string, message: string): Promise<void> {
+export async function storeNotification(userId: string, title: string, message: string , taskId?: string): Promise<void> {
   try {
     console.log('Storing notification for user:', userId);
     const db = getDatabase(app);
     const notificationsRef = ref(db, `notifications/${userId}`);
     console
     const newNotification: Notification = {
+      id: push(notificationsRef).key || '',
       title,
       message,
       read: false,
       timestamp: serverTimestamp(),
+      taskId: taskId ? taskId : ''
     };
 
     await push(notificationsRef, newNotification);
@@ -47,6 +51,7 @@ interface CommentNotification {
   mentionedUserId?: string;
   timestamp: object;
   read?: boolean;
+  id: string;
 }
 
 interface Employee {
@@ -74,6 +79,7 @@ export async function storeCommentNotification(
         const notificationsRef = ref(db, `commentNotifications/${mentionedEmployee.id}`);
 
         const newNotification: CommentNotification = {
+          id: push(notificationsRef).key || '',
           type: 'comment',
           task: {
             id: taskId,
@@ -98,4 +104,4 @@ export async function storeCommentNotification(
   }
 }
 
-export type {CommentNotification}
+export type {CommentNotification, Notification}

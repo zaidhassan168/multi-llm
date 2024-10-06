@@ -4,6 +4,7 @@ import { Employee } from './employee';
 import { Stage } from './stage';
 import { EmployeeSummary } from './summaries';
 import {taskUpdateNotification} from '@/utils/ayncfunctions/pushNotification'
+import {storeNotification} from '@/utils/storeNotifications'
 type Reactions = {
   [emoji: string]: string[]
 }
@@ -132,6 +133,7 @@ export const updateTask = async (task: Task, email: string): Promise<void> => {
       throw new Error('Failed to update task');
     }
     taskUpdateNotification(task);
+
   } catch (error) {
     console.error('Error updating task:', error);
     toast({
