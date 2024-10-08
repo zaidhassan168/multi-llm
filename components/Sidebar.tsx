@@ -70,6 +70,7 @@ export default function Sidebar({ email }: SidebarProps) {
     { icon: CalendarIcon, label: "Timeline", route: "/timeline" },
     { icon: MessageSquareIcon, label: "Task Detail", route: "/task-detail" },
     { icon: UserIcon, label: "Profile", route: "/profile" },
+    { icon: BrainCircuitIcon, label: "o1", route: "/o1", onClick: handleLogout },
   ]
 
   return (

@@ -18,7 +18,7 @@ export async function continueConversation(history: Message[]) {
 
   (async () => {
     const { textStream } = await streamText({
-      model: openai('gpt-4o'),
+      model: openai('o1-preview'),
       system:
         "You are a skillful coder",
       messages: history,
