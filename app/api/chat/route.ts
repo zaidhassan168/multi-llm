@@ -8,9 +8,9 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const { text } = await generateText({
-    model: openai('o1-preview'),
+    model: openai('o1-mini'),
     messages: convertToCoreMessages(messages),
   });
-
+  console.log('text', text);
   return new Response(text);
 }
